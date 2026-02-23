@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>CRLP AF HA Maps</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <!-- <div id="splash-overlay">
+    <div class="splash-modal">
+        <h2>Welcome</h2>
+        <p>
+        This application is provided as-is. By clicking I agree, you accept the terms of use.
+        </p>
+        <button id="agree-btn">I agree</button>
+    </div>
+    </div> -->
+    <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading...</div>
+    </div>
+
+    <div id="entire-page">
+        <div id="main-container">
+            <div id="map"></div>
+
+            <div id="right-panel">
+                <div id="user-instructions" class="controls">
+                    <span id="greeting">Welcome to the CRLP Hazard Mapping Application!</span><br>Use the controls below to explore hazard layers across Afghanistan. Select a province to zoom in and view district-level data. You can also take a snapshot of the map or download the current view as a PDF report.
+                </div>
+                <div class="controls dropdown-controls">
+                    <label>Province:</label><select id="prov-select"><option value="all">-- Show All --</option></select>
+                </div>
+                <div class="controls dropdown-controls">
+                    <label>District:</label><select id="dist-select"><option value="all">-- Select a Province --</option></select>
+                </div>
+                <div class="controls dropdown-controls">
+                    <label>Community:</label><select id="comm-select"><option value="all">-- Select a District --</option></select>
+                </div>
+                <div id="raster-list" class="controls">
+                    <p>Select Hazard Layer</p>
+                    <label><input type="radio" name="hazard-layer" value="none">None</label>
+                    <label><input type="radio" name="hazard-layer" value="pop">Population Density</label>
+                    <label><input type="radio" name="hazard-layer" value="flood">Flood Hazard</label>
+                    <label><input type="radio" name="hazard-layer" value="avalanche">Avalanche Hazard</label>
+                    <label><input type="radio" name="hazard-layer" value="landslide">Landslide Hazard</label>
+                </div>
+                <div class="controls"><button id="snapshot-btn">Take Map Snapshot</button></div>
+                <div class="controls"><button id="download-pdf-btn">Download as PDF</button></div>
+            </div>
+        </div>
+
+        <div id="pdf-content">
+            <div id="result-container">
+                <div id="snapshot-title"></div>
+            </div>
+            <div id="notes-panel">
+                <div id="raster-description" class="notes-section">
+                    <p id="active-raster"></p>
+                    <p id="raster-info"></p>
+                </div>
+                <div class="note-section">
+                    <p>Legend</p>
+                </div>
+                <div class="note-section">Section 3</div>
+            </div>
+        </div>
+
+
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/georaster"></script>
+    <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- App JS -->
+    <script src="main.js"></script>
+</body>
+</html>

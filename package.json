@@ -1,0 +1,18 @@
+{
+  "name": "crlp_af_hazmaps",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "html-to-image": "^1.11.13",
+    "leaflet": "^1.9.4"
+  }
+}
