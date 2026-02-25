@@ -20,11 +20,9 @@ function initMap() {
     map = L.map('map').setView([33.93, 67.68], 6);
 
     L.tileLayer(
-        'https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.{ext}',
-        {
-            attribution: 'Stadia Maps, © OpenMapTiles © OpenStreetMap contributors',
-            crossOrigin: true,
-            ext: 'jpg'
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri',
+                crossOrigin: true 
         }
     ).addTo(map);
 }
@@ -144,7 +142,6 @@ function showRaster(rasterLayer) {
         return;
     }
 
-    // 🔥 Turn loading ON immediately
     const overlay = document.getElementById('loadingOverlay');
     overlay.style.display = 'flex';
     disableMapInteraction();
@@ -200,7 +197,7 @@ const rasterLabels = {
 // LOAD CONTENT
 // ----------------------
 function loadContent() {
-    return fetch('public/hazard-config.json')
+    return fetch('hazard-config.json')
         .then(res => res.json())
         .then(data => {
             hazardConfig = data;
@@ -319,18 +316,10 @@ downloadPdfBtn.addEventListener('click', function () {
         });
 });
 
-
-
 // ----------------------
 // START APP
 // ----------------------
 document.addEventListener('DOMContentLoaded', () => {   
-    // const splash = document.getElementById("splash-overlay");
-    // const agreeBtn = document.getElementById("agree-btn");
-
-    // agreeBtn.addEventListener("click", () => {
-    // splash.classList.add("hidden");
-    //   });
     initMap();
     loadDistricts();
     loadContent();
