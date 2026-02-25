@@ -17,19 +17,18 @@ textarea {
 }
 
 #entire-page {
-    /* display: flex; */
-    /* flex-direction: column; */
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
     width: 100%;
 }
 
 #main-container {
     display: flex;
     gap: 10px;
-    flex: 1;
+    flex: 0 0 100vh;
     padding: 10px;
     box-sizing: border-box;
-    height:100vh;
 }
 
 #map {
@@ -39,14 +38,18 @@ textarea {
     padding: 5px;
 }
 
-#right-panel {
-    width: 300px;
+#control-panel {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    width:95%;
     overflow-y: auto;
     background: #eee;
     border: 1px solid #ccc;
     border-radius: 10px;
+    align-self: center;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 20px;
 }
 
 #greeting {
@@ -56,14 +59,17 @@ textarea {
     
 }
 
-.controls {
-    padding: 10px;
-    border-bottom:#1f1e1e solid 1px;
+#map-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; 
+    flex:1;            
 }
 
 .dropdown-controls {
-    display: flex;
+    display: inline-flex;
     flex-direction: row;
+    align-items: center;
     gap: 5px;
     font-weight: bold;
 }
@@ -76,8 +82,8 @@ textarea {
 
 #raster-list {
     display: flex;
-    flex-direction: column;
     gap: 2px;
+    align-items: center;
 }
 
 #preview {
@@ -112,20 +118,19 @@ textarea {
 }
 
 #result-container {
-    flex: 4;
+    flex: 0 0 auto;
     box-sizing: border-box;
-    padding: 5px;
 }
 
 #pdf-content {
-    display: none;
+    display:none;
     flex-direction: column;
-    width: 100%;
+
 }
 
 #pdf-content.active {
     display: flex;
-
+    width: 100%;
 }
 
 #notes-panel {

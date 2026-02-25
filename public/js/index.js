@@ -230,7 +230,22 @@ snapshotBtn.addEventListener('click', function () {
         alert("Please select a hazard layer before taking a snapshot.");
         return;
     };
-    const node = document.getElementById('map');
+    const mapElement = document.getElementById('map');
+    userZoom = map.getZoom();
+    // userBounds = map.getBounds();
+    userHeight = mapElement.offsetHeight;
+    userWidth = mapElement.offsetWidth;
+
+    // mapElement.style.width = "3508px";  // temp width
+    // mapElement.style.height = "2480px"; // temp height
+
+    // // // Tell Leaflet the map size changed
+    // // map.invalidateSize();
+
+    // //Reset the map to the same bounds and zoom
+    // // map.setView(userBounds.getCenter(), userZoom);
+    // map.fitBounds(userBounds);
+    
     const zoomControl = document.querySelector(".leaflet-control-zoom.leaflet-bar.leaflet-control");
     primaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.primaryColor || '#ffffff';
     secondaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.secondaryColor || '#a3a3a3';
@@ -238,7 +253,7 @@ snapshotBtn.addEventListener('click', function () {
     // Hide zoom control for screenshot
     zoomControl.style.display = 'none';
 
-    htmlToImage.toPng(node, { scale: 2 })
+    htmlToImage.toPng(mapElement)
         .then(dataUrl => {
             // Show zoom control again
             zoomControl.style.display = '';
@@ -280,7 +295,7 @@ downloadPdfBtn.addEventListener('click', function () {
 
 
 
-    htmlToImage.toPng(pdfContent, { scale: 2 })
+    htmlToImage.toPng(pdfContent)
         .then(dataUrl => {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF({
