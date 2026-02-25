@@ -12,7 +12,7 @@ Before you begin, make sure you have the following installed:
 
 Verify installation:
 
-```bash
+```
 node -v
 npm -v
 ```
@@ -23,7 +23,7 @@ npm -v
 
 If you haven’t already cloned the repository:
 
-```bash
+```
 git clone https://github.com/mena-gis/CRLPHazardMaps.git
 cd CRLPHazardMaps
 ```
@@ -32,7 +32,7 @@ cd CRLPHazardMaps
 
 Install all required Node modules:
 
-```bash
+```
 npm install
 ```
 This will install all dependencies listed in `package.json`.
@@ -52,7 +52,7 @@ The required data files are available on SharePoint at:
 
 Run the following command to start the server:
 
-```bash
+```
 node server.js
 ```
 

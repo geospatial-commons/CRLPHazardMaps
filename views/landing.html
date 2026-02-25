@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>CRLP AF HA Maps</title>
+
+    <!-- Landing Page -->
+    <link rel="stylesheet" href="/public/css/landing.css" />
+</head>
+<body>
+    <div id="landing-container">
+        <h1>Welcome to the CRLP Hazard Mapping Application</h1>
+        <p>Explore hazard layers across Afghanistan. Select a province to zoom in and view district-level data. You can also take a snapshot of the map or download the current view as a PDF report.</p>
+        <button id="enter-btn">Enter Application</button>
+    </div>
+
+    <script>
+        document.getElementById('enter-btn').addEventListener('click', function() {
+            window.location.href = '/app';
+        });
+    </script>
+</html>
