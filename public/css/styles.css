@@ -5,8 +5,24 @@ html, body {
     width: 100%;
 }
 
+@font-face {
+    font-family: 'Open Sans Condensed';
+    src: url('../assets/fonts/OpenSans_Condensed-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    src: url('../assets/fonts/OpenSans-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+    font-family: 'Open Sans Condensed', 'Open Sans', sans-serif;
 }
 
 button, 
@@ -43,8 +59,8 @@ textarea {
     flex-direction: row;
     width:95%;
     overflow-y: auto;
-    background: #eee;
-    border: 1px solid #ccc;
+    background: #CED1D5;
+    border: 1px solid #5D6472;
     border-radius: 10px;
     align-self: center;
     align-items: center;
