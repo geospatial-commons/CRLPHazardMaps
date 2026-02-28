@@ -1,9 +1,7 @@
-
-
 {
   "None": {
     "label": "No Hazard",
-    "rasterLayer": "none",
+    "hazardLayer": null,
     "theme": {
       "primaryColor": "#ffffff",
       "secondaryColor":"#a3a3a3"
@@ -14,23 +12,17 @@
   },
   "Flood Hazard": {
     "label": "Flood Hazard",
-    "rasterLayer": "none",
+    "hazardLayer": "flood",
     "theme": {
       "primaryColor": "#1f78b4",
       "secondaryColor": "#a6cee3"
     },
     "text": {
-      "description": "Flood Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.",
-      "hazardLevel": "Flood Hazard Level"
-    },
-    "legend": {
-      "low": "Low hazard",
-      "medium": "Moderate hazard",
-      "high": "High hazard"
+      "description": "Flood Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo."
     }
 },
   "Population Density": {
-    "rasterLayer":"data/afg_pop_2020_CN_100m_R2024B_v1.tif",
+    "hazardLayer":null,
     "theme": {
       "primaryColor": "#595959",
       "secondaryColor":"#a3a3a3"
@@ -40,7 +32,7 @@
     }
 },
     "Avalanche Hazard": {
-    "rasterLayer":"none",
+    "hazardLayer":null,
     "theme": {
       "primaryColor": "#047075",
       "secondaryColor":"#09abb3"
@@ -50,7 +42,7 @@
         }
 },
     "Landslide Hazard": {
-    "rasterLayer":"none",
+    "hazardLayer":"landslide",
     "theme": {
       "primaryColor": "#734f01",
       "secondaryColor":"#ba7f00"

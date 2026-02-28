@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const db = require('../db');
+const {db, mbtilesDb} = require('../db');
 const router = express.Router();
 
 // Landing page route
@@ -47,6 +47,41 @@ router.get('/api/settlements/:distId', (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send("Database Error");
+    }
+});
+
+router.get('/tiles/:layer/:z/:x/:y.png', (req, res) => {
+
+    const { layer } = req.params;
+    const z = parseInt(req.params.z);
+    const x = parseInt(req.params.x);
+
+    if (!mbtilesDb[layer]) {
+        return res.status(404).send("Layer not found");
+    }
+    // Flip Y (TMS → XYZ)
+    const y = Math.pow(2, z) - 1 - parseInt(req.params.y);
+
+    try {
+        const stmt = mbtilesDb[layer].prepare(`
+            SELECT tile_data FROM tiles
+            WHERE zoom_level = ?
+            AND tile_column = ?
+            AND tile_row = ?
+        `);
+
+        const tile = stmt.get(z, x, y);
+
+        if (tile) {
+            res.setHeader('Content-Type', 'image/png');
+            res.send(tile.tile_data);
+        } else {
+            res.status(404).send("Tile not found");
+        }
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Tile error");
     }
 });
 

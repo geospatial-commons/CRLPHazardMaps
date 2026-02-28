@@ -4,12 +4,12 @@
 let map;
 let districtsLayer;
 let districtData, settlementsLayer;
-let rasterLayer;
-let currentRasterLayer;
+let hazardLayer, currentHazardLayer;
 let hazardConfig = {};
 
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
+const commSelect = document.getElementById('comm-select');
 const snapshotBtn = document.getElementById('snapshot-btn');
 const downloadPdfBtn = document.getElementById('download-pdf-btn')
 
@@ -99,7 +99,7 @@ function renderLayer(provFilter, distFilter) {
 
     if (districtsLayer.getLayers().length > 0) {
         map.fitBounds(districtsLayer.getBounds(), { padding: [30, 30] });
-        
+
         if (distFilter !== 'all') {
             console.log("Finding district ID for:", distFilter);
             renderSettlements(distFilter);
@@ -120,6 +120,18 @@ function renderSettlements(distId) {
     fetch(`/api/settlements/${distId}`)
         .then(res => res.json())
         .then(data => {
+            // Populate the Dropdown
+            var sortedSettlements = data.features.sort((a, b) =>
+                a.properties.name.localeCompare(b.properties.name)
+            );
+            sortedSettlements.forEach(f => {
+                var name = f.properties.name;
+                var coords = f.geometry.coordinates; // [lon, lat]
+
+                // Create Option: Store coordinates as a string value "lat,lon"
+                var opt = new Option(name, `${coords[1]},${coords[0]}`);
+                commSelect.appendChild(opt);
+            });
             settlementsLayer = L.geoJSON(data, {
                 pointToLayer: function (feature, latlng) {
                     return L.circleMarker(latlng, {
@@ -137,6 +149,25 @@ function renderSettlements(distId) {
         });
 }
 
+commSelect.addEventListener('change', function () {
+    if (this.value === 'all') return;
+
+    // Split the "lat,lon" value back into an array
+    var coords = this.value.split(',').map(Number);
+    var lat = coords[0];
+    var lon = coords[1];
+
+    // Fly to the point
+    map.flyTo([lat, lon], 16, {
+        animate: true,
+        duration: 1.5 // seconds
+    });
+
+    // Optional: Open the popup automatically
+    if (settlementMarkers[this.value]) {
+        settlementMarkers[this.value].openPopup();
+    }
+});
 
 // ----------------------
 // DROPDOWN EVENTS
@@ -187,57 +218,56 @@ function updateDistrictMenu(province) {
 // ----------------------
 // RASTER LAYER
 // ----------------------
-function showRaster(rasterLayer) {
+document.querySelectorAll('input[name="hazard-layer"]')
+    .forEach(radio => {
+        radio.addEventListener('change', function () {
+            const label = rasterLabels[this.value];
+            hazardLayer = hazardConfig[label].hazardLayer
 
-    if (rasterLayer === "none") {
-        if (currentRasterLayer) {
-            map.removeLayer(currentRasterLayer);
-        }
-        console.warn("No raster layer provided");
-        return;
+            // Update pdf-content
+            document.getElementById('active-raster').textContent = label;
+            document.getElementById('raster-info').textContent = hazardConfig[label].text.description;
+
+            toggleRaster(hazardLayer);
+        });
+    });
+
+
+function toggleRaster(hazardLayer) {
+    console.log("Toggling raster layer:", hazardLayer);
+
+    if (currentHazardLayer) {
+        map.removeLayer(currentHazardLayer);
+        currentHazardLayer = null;
     }
+    if (!hazardLayer) return;
+    showRaster(hazardLayer);
+}
+
+function showRaster(hazardLayer) {
+    console.log("Showing raster layer:", hazardLayer);
 
     const overlay = document.getElementById('loadingOverlay');
     overlay.style.display = 'flex';
     disableMapInteraction();
 
-    // Remove previous raster layer if it exists
-    if (currentRasterLayer) {
-        console.log("removing current raster layer");
-        map.removeLayer(currentRasterLayer);
-        currentRasterLayer = null;
-    }
+    const layer = L.tileLayer(`/tiles/${hazardLayer}/{z}/{x}/{y}.png`, {
+        opacity: 0.5,
+        maxZoom: 19
+    });
+    currentHazardLayer = layer;
+    layer.addTo(map);
 
-    fetch(rasterLayer)
-        .then(response => response.arrayBuffer())
-        .then(arrayBuffer => parseGeoraster(arrayBuffer))
-        .then(georaster => {
+    layer.on('load', () => {
+        overlay.style.display = 'none';
+        enableMapInteraction();
+    });
 
-            const layer = new GeoRasterLayer({
-                georaster,
-                opacity: 0.5,
-                resolution: 128
-            });
-
-            console.log("Adding new raster layer:", rasterLayer);
-
-            layer.addTo(map);
-            currentRasterLayer = layer;
-
-            map.whenReady(() => {
-                // Small delay ensures canvas render completes
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                    enableMapInteraction();
-                }, 100);
-            });
-
-        })
-        .catch(error => {
-            console.error("Raster load failed:", error);
-            overlay.style.display = 'none';
-            enableMapInteraction();
-        });
+    layer.on('tileerror', (err) => {
+        console.error("Tile error:", err);
+        overlay.style.display = 'none';
+        enableMapInteraction();
+    });
 }
 
 const rasterLabels = {
@@ -259,21 +289,6 @@ function loadContent() {
         });
 }
 
-document.querySelectorAll('input[name="hazard-layer"]')
-    .forEach(radio => {
-        radio.addEventListener('change', function () {
-            const label = rasterLabels[this.value];
-
-            // Set the active raster label in the UI
-            document.getElementById('active-raster').textContent = label;
-
-            // Update the UI with content from hazard-config.json
-            document.getElementById('raster-info').textContent = hazardConfig[label].text.description;
-            rasterLayer = hazardConfig[label].rasterLayer
-
-            showRaster(rasterLayer);
-        });
-    });
 
 // ----------------------
 // SNAPSHOT
