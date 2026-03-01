@@ -39,7 +39,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('/assets/background/h-background-digital-02.png');
+    background-image: url('/assets/background/h-background-corporate-02.png');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -54,7 +54,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(93, 100, 114, 0.7);
+    background: rgba(0, 73, 114, 0.6);
     z-index: 1;
 }
 
@@ -82,14 +82,14 @@ body {
 .landing-title {
     font-size: 2.8em;
     font-weight: 700;
-    color: #5D6472;
+    color: #004972;
     margin-bottom: 10px;
     letter-spacing: -0.5px;
 }
 
 .landing-subtitle {
     font-size: 1.2em;
-    color: #07AB50;
+    color: #336D8E;
     font-weight: 600;
     margin-bottom: 0;
 }
@@ -117,14 +117,14 @@ body {
     padding: 25px;
     background: #f8f9fa;
     border-radius: 8px;
-    border-left: 4px solid #07AB50;
+    border-left: 4px solid #004972;
     text-align: center;
     transition: all 0.3s ease;
 }
 
 .feature-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(7, 171, 80, 0.15);
+    box-shadow: 0 8px 20px rgba(0, 73, 114, 0.15);
 }
 
 .feature-icon {
@@ -135,7 +135,7 @@ body {
 
 .feature-item h3 {
     font-size: 1.2em;
-    color: #5D6472;
+    color: #004972;
     margin-bottom: 10px;
     font-weight: 700;
 }
@@ -151,7 +151,7 @@ body {
 }
 
 .enter-button {
-    background: linear-gradient(135deg, #07AB50 0%, #05933f 100%);
+    background: linear-gradient(135deg, #004972 0%, #336D8E 100%);
     color: white;
     border: none;
     padding: 16px 50px;
@@ -160,20 +160,20 @@ body {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(7, 171, 80, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 73, 114, 0.3);
     font-family: 'Open Sans', sans-serif;
     letter-spacing: 0.5px;
 }
 
 .enter-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(7, 171, 80, 0.4);
-    background: linear-gradient(135deg, #05933f 0%, #047a33 100%);
+    box-shadow: 0 6px 20px rgba(0, 73, 114, 0.4);
+    background: linear-gradient(135deg, #336D8E 0%, #6692AA 100%);
 }
 
 .enter-button:active {
     transform: translateY(0);
-    box-shadow: 0 2px 10px rgba(7, 171, 80, 0.3);
+    box-shadow: 0 2px 10px rgba(0, 73, 114, 0.3);
 }
 
 .footer-text {
@@ -182,15 +182,15 @@ body {
     margin-top: 15px;
 }
 
-.disclaimer {
+.terms-of-use {
     background: #f5f5f5;
-    border-left: 4px solid #5D6472;
+    border-left: 4px solid #004972;
     padding: 15px;
     margin: 30px 0;
     border-radius: 4px;
 }
 
-.disclaimer p {
+.terms-of-use p {
     color: #555;
     font-size: 0.9em;
     line-height: 1.6;

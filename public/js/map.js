@@ -7,6 +7,11 @@ let districtData, settlementsLayer;
 let hazardLayer, currentHazardLayer;
 let hazardConfig = {};
 
+// Layer Control Variables
+let baseMaps = {};
+let overlayLayers = {};
+let layerControl;
+
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
 const commSelect = document.getElementById('comm-select');
@@ -19,12 +24,31 @@ const downloadPdfBtn = document.getElementById('download-pdf-btn')
 function initMap() {
     map = L.map('map').setView([33.93, 67.68], 6);
 
-    L.tileLayer(
+    // ---- SET UP BASEMAPS ----
+    // Add more basemaps here in the future by following this pattern:
+    baseMaps['Esri Satellite'] = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
         crossOrigin: true
-    }
-    ).addTo(map);
+    });
+
+    baseMaps['OpenStreetMap'] = L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        crossOrigin: true
+    });
+
+    // Set default basemap
+    baseMaps['Esri Satellite'].addTo(map);
+
+    // ---- SET UP OVERLAY LAYERS ----
+    // Overlay layers will be added here as they're loaded
+    // (e.g., districtsLayer will be added to overlayLayers in renderLayer())
+
+    // ---- INITIALIZE LAYER CONTROL ----
+    // Layer control will be initialized after baseMaps are set up
+    layerControl = L.control.layers(baseMaps, overlayLayers, { position: 'topright' });
+    layerControl.addTo(map);
 }
 
 function disableMapInteraction() {
@@ -72,7 +96,11 @@ function populateProvinceMenu() {
 // RENDER LAYER
 // ----------------------
 function renderLayer(provFilter, distFilter) {
-    if (districtsLayer) map.removeLayer(districtsLayer);
+    if (districtsLayer) {
+        map.removeLayer(districtsLayer);
+        // Remove from layer control
+        layerControl.removeLayer(districtsLayer);
+    }
 
     districtsLayer = L.geoJSON(districtData, {
         filter: f => {
@@ -96,6 +124,10 @@ function renderLayer(provFilter, distFilter) {
             );
         }
     }).addTo(map);
+
+    // Add to overlay layers and layer control
+    overlayLayers['Districts'] = districtsLayer;
+    layerControl.addOverlay(districtsLayer, 'Districts');
 
     if (districtsLayer.getLayers().length > 0) {
         map.fitBounds(districtsLayer.getBounds(), { padding: [30, 30] });
@@ -308,16 +340,19 @@ snapshotBtn.addEventListener('click', function () {
 
 
     const zoomControl = document.querySelector(".leaflet-control-zoom.leaflet-bar.leaflet-control");
+    const layerControlElement = document.querySelector(".leaflet-control-layers.leaflet-control");
     primaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.primaryColor || '#ffffff';
     secondaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.secondaryColor || '#a3a3a3';
 
-    // Hide zoom control for screenshot
+    // Hide zoom and layer control for screenshot
     zoomControl.style.display = 'none';
+    layerControlElement.style.display = 'none';
 
     htmlToImage.toPng(mapElement)
         .then(dataUrl => {
             // Show zoom control again
             zoomControl.style.display = '';
+            layerControlElement.style.display = '';
 
             const img = new Image();
             img.src = dataUrl;
