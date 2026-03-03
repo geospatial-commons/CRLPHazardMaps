@@ -29,13 +29,15 @@ function initMap() {
     baseMaps['Esri Satellite'] = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
-        crossOrigin: true
+        crossOrigin: true,
+        zIndex: 1
     });
 
     baseMaps['OpenStreetMap'] = L.tileLayer(
         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
-        crossOrigin: true
+        crossOrigin: true,
+        zIndex: 1
     });
 
     // Set default basemap
@@ -48,6 +50,15 @@ function initMap() {
     // ---- INITIALIZE LAYER CONTROL ----
     // Layer control will be initialized after baseMaps are set up
     layerControl = L.control.layers(baseMaps, overlayLayers, { position: 'topright' });
+
+    scaleBar = L.control.scale({
+        position: 'bottomright',  // to move it
+        metric: true,
+        imperial: false,
+        maxWidth: 200             // width in pixels
+    }).addTo(map);
+
+    scaleBar.addTo(map);
     layerControl.addTo(map);
 }
 
@@ -120,7 +131,7 @@ function renderLayer(provFilter, distFilter) {
         },
         onEachFeature: (f, l) => {
             l.bindPopup(
-                `<b>${f.properties.Dist_name}</b><br>${f.properties.Prov_name}`
+                `<b>Province: </b>${f.properties.Prov_name}<br><b>District: </b>${f.properties.Dist_name}`
             );
         }
     }).addTo(map);
@@ -167,7 +178,7 @@ function renderSettlements(distId) {
             settlementsLayer = L.geoJSON(data, {
                 pointToLayer: function (feature, latlng) {
                     return L.circleMarker(latlng, {
-                        radius: 4,
+                        radius: 3,
                         fillColor: "#ff0000",
                         color: "#fff",
                         weight: 1,
@@ -175,6 +186,7 @@ function renderSettlements(distId) {
                     });
                 },
                 onEachFeature: function (f, l) {
+                    console.log(f.properties);
                     l.bindPopup(`<b>Settlement:</b> ${f.properties.name}`);
                 }
             }).addTo(map);
@@ -207,7 +219,7 @@ commSelect.addEventListener('change', function () {
 // 5. UI Events
 provSelect.addEventListener('change', function () {
     distSelect.innerHTML = '<option value="all">-- All Districts --</option>';
-
+    commSelect.innerHTML = '<option value="all">-- All Settlements --</option>';
     if (this.value !== 'all') {
         // 1. Filter features by province
         // 2. Map to an object containing both Name and Code
@@ -229,6 +241,7 @@ provSelect.addEventListener('change', function () {
 });
 
 distSelect.addEventListener('change', function () {
+    commSelect.innerHTML = '<option value="all">-- All Settlements --</option>';
     renderLayer(provSelect.value, this.value);
 });
 
@@ -285,7 +298,9 @@ function showRaster(hazardLayer) {
 
     const layer = L.tileLayer(`/tiles/${hazardLayer}/{z}/{x}/{y}.png`, {
         opacity: 0.5,
-        maxZoom: 19
+        maxZoom: 18,
+        maxNativeZoom: 15,
+        zIndex: 200
     });
     currentHazardLayer = layer;
     layer.addTo(map);

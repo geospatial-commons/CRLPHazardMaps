@@ -25,7 +25,8 @@ router.get('/api/settlements/:distId', (req, res) => {
                    coord_y,
                    coord_x
             FROM settlements
-            WHERE norm_dist_code = ?
+            WHERE norm_dist_code = ? 
+            /*and GPS_Verified = true*/
         `;
  
         const settlements = db.prepare(query).all(distId);
