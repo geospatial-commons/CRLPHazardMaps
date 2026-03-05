@@ -106,7 +106,7 @@ body {
     margin-bottom: 40px;
 }
 
-.features {
+/* .features {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 30px;
@@ -144,7 +144,7 @@ body {
     color: #666;
     font-size: 0.95em;
     line-height: 1.6;
-}
+} */
 
 .landing-footer {
     text-align: center;

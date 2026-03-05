@@ -8,7 +8,6 @@ let hazardLayer, currentHazardLayer;
 let hazardConfig = {};
 
 let baseMaps = {};
-let overlayLayers = {};
 let layerControl;
 
 const provSelect = document.getElementById('prov-select');
@@ -20,7 +19,6 @@ const downloadPdfBtn = document.getElementById('download-pdf-btn')
 
 const rasterLabels = {
     'none': 'None',
-    'pop': 'Population Density',
     'flood': 'Flood Hazard',
     'avalanche': 'Avalanche Hazard',
     'landslide': 'Landslide Hazard'
@@ -58,8 +56,25 @@ function initMap() {
             hazardConfig = data;
         });
 
+    getProvinces(0); // Load simplified provinces first for faster initial load       
 
-    fetch('api/provinces')
+    // ---- INITIALIZE LAYER CONTROL ----
+    // Layer control will be initialized after baseMaps are set up
+    layerControl = L.control.layers(baseMaps, {}, { position: 'topright' });
+
+    scaleBar = L.control.scale({
+        position: 'bottomright',
+        metric: true,
+        imperial: false,
+        maxWidth: 200
+    })
+
+    scaleBar.addTo(map);
+    layerControl.addTo(map);
+}
+
+function getProvinces(quality) {
+    fetch(`api/provinces/${quality}`)
         .then(res => res.json())
         .then(data => {
             provincesData = data;
@@ -75,26 +90,16 @@ function initMap() {
             });
 
             renderProvinces('all');
+
+            if (quality == 0) {
+                getProvinces(1); // Fetch detailed provinces after loading simplified ones
+            }
+
         })
         .catch(err => {
             console.error("Error loading provinces:", err);
         });
-
-    // ---- INITIALIZE LAYER CONTROL ----
-    // Layer control will be initialized after baseMaps are set up
-    layerControl = L.control.layers(baseMaps, overlayLayers, { position: 'topright' });
-
-    scaleBar = L.control.scale({
-        position: 'bottomright',
-        metric: true,
-        imperial: false,
-        maxWidth: 200             // width in pixels
-    }).addTo(map);
-
-    scaleBar.addTo(map);
-    layerControl.addTo(map);
 }
-
 
 function renderProvinces(selectedProvId) {
     if (provincesLayer) {
@@ -124,6 +129,8 @@ function renderProvinces(selectedProvId) {
     }
 };
 
+
+
 // Renders the fetched Districts ON TOP of the Province
 function renderDistricts(data, selectedDistId) {
     if (districtsLayer) {
@@ -134,6 +141,8 @@ function renderDistricts(data, selectedDistId) {
 
     districtsLayer = L.geoJSON(data, {
         style: function (f) {
+            // If a specific district is selected, highlight it and give it a thicker border. 
+            // Otherwise, show all districts with default styling. isHighlighted returns boolean.
             var isHighlighted = (selectedDistId !== 'all' && f.properties.Dist_ID_24 == selectedDistId);
             return {
                 color: isHighlighted ? "#00eeff" : "#ffffff", // White borders for districts
@@ -189,6 +198,7 @@ function renderSettlements(distId) {
         .then(res => res.json())
         .then(data => {
             // Populate the Dropdown
+            commSelect.innerHTML = '<option value="all">-- Select Settlement --</option>';
             var sortedSettlements = data.features.sort((a, b) =>
                 a.properties.name.localeCompare(b.properties.name)
             );
@@ -231,11 +241,6 @@ commSelect.addEventListener('change', function () {
         animate: true,
         duration: 1.5 // seconds
     });
-
-    // Optional: Open the popup automatically
-    if (settlementMarkers[this.value]) {
-        settlementMarkers[this.value].openPopup();
-    }
 });
 
 // ----------------------
@@ -294,20 +299,6 @@ distSelect.addEventListener('change', function () {
     }
 });
 
-function updateDistrictMenu(province) {
-    distSelect.innerHTML = '<option value="all">-- All Districts --</option>';
-
-    if (province === 'all') return;
-
-    const districts = districtsData.features
-        .filter(f => f.properties.Prov_name === province)
-        .map(f => f.properties.Dist_name)
-        .sort();
-
-    districts.forEach(d => {
-        distSelect.appendChild(new Option(d, d));
-    });
-}
 
 // ----------------------
 // RASTER LAYER
@@ -379,12 +370,6 @@ snapshotBtn.addEventListener('click', function () {
         return;
     };
     const mapElement = document.getElementById('map');
-    userZoom = map.getZoom();
-    // userBounds = map.getBounds();
-    userHeight = mapElement.offsetHeight;
-    userWidth = mapElement.offsetWidth;
-
-
     const zoomControl = document.querySelector(".leaflet-control-zoom.leaflet-bar.leaflet-control");
     const layerControlElement = document.querySelector(".leaflet-control-layers.leaflet-control");
     primaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.primaryColor || '#ffffff';

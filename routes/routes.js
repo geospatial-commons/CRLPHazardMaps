@@ -49,14 +49,22 @@ router.get('/tiles/:layer/:z/:x/:y.png', (req, res) => {
     }
 });
 // API route to fetch all provinces
-router.get('/api/provinces', (req, res) => {
+router.get('/api/provinces/:quality', (req, res) => {
+    const quality = req.params.quality; // 'simplified' or 'detailed'
 
     try {
-        //Fetch all provinces
-        const query = `
+        let query = '';
+        if (quality == 0) {
+            query = `
             SELECT Prov_name, Pro_ID, geom_to_wkt
             FROM simplified
         `;
+        } else {
+            query = `
+            SELECT Prov_name, Pro_ID, geom_to_wkt
+            FROM provinces
+        `;
+        }
 
         const provinces = db.prepare(query).all();
 
@@ -150,7 +158,5 @@ router.get('/api/settlements/:distId', (req, res) => {
         res.status(500).send("Database Error");
     }
 });
-
-
-
+ 
 module.exports = router;
