@@ -2,12 +2,11 @@
 // GLOBAL VARIABLES
 // ----------------------
 let map;
-let districtsLayer;
-let districtData, settlementsLayer;
+let provincesData, districtsData;
+let provincesLayer, districtsLayer, settlementsLayer;
 let hazardLayer, currentHazardLayer;
 let hazardConfig = {};
 
-// Layer Control Variables
 let baseMaps = {};
 let overlayLayers = {};
 let layerControl;
@@ -17,6 +16,16 @@ const distSelect = document.getElementById('dist-select');
 const commSelect = document.getElementById('comm-select');
 const snapshotBtn = document.getElementById('snapshot-btn');
 const downloadPdfBtn = document.getElementById('download-pdf-btn')
+
+
+const rasterLabels = {
+    'none': 'None',
+    'pop': 'Population Density',
+    'flood': 'Flood Hazard',
+    'avalanche': 'Avalanche Hazard',
+    'landslide': 'Landslide Hazard'
+};
+
 
 // ----------------------
 // INITIALIZE MAP
@@ -43,16 +52,40 @@ function initMap() {
     // Set default basemap
     baseMaps['Esri Satellite'].addTo(map);
 
-    // ---- SET UP OVERLAY LAYERS ----
-    // Overlay layers will be added here as they're loaded
-    // (e.g., districtsLayer will be added to overlayLayers in renderLayer())
+    fetch('hazard-config.json')
+        .then(res => res.json())
+        .then(data => {
+            hazardConfig = data;
+        });
+
+
+    fetch('api/provinces')
+        .then(res => res.json())
+        .then(data => {
+            provincesData = data;
+
+            let provMap = new Map();
+            data.features.forEach(f => {
+                provMap.set(f.properties.id, f.properties.name);
+            });
+
+            let sortedProvs = Array.from(provMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+            sortedProvs.forEach(([id, name]) => {
+                provSelect.appendChild(new Option(name, id));
+            });
+
+            renderProvinces('all');
+        })
+        .catch(err => {
+            console.error("Error loading provinces:", err);
+        });
 
     // ---- INITIALIZE LAYER CONTROL ----
     // Layer control will be initialized after baseMaps are set up
     layerControl = L.control.layers(baseMaps, overlayLayers, { position: 'topright' });
 
     scaleBar = L.control.scale({
-        position: 'bottomright',  // to move it
+        position: 'bottomright', 
         metric: true,
         imperial: false,
         maxWidth: 200             // width in pixels
@@ -61,6 +94,70 @@ function initMap() {
     scaleBar.addTo(map);
     layerControl.addTo(map);
 }
+
+
+function renderProvinces(selectedProvId) {
+    if (provincesLayer) {
+        map.removeLayer(provincesLayer);
+    }
+    if (!provincesData) return;
+    provincesLayer = L.geoJSON(provincesData, {
+        style: function (f) {
+            var isHighlighted = (selectedProvId !== 'all' && f.properties.id === selectedProvId);
+            return {
+                color: isHighlighted ? "#ff0000" : "#000000",
+                weight: isHighlighted ? 2 : 1,
+                fillOpacity: isHighlighted ? 0.0 : 0.1
+            };
+        },
+        onEachFeature: function (f, l) {
+            l.bindPopup(`<b>Province:</b> ${f.properties.name}`);
+        }
+    }).addTo(map)
+    // overlayLayers['Provinces'] = provincesLayer;
+    // layerControl.addOverlay(provincesLayer, 'Provinces');
+
+    // Zoom to whole country if 'all' is selected
+    if (selectedProvId === 'all' && provincesLayer.getLayers().length > 0) {
+        map.fitBounds(provincesLayer.getBounds(), { padding: [30, 30] });
+    }
+};
+
+// Renders the fetched Districts ON TOP of the Province
+function renderDistricts(data, selectedDistId) {
+    if (districtsLayer) map.removeLayer(districtsLayer);
+    if (!data) return;
+    console.log("Rendering districts with selectedDistId:", selectedDistId);
+
+    console.log(data);
+    districtsLayer = L.geoJSON(data, {
+        style: function (f) {
+            var isHighlighted = (selectedDistId !== 'all' && f.properties.Dist_ID_24 == selectedDistId);
+            return {
+                color: isHighlighted ? "#00eeff" : "#ffffff", // White borders for districts
+                weight: isHighlighted ? 4 : 1,
+                fillOpacity: isHighlighted ? 0.3 : 0.1
+            };
+        },
+        onEachFeature: function (f, l) {
+            l.bindPopup(`<b>District:</b> ${f.properties.name}`);
+        }
+    }).addTo(map);
+
+    // Zoom Logic
+    if (districtsLayer.getLayers().length > 0) {
+        if (selectedDistId !== 'all') {
+            // Zoom to specific district
+            let distLayer = districtsLayer.getLayers().find(l => l.feature.properties.distID == selectedDistId);
+            if (distLayer) map.fitBounds(distLayer.getBounds(), { padding: [30, 30] });
+        } else {
+            // Zoom to all districts (the whole province)
+            map.fitBounds(districtsLayer.getBounds(), { padding: [30, 30] });
+        }
+    }
+}
+
+
 
 function disableMapInteraction() {
     map.dragging.disable();
@@ -80,78 +177,6 @@ function enableMapInteraction() {
     map.touchZoom.enable();
 }
 
-// ----------------------
-// LOAD DISTRICTS
-// ----------------------
-function loadDistricts() {
-    fetch('data/districts.geojson')
-        .then(res => res.json())
-        .then(data => {
-            districtData = data;
-            populateProvinceMenu();
-            renderLayer('all', 'all');
-        });
-}
-
-function populateProvinceMenu() {
-    const provinces = [
-        ...new Set(districtData.features.map(f => f.properties.Prov_name))
-    ].sort();
-
-    provinces.forEach(p => {
-        provSelect.appendChild(new Option(p, p));
-    });
-}
-
-// ----------------------
-// RENDER LAYER
-// ----------------------
-function renderLayer(provFilter, distFilter) {
-    if (districtsLayer) {
-        map.removeLayer(districtsLayer);
-        // Remove from layer control
-        layerControl.removeLayer(districtsLayer);
-    }
-
-    districtsLayer = L.geoJSON(districtData, {
-        filter: f => {
-            const matchProv = (provFilter === "all" || f.properties.Prov_name === provFilter);
-            const matchDist = (distFilter === "all" || f.properties.Dist_ID_24 === distFilter);
-            return matchProv && matchDist;
-        },
-        style: f => {
-            const highlight = (distFilter !== 'all' &&
-                f.properties.Dist_ID_24 === distFilter);
-
-            return {
-                color: highlight ? "#00eeff" : "#ff7800",
-                weight: highlight ? 2 : 2,
-                fillOpacity: highlight ? 0.0 : 0.1
-            };
-        },
-        onEachFeature: (f, l) => {
-            l.bindPopup(
-                `<b>Province: </b>${f.properties.Prov_name}<br><b>District: </b>${f.properties.Dist_name}`
-            );
-        }
-    }).addTo(map);
-
-    // Add to overlay layers and layer control
-    overlayLayers['Districts'] = districtsLayer;
-    layerControl.addOverlay(districtsLayer, 'Districts');
-
-    if (districtsLayer.getLayers().length > 0) {
-        map.fitBounds(districtsLayer.getBounds(), { padding: [30, 30] });
-
-        if (distFilter !== 'all') {
-            console.log("Finding district ID for:", distFilter);
-            renderSettlements(distFilter);
-        } else {
-            // Clear settlements if "All Districts" is selected
-            if (settlementsLayer) map.removeLayer(settlementsLayer);
-        }
-    }
-}
 
 // 4. Settlement Rendering Function
 function renderSettlements(distId) {
@@ -186,7 +211,7 @@ function renderSettlements(distId) {
                     });
                 },
                 onEachFeature: function (f, l) {
-                    console.log(f.properties);
+                    // console.log(f.properties);
                     l.bindPopup(`<b>Settlement:</b> ${f.properties.name}`);
                 }
             }).addTo(map);
@@ -218,31 +243,55 @@ commSelect.addEventListener('change', function () {
 // ----------------------
 // 5. UI Events
 provSelect.addEventListener('change', function () {
+    const provId = this.value;
+
     distSelect.innerHTML = '<option value="all">-- All Districts --</option>';
     commSelect.innerHTML = '<option value="all">-- All Settlements --</option>';
-    if (this.value !== 'all') {
-        // 1. Filter features by province
-        // 2. Map to an object containing both Name and Code
-        var dists = districtData.features
-            .filter(f => f.properties.Prov_name === this.value)
-            .map(f => ({
-                name: f.properties.Dist_name,
-                code: f.properties.Dist_ID_24 // This is your 4-char code
-            }))
-            .sort((a, b) => a.name.localeCompare(b.name)); // Sort by name alphabetically
+    if (districtsLayer) map.removeLayer(districtsLayer);
+    if (settlementsLayer) map.removeLayer(settlementsLayer);
 
-        // 3. Create options: new Option(text, value)
-        dists.forEach(d => {
-            distSelect.appendChild(new Option(d.name, d.code));
-        });
-    }
+    renderProvinces(provId);
 
-    renderLayer(this.value, 'all');
+    if (provId === 'all') return; // Stop here if "Show All" was selected
+
+    // Fetch districts belonging to this Province ID
+    fetch(`/api/districts/${provId}`)
+        .then(res => res.json())
+        .then(data => {
+            districtsData = data;
+            console.log("Fetched districts: " , districtsData.features);
+
+            // Populate District Dropdown with Dist_Id_24 as the value
+            let sortedDists = data.features.map(f => ({
+                name: f.properties.name,
+                provId: f.properties.provID,
+                distId: f.properties.distID
+            })).sort((a, b) => a.name.localeCompare(b.name));
+            console.log(districtsData);
+
+            sortedDists.forEach(d => distSelect.appendChild(new Option(d.name, d.distId)));
+
+            // Draw the new districts layer on top of the province layer
+            console.log("triggering renderDistricts with data: ", data);
+            renderDistricts(data, 'all');
+        })
+        .catch(err => console.error("Error loading districts:", err));
 });
 
+
+// DISTRICT SELECTED -> Highlight & Fetch Settlements
 distSelect.addEventListener('change', function () {
-    commSelect.innerHTML = '<option value="all">-- All Settlements --</option>';
-    renderLayer(provSelect.value, this.value);
+    const distId = this.value;
+    
+    // Redraw districts to show the highlight/zoom
+    renderDistricts(districtsData, distId);
+    
+    if (distId !== 'all') {
+        renderSettlements(distId);
+    } else {
+        if (settlementsLayer) map.removeLayer(settlementsLayer);
+        commSelect.innerHTML = '<option value="all">-- Select Settlement --</option>';
+    }
 });
 
 function updateDistrictMenu(province) {
@@ -250,7 +299,7 @@ function updateDistrictMenu(province) {
 
     if (province === 'all') return;
 
-    const districts = districtData.features
+    const districts = districtsData.features
         .filter(f => f.properties.Prov_name === province)
         .map(f => f.properties.Dist_name)
         .sort();
@@ -317,24 +366,6 @@ function showRaster(hazardLayer) {
     });
 }
 
-const rasterLabels = {
-    'none': 'None',
-    'pop': 'Population Density',
-    'flood': 'Flood Hazard',
-    'avalanche': 'Avalanche Hazard',
-    'landslide': 'Landslide Hazard'
-};
-
-// ----------------------
-// LOAD CONTENT
-// ----------------------
-function loadContent() {
-    return fetch('hazard-config.json')
-        .then(res => res.json())
-        .then(data => {
-            hazardConfig = data;
-        });
-}
 
 
 // ----------------------
@@ -400,10 +431,15 @@ snapshotBtn.addEventListener('click', function () {
         });
 });
 
+
+// ----------------------
+// DOWNLOAD PDF
+// ----------------------
 downloadPdfBtn.addEventListener('click', function () {
     const pdfContent = document.getElementById('pdf-content');
     const titleText = document.getElementById('snapshot-title').textContent;
-
+    //pdfContent.style.height = fixed height
+    //pdfContent.style.width = fixed width
 
 
     htmlToImage.toPng(pdfContent)
@@ -447,6 +483,4 @@ downloadPdfBtn.addEventListener('click', function () {
 // ----------------------
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
-    loadDistricts();
-    loadContent();
 });

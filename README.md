@@ -39,10 +39,12 @@ This will install all dependencies listed in `package.json`.
 
 ### 3. Replace the Data Files
 
-Update the following files in the `data/` directory:
+Add the following files to the `public/data/` directory:
+- `districts.geojson`
 
-- Replace `districts_temp.geojson` with `districts.geojson`
-- Replace `afg_pop_temp.tif` with `afg_pop_2020_CN_100m_R2024B_v1.tif`
+Add the following files to the `data/` directory:
+- `afghanistan_data.gpkg`
+- `landslide_v2.mbtiles`
 
 The required data files are available on SharePoint at:
 `~/Documents/Map Automator Development/CRLPHazardMaps Data`
