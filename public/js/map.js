@@ -85,7 +85,7 @@ function initMap() {
     layerControl = L.control.layers(baseMaps, overlayLayers, { position: 'topright' });
 
     scaleBar = L.control.scale({
-        position: 'bottomright', 
+        position: 'bottomright',
         metric: true,
         imperial: false,
         maxWidth: 200             // width in pixels
@@ -99,6 +99,7 @@ function initMap() {
 function renderProvinces(selectedProvId) {
     if (provincesLayer) {
         map.removeLayer(provincesLayer);
+        layerControl.removeLayer(provincesLayer);
     }
     if (!provincesData) return;
     provincesLayer = L.geoJSON(provincesData, {
@@ -114,8 +115,8 @@ function renderProvinces(selectedProvId) {
             l.bindPopup(`<b>Province:</b> ${f.properties.name}`);
         }
     }).addTo(map)
-    // overlayLayers['Provinces'] = provincesLayer;
-    // layerControl.addOverlay(provincesLayer, 'Provinces');
+
+    layerControl.addOverlay(provincesLayer, 'Provinces');
 
     // Zoom to whole country if 'all' is selected
     if (selectedProvId === 'all' && provincesLayer.getLayers().length > 0) {
@@ -125,11 +126,12 @@ function renderProvinces(selectedProvId) {
 
 // Renders the fetched Districts ON TOP of the Province
 function renderDistricts(data, selectedDistId) {
-    if (districtsLayer) map.removeLayer(districtsLayer);
+    if (districtsLayer) {
+        map.removeLayer(districtsLayer);
+        layerControl.removeLayer(districtsLayer)
+    };
     if (!data) return;
-    console.log("Rendering districts with selectedDistId:", selectedDistId);
 
-    console.log(data);
     districtsLayer = L.geoJSON(data, {
         style: function (f) {
             var isHighlighted = (selectedDistId !== 'all' && f.properties.Dist_ID_24 == selectedDistId);
@@ -143,7 +145,7 @@ function renderDistricts(data, selectedDistId) {
             l.bindPopup(`<b>District:</b> ${f.properties.name}`);
         }
     }).addTo(map);
-
+    layerControl.addOverlay(districtsLayer, 'Districts');
     // Zoom Logic
     if (districtsLayer.getLayers().length > 0) {
         if (selectedDistId !== 'all') {
@@ -177,8 +179,6 @@ function enableMapInteraction() {
     map.touchZoom.enable();
 }
 
-
-// 4. Settlement Rendering Function
 function renderSettlements(distId) {
     console.log(distId);
     if (settlementsLayer) map.removeLayer(settlementsLayer);
@@ -259,7 +259,7 @@ provSelect.addEventListener('change', function () {
         .then(res => res.json())
         .then(data => {
             districtsData = data;
-            console.log("Fetched districts: " , districtsData.features);
+            console.log("Fetched districts: ", districtsData.features);
 
             // Populate District Dropdown with Dist_Id_24 as the value
             let sortedDists = data.features.map(f => ({
@@ -282,10 +282,10 @@ provSelect.addEventListener('change', function () {
 // DISTRICT SELECTED -> Highlight & Fetch Settlements
 distSelect.addEventListener('change', function () {
     const distId = this.value;
-    
+
     // Redraw districts to show the highlight/zoom
     renderDistricts(districtsData, distId);
-    
+
     if (distId !== 'all') {
         renderSettlements(distId);
     } else {
