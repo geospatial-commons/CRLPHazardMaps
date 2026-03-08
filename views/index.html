@@ -86,13 +86,31 @@
         </div>
 
         <div id="pdf-content">
-            <div id="layout-title" class="row-1"></div>
+            <div class="row-1">
+                <img id="wb-logo" src="/assets/img/globe.png" alt="World Bank Logo" />
+                <div id="layout-title"></div>
+            </div>
             <div class="row-2">
                 <div id="map-container"></div>
                 <div id="right-panel">
                     <div id="right-panel-row-1">
-                        <p>Legend</p>
+                        <p id="legend-title">Legend</p>
+                        <div class="legend">
+                            <div class="legend-item">
+                                <span class="legend-color high"></span>
+                                <span class="legend-label">High</span>
+                            </div>
 
+                            <div class="legend-item">
+                                <span class="legend-color medium"></span>
+                                <span class="legend-label">Medium</span>
+                            </div>
+
+                            <div class="legend-item">
+                                <span class="legend-color low"></span>
+                                <span class="legend-label">Low</span>
+                            </div>
+                        </div>
                     </div>
                     <div id="right-panel-row-2">
                         <p id="active-raster"></p>
@@ -101,7 +119,15 @@
                 </div>
             </div>
             <div id="footer" class="row-3">
-                <div id="footer-column-1"></div>
+                <div id="footer-column-1">
+                    <p id="footer-text">The boundaries and names shown and the designations used on this map do not
+                        imply official endorsement or acceptance by the World Bank Group.</p>
+                    <div id="foot-c1-r2">
+                        <p id="footer-date"></p>
+                        <p id="footer-contact"><span style="font-weight:bold">Feedback: </span><a
+                                href="mailto:rariadelafosse@worldbank.org">rariadelafosse@worldbank.org</a></p>
+                    </div>
+                </div>
                 <div id="footer-column-2">
                     <div id="scale-bar"></div>
                 </div>

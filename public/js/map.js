@@ -383,6 +383,14 @@ downloadPdfBtn.addEventListener('click', function () {
 
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
+    
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    document.getElementById('footer-date').innerHTML = `<strong>Date Created: </strong> ${formattedDate}`;
 
     // Hide zoom and layer control for screenshot
     zoomControl.style.display = 'none';
