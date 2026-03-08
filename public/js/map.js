@@ -3,7 +3,7 @@
 // ----------------------
 let map;
 let provincesData, districtsData;
-let provincesLayer, districtsLayer, settlementsLayer;
+let provincesLayer, districtsLayer, communityLayer;
 let hazardLayer, currentHazardLayer;
 let hazardConfig = {};
 
@@ -13,7 +13,8 @@ let layerControl;
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
 const commSelect = document.getElementById('comm-select');
-// const snapshotBtn = document.getElementById('snapshot-btn');
+const opacityRange = document.getElementById('opacity-range');
+const opacityValue = document.getElementById('opacity-value');
 const downloadPdfBtn = document.getElementById('download-pdf-btn')
 
 
@@ -21,7 +22,8 @@ const rasterLabels = {
     'none': 'None',
     'flood': 'Flood Hazard',
     'avalanche': 'Avalanche Hazard',
-    'landslide': 'Landslide Hazard'
+    'landslide': 'Landslide Hazard',
+    'earthquake': 'Earthquake Hazard'
 };
 
 
@@ -81,12 +83,12 @@ function getProvinces(quality) {
 
             let provMap = new Map();
             data.features.forEach(f => {
-                provMap.set(f.properties.id, f.properties.name);
+                provMap.set(f.properties.provID, f.properties.name);
             });
 
             let sortedProvs = Array.from(provMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-            sortedProvs.forEach(([id, name]) => {
-                provSelect.appendChild(new Option(name, id));
+            sortedProvs.forEach(([provID, name]) => {
+                provSelect.appendChild(new Option(name, provID));
             });
 
             renderProvinces('all');
@@ -107,13 +109,14 @@ function renderProvinces(selectedProvId) {
         layerControl.removeLayer(provincesLayer);
     }
     if (!provincesData) return;
+
     provincesLayer = L.geoJSON(provincesData, {
         style: function (f) {
-            var isHighlighted = (selectedProvId !== 'all' && f.properties.id === selectedProvId);
+            var isHighlighted = (selectedProvId !== 'all' && f.properties.provID === selectedProvId);
             return {
                 color: isHighlighted ? "#ff0000" : "#000000",
                 weight: isHighlighted ? 2 : 1,
-                fillOpacity: isHighlighted ? 0.0 : 0.1
+                fillOpacity: isHighlighted ? 0.0 : 0.0
             };
         },
         onEachFeature: function (f, l) {
@@ -130,24 +133,25 @@ function renderProvinces(selectedProvId) {
 };
 
 
-
 // Renders the fetched Districts ON TOP of the Province
 function renderDistricts(data, selectedDistId) {
+    console.log("Rendering districts with selectedDistId:", selectedDistId);
     if (districtsLayer) {
         map.removeLayer(districtsLayer);
         layerControl.removeLayer(districtsLayer)
     };
     if (!data) return;
+    console.log("Data passed to renderDistricts:", data);
 
     districtsLayer = L.geoJSON(data, {
         style: function (f) {
             // If a specific district is selected, highlight it and give it a thicker border. 
             // Otherwise, show all districts with default styling. isHighlighted returns boolean.
-            var isHighlighted = (selectedDistId !== 'all' && f.properties.Dist_ID_24 == selectedDistId);
+            var isHighlighted = (selectedDistId !== 'all' && f.properties.distID == selectedDistId);
             return {
                 color: isHighlighted ? "#00eeff" : "#ffffff", // White borders for districts
-                weight: isHighlighted ? 4 : 1,
-                fillOpacity: isHighlighted ? 0.3 : 0.1
+                weight: isHighlighted ? 3 : 1,
+                fillOpacity: isHighlighted ? 0 : 0
             };
         },
         onEachFeature: function (f, l) {
@@ -168,6 +172,45 @@ function renderDistricts(data, selectedDistId) {
     }
 }
 
+function renderCommunities(distId) {
+    // console.log(distId);
+    if (communityLayer) map.removeLayer(communityLayer);
+    if (!distId) return;
+
+    // Fetch ONLY the data for the selected district from our new SQL API
+    fetch(`/api/communities/${distId}`)
+        .then(res => res.json())
+        .then(data => {
+            // Populate the Dropdown
+            commSelect.innerHTML = '<option value="all">-- All Communities --</option>';
+            var sortedCommunities = data.features.sort((a, b) =>
+                a.properties.name.localeCompare(b.properties.name)
+            );
+            sortedCommunities.forEach(f => {
+                var name = f.properties.name;
+                var coords = f.geometry.coordinates; // [lon, lat]
+
+                // Create Option: Store coordinates as a string value "lat,lon"
+                var opt = new Option(name, `${coords[1]},${coords[0]}`);
+                commSelect.appendChild(opt);
+            });
+            communityLayer = L.geoJSON(data, {
+                pointToLayer: function (feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        radius: 3,
+                        fillColor: "#ffffff",
+                        color: "#000000",
+                        weight: 1,
+                        fillOpacity: 0.9
+                    });
+                },
+                onEachFeature: function (f, l) {
+                    // console.log(f.properties);
+                    l.bindPopup(`<b>Community:</b> ${f.properties.name}`);
+                }
+            }).addTo(map);
+        });
+}
 
 
 function disableMapInteraction() {
@@ -188,45 +231,64 @@ function enableMapInteraction() {
     map.touchZoom.enable();
 }
 
-function renderSettlements(distId) {
-    console.log(distId);
-    if (settlementsLayer) map.removeLayer(settlementsLayer);
-    if (!distId) return;
+// ----------------------
+// EVENT LISTENERS
+// ----------------------
 
-    // Fetch ONLY the data for the selected district from our new SQL API
-    fetch(`/api/settlements/${distId}`)
+provSelect.addEventListener('change', function () {
+    const provId = this.value;
+
+    distSelect.innerHTML = '<option value="all">-- All Districts --</option>';
+    commSelect.innerHTML = '<option value="all">-- Select District --</option>';
+    if (districtsLayer) map.removeLayer(districtsLayer);
+    if (communityLayer) map.removeLayer(communityLayer);
+
+    renderProvinces(provId);
+
+    if (provId === 'all') return; // Stop here if "Show All" was selected
+
+    // Fetch districts belonging to this Province ID
+    fetch(`/api/districts/${provId}`)
         .then(res => res.json())
         .then(data => {
-            // Populate the Dropdown
-            commSelect.innerHTML = '<option value="all">-- Select Settlement --</option>';
-            var sortedSettlements = data.features.sort((a, b) =>
-                a.properties.name.localeCompare(b.properties.name)
-            );
-            sortedSettlements.forEach(f => {
-                var name = f.properties.name;
-                var coords = f.geometry.coordinates; // [lon, lat]
+            districtsData = data;
+            // console.log("Fetched districts: ", districtsData.features);
 
-                // Create Option: Store coordinates as a string value "lat,lon"
-                var opt = new Option(name, `${coords[1]},${coords[0]}`);
-                commSelect.appendChild(opt);
-            });
-            settlementsLayer = L.geoJSON(data, {
-                pointToLayer: function (feature, latlng) {
-                    return L.circleMarker(latlng, {
-                        radius: 3,
-                        fillColor: "#ff0000",
-                        color: "#fff",
-                        weight: 1,
-                        fillOpacity: 0.9
-                    });
-                },
-                onEachFeature: function (f, l) {
-                    // console.log(f.properties);
-                    l.bindPopup(`<b>Settlement:</b> ${f.properties.name}`);
-                }
-            }).addTo(map);
-        });
-}
+            // Populate District Dropdown with Dist_Id_24 as the value
+            let sortedDists = data.features.map(f => ({
+                name: f.properties.name,
+                provId: f.properties.provID,
+                distId: f.properties.distID
+            })).sort((a, b) => a.name.localeCompare(b.name));
+            // console.log(districtsData);
+
+            sortedDists.forEach(d => distSelect.appendChild(new Option(d.name, d.distId)));
+
+            // Draw the new districts layer on top of the province layer
+            // console.log("triggering renderDistricts with data: ", data);
+            renderDistricts(data, 'all');
+        })
+        .catch(err => console.error("Error loading districts:", err));
+});
+
+
+// DISTRICT SELECTED -> Highlight & Fetch Community
+distSelect.addEventListener('change', function () {
+    const distId = this.value;
+
+    // Redraw districts to show the highlight/zoom
+    renderDistricts(districtsData, distId);
+
+    if (distId !== 'all') {
+        renderCommunities(distId);
+    } else if (communityLayer)
+        {
+            map.removeLayer(communityLayer);
+            console.log("Removed community layer");
+            commSelect.innerHTML = '<option value="all">-- Select District --</option>';
+    }
+});
+
 
 commSelect.addEventListener('change', function () {
     if (this.value === 'all') return;
@@ -242,63 +304,6 @@ commSelect.addEventListener('change', function () {
         duration: 1.5 // seconds
     });
 });
-
-// ----------------------
-// DROPDOWN EVENTS
-// ----------------------
-// 5. UI Events
-provSelect.addEventListener('change', function () {
-    const provId = this.value;
-
-    distSelect.innerHTML = '<option value="all">-- All Districts --</option>';
-    commSelect.innerHTML = '<option value="all">-- All Settlements --</option>';
-    if (districtsLayer) map.removeLayer(districtsLayer);
-    if (settlementsLayer) map.removeLayer(settlementsLayer);
-
-    renderProvinces(provId);
-
-    if (provId === 'all') return; // Stop here if "Show All" was selected
-
-    // Fetch districts belonging to this Province ID
-    fetch(`/api/districts/${provId}`)
-        .then(res => res.json())
-        .then(data => {
-            districtsData = data;
-            console.log("Fetched districts: ", districtsData.features);
-
-            // Populate District Dropdown with Dist_Id_24 as the value
-            let sortedDists = data.features.map(f => ({
-                name: f.properties.name,
-                provId: f.properties.provID,
-                distId: f.properties.distID
-            })).sort((a, b) => a.name.localeCompare(b.name));
-            console.log(districtsData);
-
-            sortedDists.forEach(d => distSelect.appendChild(new Option(d.name, d.distId)));
-
-            // Draw the new districts layer on top of the province layer
-            console.log("triggering renderDistricts with data: ", data);
-            renderDistricts(data, 'all');
-        })
-        .catch(err => console.error("Error loading districts:", err));
-});
-
-
-// DISTRICT SELECTED -> Highlight & Fetch Settlements
-distSelect.addEventListener('change', function () {
-    const distId = this.value;
-
-    // Redraw districts to show the highlight/zoom
-    renderDistricts(districtsData, distId);
-
-    if (distId !== 'all') {
-        renderSettlements(distId);
-    } else {
-        if (settlementsLayer) map.removeLayer(settlementsLayer);
-        commSelect.innerHTML = '<option value="all">-- Select Settlement --</option>';
-    }
-});
-
 
 // ----------------------
 // RASTER LAYER
@@ -319,7 +324,7 @@ document.querySelectorAll('input[name="hazard-layer"]')
 
 
 function toggleRaster(hazardLayer) {
-    console.log("Toggling raster layer:", hazardLayer);
+    // console.log("Toggling raster layer:", hazardLayer);
 
     if (currentHazardLayer) {
         map.removeLayer(currentHazardLayer);
@@ -330,14 +335,14 @@ function toggleRaster(hazardLayer) {
 }
 
 function showRaster(hazardLayer) {
-    console.log("Showing raster layer:", hazardLayer);
+    // console.log("Showing raster layer:", hazardLayer);
 
     const overlay = document.getElementById('loadingOverlay');
     overlay.style.display = 'flex';
     disableMapInteraction();
 
     const layer = L.tileLayer(`/tiles/${hazardLayer}/{z}/{x}/{y}.png`, {
-        opacity: 0.5,
+        opacity: document.getElementById('opacity-range').value / 100,
         maxZoom: 18,
         maxNativeZoom: 15,
         zIndex: 200
@@ -357,37 +362,30 @@ function showRaster(hazardLayer) {
     });
 }
 
-// refreshElements = function (elementId, newContent) {
-//     const element = document.getElementById(elementId);
-//     if (element) {
-//         element.textContent = newContent;
-//     }   
+opacityRange.addEventListener('input', function () {
+    opacityValue.textContent = `${this.value}%`;
+    if (currentHazardLayer) {
+        currentHazardLayer.setOpacity(this.value / 100);
+    }
+});
 
 // ----------------------
-// SNAPSHOT
+// DOWNLOAD
 // ----------------------
 downloadPdfBtn.addEventListener('click', function () {
 
-    // if no raster layer is checked, show alert and return
-    const checkedRaster = document.querySelector('input[name="hazard-layer"]:checked');
-    // if (checkedRaster.value === 'none') {
-    //     alert("Please select a hazard layer before taking a snapshot.");
-    //     return;
-    // };
+    // const checkedRaster = document.querySelector('input[name="hazard-layer"]:checked');
     const mapElement = document.getElementById('map');
     const zoomControl = document.querySelector(".leaflet-control-zoom");
     const layerControl = document.querySelector(".leaflet-control-layers");
     const scaleBar = document.querySelector(".leaflet-control-scale");
-
-    primaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.primaryColor;
-    secondaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.secondaryColor;
 
     // Hide zoom and layer control for screenshot
     zoomControl.style.display = 'none';
     layerControl.style.display = 'none';
     scaleBar.style.display = 'none';
 
-    htmlToImage.toPng(mapElement, { scale: 2 })
+    htmlToImage.toPng(mapElement)
         .then(function (dataUrl) {
 
             // Show zoom control again
@@ -397,12 +395,12 @@ downloadPdfBtn.addEventListener('click', function () {
 
             const mapImg = new Image();
             mapImg.src = dataUrl;
-            mapImg.id = "preview";
+            mapImg.id = "map-image";
 
 
-            const container = document.getElementById('map-container');
-            container.innerHTML = '';
-            container.appendChild(mapImg);
+            const mapContainer = document.getElementById('map-container');
+            mapContainer.innerHTML = '';
+            mapContainer.appendChild(mapImg);
 
             const titleDiv = document.getElementById('layout-title');
 
@@ -434,16 +432,12 @@ downloadPdfBtn.addEventListener('click', function () {
         });
 });
 
-
-
 // ----------------------
 // DOWNLOAD PDF
 // ----------------------
 function downloadPdf() {
     const pdfContent = document.getElementById('pdf-content');
     const titleText = document.getElementById('layout-title').textContent;
-    //pdfContent.style.height = fixed height
-    //pdfContent.style.width = fixed width
 
     htmlToImage.toPng(pdfContent)
         .then(dataUrl => {
@@ -453,26 +447,8 @@ function downloadPdf() {
                 unit: 'mm',
                 format: 'a4'
             });
-
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            console.log(pageWidth, pageHeight)
+            // console.log(pageWidth, pageHeight)
             const margin = 5;
-            // const maxWidth = pageWidth - (margin * 2);
-            // const maxHeight = pageHeight - (margin * 2);
-
-            // Calculate image dimensions while maintaining aspect ratio
-            // const imgAspectRatio = pdfContent.offsetWidth / pdfContent.offsetHeight;
-            // let imgWidth = maxWidth;
-            // let imgHeight = imgWidth / imgAspectRatio;
-
-            // Scale down if height exceeds page
-            // if (imgHeight > maxHeight) {
-            //     imgHeight = maxHeight;
-            //     imgWidth = imgHeight * imgAspectRatio;
-            // }
-
             pdf.addImage(dataUrl, 'PNG', margin, margin, 287, 200);
             pdf.save(`${titleText || 'hazard-map'}.pdf`);
         })

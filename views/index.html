@@ -21,31 +21,31 @@
 
     <div id="entire-page">
         <div id="user-instructions">
-            <span id="greeting">Welcome to the CRLP Hazard Mapping Application!</span><br>Use the controls below to
+            <!-- <span id="greeting">Welcome to the CRLP Hazard Mapping Application!</span><br>Use the controls below to
             explore hazard layers across Afghanistan. Select a province to zoom in and view district-level data. You can
-            also take a snapshot of the map or download the current view as a PDF report.
+            also take a snapshot of the map or download the current view as a PDF report. -->
         </div>
         <div id="control-panel">
             <div id="map-settings">
                 <div class="dropdown-row">
                     <div class="dropdown-controls">
-                        <label>Province:</label><select id="prov-select">
+                        <label class="cp-label">Province:</label><select id="prov-select">
                             <option value="all">-- Show All --</option>
                         </select>
                     </div>
                     <div class="dropdown-controls">
-                        <label>District:</label><select id="dist-select">
+                        <label class="cp-label">District:</label><select id="dist-select">
                             <option value="all">-- Select a Province --</option>
                         </select>
                     </div>
                     <div class="dropdown-controls">
-                        <label>Community:</label><select id="comm-select">
+                        <label class="cp-label">Community:</label><select id="comm-select">
                             <option value="all">-- Select a District --</option>
                         </select>
                     </div>
                 </div>
                 <div id="raster-list">
-                    <p style="margin-right:20px">Select Hazard Layer: </p>
+                    <p class="cp-label">Select Hazard Layer: </p>
 
                     <label class="raster-option">
                         <input type="radio" name="hazard-layer" value="none" checked>
@@ -54,18 +54,27 @@
 
                     <label class="raster-option">
                         <input type="radio" name="hazard-layer" value="flood">
-                        Flood Hazard
+                        Flood
                     </label>
 
                     <label class="raster-option">
                         <input type="radio" name="hazard-layer" value="avalanche">
-                        Avalanche Hazard
+                        Avalanche
                     </label>
 
                     <label class="raster-option">
                         <input type="radio" name="hazard-layer" value="landslide">
-                        Landslide Hazard
+                        Landslide
                     </label>
+                    <label class="raster-option">
+                        <input type="radio" name="hazard-layer" value="earthquake">
+                        Earthquake
+                    </label>
+                    <div id="opacity-slider">
+                        <label for="opacity-range" id="opacity-label">Opacity:</label>
+                        <input type="range" id="opacity-range" min="0" max="100" step="1" value="50">
+                        <span id="opacity-value">50%</span>
+                    </div>
                 </div>
             </div>
             <div id="action-button">

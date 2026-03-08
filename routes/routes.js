@@ -74,7 +74,7 @@ router.get('/api/provinces/:quality', (req, res) => {
                 type: "Feature",
                 properties: {
                     name: p.Prov_name,
-                    id: p.Pro_ID
+                    provID: p.Pro_ID
                 },
                 geometry: wellknown.parse(p.geom_to_wkt)
             }))
@@ -121,13 +121,13 @@ router.get('/api/districts/:provId', (req, res) => {
     }
 });
 
-// API route to fetch filtered settlements via SQL
-router.get('/api/settlements/:distId', (req, res) => {
+// API route to fetch filtered communities via SQL
+router.get('/api/communities/:distId', (req, res) => {
     const distId = req.params.distId;
 
     try {
-        // SQL Query: Fetch only settlements matching the district ID
-        // Note: Replace 'settlements_table' with the actual table name in your GPKG
+        // SQL Query: Fetch only communities matching the district ID
+        // Note: Replace 'communities_table' with the actual table name in your GPKG
         const query = `
             SELECT point_name, norm_dist_code,
                    coord_y,
@@ -137,17 +137,17 @@ router.get('/api/settlements/:distId', (req, res) => {
             /*and GPS_Verified = true*/
         `;
 
-        const settlements = db.prepare(query).all(distId);
+        const communities = db.prepare(query).all(distId);
 
         // Convert the SQL results into a tiny GeoJSON-like format for Leaflet
         const geojson = {
             type: "FeatureCollection",
-            features: settlements.map(s => ({
+            features: communities.map(c => ({
                 type: "Feature",
-                properties: { name: s.point_name, norm_dist_code: s.norm_dist_code },
+                properties: { name: c.point_name, norm_dist_code: c.norm_dist_code },
                 geometry: {
                     type: "Point",
-                    coordinates: [s.coord_x, s.coord_y]
+                    coordinates: [c.coord_x, c.coord_y]
                 }
             }))
         };
