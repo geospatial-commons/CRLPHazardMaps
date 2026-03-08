@@ -47,8 +47,8 @@ textarea {
 }
 
 #map {
-    height:100%;
-    width:100%;
+    height:170mm;
+    width:230mm;
     border: 2px solid #004972;
     border-radius: 4px;
 }
@@ -56,7 +56,7 @@ textarea {
 #control-panel {
     display: flex;
     flex-direction: row;
-    width:100%;
+    width:230mm;
     box-sizing: border-box;
     overflow-y: auto;
     background: #B2C8D5;
@@ -98,16 +98,19 @@ textarea {
 }
 
 #prov-select,
-#dist-select,
-#comm-select {
+#dist-select{
     width: 100%;
 }
 
+#comm-select {
+    max-width: 180px;
+}
 
 #raster-list {
     display: flex;
     gap: 2px;
     align-items: center;
+    margin-right: 5px;
 }
 
 #raster-list p {
@@ -259,7 +262,7 @@ textarea {
     border: 1px solid black;
     padding: 10px;
     margin-bottom: 1px;
-    font-weight: bold;
+    /* font-weight: bold; */
     text-align: left;
     /* display: none; */
     box-sizing: border-box;
@@ -267,6 +270,8 @@ textarea {
     display: flex;
     align-items:center;
     background-color: #004972;
+    color: #ffffff;
+    font-size:22px;
 }
 
 #map-container {
@@ -320,6 +325,36 @@ textarea {
     border: 1px solid #ccc;
     padding: 1mm;
 }       
+
+
+#footer-column-1,
+#footer-column-2 {
+    flex: 1;
+    border: 1px solid #ccc;
+    padding: 1mm;
+}
+
+
+#scale-bar {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    font-family: 'Open Sans Condensed'
+}
+
+.custom-scale-text {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #004972;
+}
+
+.custom-scale-bar {
+    position: relative;
+    height: 8px;
+    background: linear-gradient(to right, #004972 50%, #fff 50%);
+    border: 2px solid #004972;
+}
 
 #active-raster {
     font-weight: bold;

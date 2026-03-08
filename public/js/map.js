@@ -281,11 +281,10 @@ distSelect.addEventListener('change', function () {
 
     if (distId !== 'all') {
         renderCommunities(distId);
-    } else if (communityLayer)
-        {
-            map.removeLayer(communityLayer);
-            console.log("Removed community layer");
-            commSelect.innerHTML = '<option value="all">-- Select District --</option>';
+    } else if (communityLayer) {
+        map.removeLayer(communityLayer);
+        console.log("Removed community layer");
+        commSelect.innerHTML = '<option value="all">-- Select District --</option>';
     }
 });
 
@@ -336,7 +335,7 @@ function toggleRaster(hazardLayer) {
 
 function showRaster(hazardLayer) {
     // console.log("Showing raster layer:", hazardLayer);
-
+    if (hazardLayer === 'none') return;
     const overlay = document.getElementById('loadingOverlay');
     overlay.style.display = 'flex';
     disableMapInteraction();
@@ -378,7 +377,12 @@ downloadPdfBtn.addEventListener('click', function () {
     const mapElement = document.getElementById('map');
     const zoomControl = document.querySelector(".leaflet-control-zoom");
     const layerControl = document.querySelector(".leaflet-control-layers");
-    const scaleBar = document.querySelector(".leaflet-control-scale");
+    const scaleBar = document.querySelector(".leaflet-control-scale-line");
+    const scaleBarWidth = document.querySelector(".leaflet-control-scale-line").style.width;
+    const scaleBarText = document.querySelector(".leaflet-control-scale-line").textContent;
+
+    const mapContainerLayout = document.getElementById('map-container');
+    const scaleBarLayout = document.getElementById('scale-bar');
 
     // Hide zoom and layer control for screenshot
     zoomControl.style.display = 'none';
@@ -398,9 +402,17 @@ downloadPdfBtn.addEventListener('click', function () {
             mapImg.id = "map-image";
 
 
-            const mapContainer = document.getElementById('map-container');
-            mapContainer.innerHTML = '';
-            mapContainer.appendChild(mapImg);
+            mapContainerLayout.innerHTML = '';
+            mapContainerLayout.appendChild(mapImg);
+
+            scaleBarLayout.innerHTML = `
+                    <div class="custom-scale-text">${scaleBarText}</div>
+                    <div class="custom-scale-bar" style="width:${scaleBarWidth}">
+                        <div class="custom-scale-tick left"></div>
+                        <div class="custom-scale-tick right"></div>
+                    </div>
+            `;
+
 
             const titleDiv = document.getElementById('layout-title');
 
