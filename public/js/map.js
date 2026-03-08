@@ -13,7 +13,7 @@ let layerControl;
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
 const commSelect = document.getElementById('comm-select');
-const snapshotBtn = document.getElementById('snapshot-btn');
+// const snapshotBtn = document.getElementById('snapshot-btn');
 const downloadPdfBtn = document.getElementById('download-pdf-btn')
 
 
@@ -357,75 +357,93 @@ function showRaster(hazardLayer) {
     });
 }
 
-
+// refreshElements = function (elementId, newContent) {
+//     const element = document.getElementById(elementId);
+//     if (element) {
+//         element.textContent = newContent;
+//     }   
 
 // ----------------------
 // SNAPSHOT
 // ----------------------
-snapshotBtn.addEventListener('click', function () {
+downloadPdfBtn.addEventListener('click', function () {
+
     // if no raster layer is checked, show alert and return
     const checkedRaster = document.querySelector('input[name="hazard-layer"]:checked');
-    if (!checkedRaster) {
-        alert("Please select a hazard layer before taking a snapshot.");
-        return;
-    };
+    // if (checkedRaster.value === 'none') {
+    //     alert("Please select a hazard layer before taking a snapshot.");
+    //     return;
+    // };
     const mapElement = document.getElementById('map');
-    const zoomControl = document.querySelector(".leaflet-control-zoom.leaflet-bar.leaflet-control");
-    const layerControlElement = document.querySelector(".leaflet-control-layers.leaflet-control");
-    primaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.primaryColor || '#ffffff';
-    secondaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.secondaryColor || '#a3a3a3';
+    const zoomControl = document.querySelector(".leaflet-control-zoom");
+    const layerControl = document.querySelector(".leaflet-control-layers");
+    const scaleBar = document.querySelector(".leaflet-control-scale");
+
+    primaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.primaryColor;
+    secondaryColor = hazardConfig[rasterLabels[checkedRaster.value]].theme.secondaryColor;
 
     // Hide zoom and layer control for screenshot
     zoomControl.style.display = 'none';
-    layerControlElement.style.display = 'none';
+    layerControl.style.display = 'none';
+    scaleBar.style.display = 'none';
 
-    htmlToImage.toPng(mapElement)
-        .then(dataUrl => {
+    htmlToImage.toPng(mapElement, { scale: 2 })
+        .then(function (dataUrl) {
+
             // Show zoom control again
             zoomControl.style.display = '';
-            layerControlElement.style.display = '';
+            layerControl.style.display = '';
+            scaleBar.style.display = '';
 
-            const img = new Image();
-            img.src = dataUrl;
-            img.id = "preview";
+            const mapImg = new Image();
+            mapImg.src = dataUrl;
+            mapImg.id = "preview";
 
-            const container = document.getElementById('result-container');
-            const titleDiv = document.getElementById('snapshot-title');
 
-            const districtName = distSelect.value === 'all'
-                ? 'All Districts'
-                : `${distSelect.options[distSelect.selectedIndex].text}, ${provSelect.options[provSelect.selectedIndex].text}`;
-
-            titleDiv.textContent = districtName;
-            titleDiv.classList.add('active');
-            titleDiv.style.backgroundColor = primaryColor;
-
+            const container = document.getElementById('map-container');
             container.innerHTML = '';
-            container.appendChild(titleDiv);
-            container.appendChild(img);
+            container.appendChild(mapImg);
 
-            // Show the pdf content
-            const pdfContent = document.getElementById('pdf-content');
-            pdfContent.classList.add('active');
+            const titleDiv = document.getElementById('layout-title');
+
+            const provName = provSelect.options[provSelect.selectedIndex].text;
+            const distName = distSelect.options[distSelect.selectedIndex].text;
+            const commName = commSelect.options[commSelect.selectedIndex].text;
+
+            let titleText = '';
+            if (commSelect.value !== 'all') {
+                titleText = `${commName}, ${distName} District, ${provName} Province`;
+            } else if (distSelect.value !== 'all') {
+                titleText = `${distName} District, ${provName} Province`;
+            } else if (provSelect.value !== 'all') {
+                titleText = `${provName} Province`;
+            } else {
+                titleText = 'Afghanistan';
+            }
+
+            titleDiv.textContent = titleText;
+
+            downloadPdf();
+
         })
+
         .catch(err => {
             // Show zoom control if error occurs
             zoomControl.style.display = '';
-            console.error('Snapshot failed:', err);
-            alert("Check console for CORS errors.");
+            console.error('Failed:', err);
         });
 });
+
 
 
 // ----------------------
 // DOWNLOAD PDF
 // ----------------------
-downloadPdfBtn.addEventListener('click', function () {
+function downloadPdf() {
     const pdfContent = document.getElementById('pdf-content');
-    const titleText = document.getElementById('snapshot-title').textContent;
+    const titleText = document.getElementById('layout-title').textContent;
     //pdfContent.style.height = fixed height
     //pdfContent.style.width = fixed width
-
 
     htmlToImage.toPng(pdfContent)
         .then(dataUrl => {
@@ -437,31 +455,33 @@ downloadPdfBtn.addEventListener('click', function () {
             });
 
             const pageWidth = pdf.internal.pageSize.getWidth();
+            
             const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 10;
-            const maxWidth = pageWidth - (margin * 2);
-            const maxHeight = pageHeight - (margin * 2);
+            console.log(pageWidth, pageHeight)
+            const margin = 5;
+            // const maxWidth = pageWidth - (margin * 2);
+            // const maxHeight = pageHeight - (margin * 2);
 
             // Calculate image dimensions while maintaining aspect ratio
-            const imgAspectRatio = pdfContent.offsetWidth / pdfContent.offsetHeight;
-            let imgWidth = maxWidth;
-            let imgHeight = imgWidth / imgAspectRatio;
+            // const imgAspectRatio = pdfContent.offsetWidth / pdfContent.offsetHeight;
+            // let imgWidth = maxWidth;
+            // let imgHeight = imgWidth / imgAspectRatio;
 
             // Scale down if height exceeds page
-            if (imgHeight > maxHeight) {
-                imgHeight = maxHeight;
-                imgWidth = imgHeight * imgAspectRatio;
-            }
+            // if (imgHeight > maxHeight) {
+            //     imgHeight = maxHeight;
+            //     imgWidth = imgHeight * imgAspectRatio;
+            // }
 
-            pdf.addImage(dataUrl, 'PNG', margin, margin, imgWidth, imgHeight);
-            pdf.save(`${titleText || 'snapshot'}.pdf`);
+            pdf.addImage(dataUrl, 'PNG', margin, margin, 287, 200);
+            pdf.save(`${titleText || 'hazard-map'}.pdf`);
         })
         .catch(err => {
             // Restore original height in case of error
             console.error('PDF generation failed:', err);
             alert('Error generating PDF. Check console.');
         });
-});
+}
 
 // ----------------------
 // START APP

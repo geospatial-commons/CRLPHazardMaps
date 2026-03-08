@@ -1,7 +1,7 @@
 {
   "None": {
     "label": "No Hazard",
-    "hazardLayer": null,
+    "hazardLayer": "none",
     "theme": {
       "primaryColor": "#004972",
       "secondaryColor":"#CCDBE3"

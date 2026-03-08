@@ -45,7 +45,7 @@
                     </div>
                 </div>
                 <div id="raster-list">
-                    <p style="margin-right:20px">Select Hazard Layer:  </p>
+                    <p style="margin-right:20px">Select Hazard Layer: </p>
 
                     <label class="raster-option">
                         <input type="radio" name="hazard-layer" value="none" checked>
@@ -68,29 +68,32 @@
                     </label>
                 </div>
             </div>
-            <div id="action-buttons">
-                <div><button id="snapshot-btn">Take Map Snapshot</button></div>
+            <div id="action-button">
                 <div><button id="download-pdf-btn">Download as PDF</button></div>
             </div>
         </div>
         <div id="main-container">
             <div id="map"></div>
-
         </div>
 
         <div id="pdf-content">
-            <div id="result-container">
-                <div id="snapshot-title"></div>
+            <div id="layout-title" class="row-1"></div>
+            <div class="row-2">
+                <div id="map-container"></div>
+                <div id="right-panel">
+                    <div id="right-panel-row-1">
+                        <p>Legend</p>
+
+                    </div>
+                    <div id="right-panel-row-2">
+                        <p id="active-raster"></p>
+                        <p id="raster-info"></p>
+                    </div>
+                </div>
             </div>
-            <div id="notes-panel">
-                <div id="raster-description" class="notes-section">
-                    <p id="active-raster"></p>
-                    <p id="raster-info"></p>
-                </div>
-                <div class="note-section">
-                    <p>Legend</p>
-                </div>
-                <div class="note-section">Section 3</div>
+            <div id="footer" class="row-3">
+                <div id="footer-column-1"></div>
+                <div id="footer-column-2"></div>
             </div>
         </div>
     </div>
