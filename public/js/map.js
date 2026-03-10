@@ -2,6 +2,7 @@
 // GLOBAL VARIABLES
 // ----------------------
 let map;
+let overlayLayers = {};
 let provincesData, districtsData;
 let provincesLayer, districtsLayer, communityLayer;
 let hazardLayer, currentHazardLayer;
@@ -62,7 +63,7 @@ function initMap() {
 
     // ---- INITIALIZE LAYER CONTROL ----
     // Layer control will be initialized after baseMaps are set up
-    layerControl = L.control.layers(baseMaps, {}, { position: 'topright' });
+    layerControl = L.control.layers(baseMaps, overlayLayers, { position: 'topright' });
 
     scaleBar = L.control.scale({
         position: 'bottomright',
@@ -92,6 +93,8 @@ function getProvinces(quality) {
             });
 
             renderProvinces('all');
+
+
 
             if (quality == 0) {
                 getProvinces(1); // Fetch detailed provinces after loading simplified ones
@@ -123,7 +126,7 @@ function renderProvinces(selectedProvId) {
             l.bindPopup(`<b>Province:</b> ${f.properties.name}`);
         }
     }).addTo(map)
-
+    overlayLayers['Provinces'] = provincesLayer;
     layerControl.addOverlay(provincesLayer, 'Provinces');
 
     // Zoom to whole country if 'all' is selected
@@ -158,6 +161,7 @@ function renderDistricts(data, selectedDistId) {
             l.bindPopup(`<b>District:</b> ${f.properties.name}`);
         }
     }).addTo(map);
+    overlayLayers['Districts'] = districtsLayer;
     layerControl.addOverlay(districtsLayer, 'Districts');
     // Zoom Logic
     if (districtsLayer.getLayers().length > 0) {
@@ -209,6 +213,9 @@ function renderCommunities(distId) {
                     l.bindPopup(`<b>Community:</b> ${f.properties.name}`);
                 }
             }).addTo(map);
+            overlayLayers['Communities'] = communityLayer;
+            layerControl.addOverlay(communityLayer, 'Communities');
+
         });
 }
 
@@ -310,12 +317,12 @@ commSelect.addEventListener('change', function () {
 document.querySelectorAll('input[name="hazard-layer"]')
     .forEach(radio => {
         radio.addEventListener('change', function () {
-            const label = rasterLabels[this.value];
-            hazardLayer = hazardConfig[label].hazardLayer
+            let hazardLabel = rasterLabels[this.value];
+            hazardLayer = hazardConfig[hazardLabel].hazardLayer
 
             // Update pdf-content
-            document.getElementById('active-raster').textContent = label;
-            document.getElementById('raster-info').textContent = hazardConfig[label].text.description;
+            document.getElementById('active-raster').textContent = hazardLabel;
+            document.getElementById('raster-info').textContent = hazardConfig[hazardLabel].text.description;
 
             toggleRaster(hazardLayer);
         });
@@ -368,6 +375,20 @@ opacityRange.addEventListener('input', function () {
     }
 });
 
+function buildLegend() {
+    let hazardLabel = rasterLabels[document.querySelector('input[name="hazard-layer"]:checked').value];
+    console.log("Selected hazard hazardLabel for legend:", hazardLabel);
+    let mapConfig = hazardConfig[hazardLabel];
+    document.getElementById('hazard-legend-title').textContent = mapConfig.legend.title;
+    document.getElementsByClassName("legend-color high")[0].style.backgroundColor = mapConfig.legend.highColor;
+    document.getElementsByClassName("legend-label high")[0].textContent = mapConfig.legend.highLabel;
+    document.getElementsByClassName("legend-color medium")[0].style.backgroundColor = mapConfig.legend.mediumColor;
+    document.getElementsByClassName("legend-label medium")[0].textContent = mapConfig.legend.mediumLabel;
+    document.getElementsByClassName("legend-color low")[0].style.backgroundColor = mapConfig.legend.lowColor;
+    document.getElementsByClassName("legend-label low")[0].textContent = mapConfig.legend.lowLabel;
+    // document.getElementsByClassName("legend-color no-data")[0].style.backgroundColor = mapConfig.legend.noDataColor;
+    // document.getElementsByClassName("legend-label no-data")[0].textContent = mapConfig.legend.noDataLabel;
+}
 // ----------------------
 // DOWNLOAD
 // ----------------------
@@ -383,7 +404,7 @@ downloadPdfBtn.addEventListener('click', function () {
 
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
-    
+
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-US', {
         year: 'numeric',
@@ -391,6 +412,19 @@ downloadPdfBtn.addEventListener('click', function () {
         day: 'numeric'
     });
     document.getElementById('footer-date').innerHTML = `<strong>Date Created: </strong> ${formattedDate}`;
+
+
+    // ---------------
+    // BUILD LEGEND
+    // ---------------
+    
+    // Get list of active overlay layers to include in the legend
+    let activeLayers = Object.entries(overlayLayers)
+    .filter(([key, layer]) => map.hasLayer(layer))
+    .map(([key]) => key);
+    
+    buildLegend();
+
 
     // Hide zoom and layer control for screenshot
     zoomControl.style.display = 'none';
@@ -440,7 +474,7 @@ downloadPdfBtn.addEventListener('click', function () {
             }
 
             titleDiv.textContent = titleText;
-
+            console.log("The Map Image has loaded, now generating PDF...");
             downloadPdf();
 
         })

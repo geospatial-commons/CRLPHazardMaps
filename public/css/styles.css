@@ -49,8 +49,11 @@ textarea {
 #map {
     height:170mm;
     width:230mm;
-    border: 2px solid #004972;
-    border-radius: 4px;
+    border: 1px solid #004972;
+    border-radius: 2px;
+    margin-left:auto;
+    margin-right:auto;
+    box-sizing: border-box;
 }
 
 #control-panel {
@@ -58,14 +61,16 @@ textarea {
     flex-direction: row;
     width:230mm;
     box-sizing: border-box;
-    overflow-y: auto;
+    /* overflow-y: auto; */
     background: #B2C8D5;
     border: 1px solid #004972;
-    border-radius: 4px;
+    /* border-radius: 4px; */
     align-self: flex-start;
     align-items: center;
-    padding: 8px 12px;
-    margin: 10px 0px 10px 0px;;
+    padding: 4px;
+    margin: 0px 0px 3px 0px;;
+    margin-left:auto;
+    margin-right:auto;
 }
 
 
@@ -99,11 +104,11 @@ textarea {
 
 #prov-select,
 #dist-select{
-    width: 100%;
+    width: 140px;
 }
 
 #comm-select {
-    max-width: 180px;
+    max-width: 170px;
 }
 
 #raster-list {
@@ -111,12 +116,6 @@ textarea {
     gap: 2px;
     align-items: center;
     margin-right: 5px;
-}
-
-#raster-list p {
-    font-weight: bold;
-    font-size: 16px;
-
 }
 
 #raster-list label,
@@ -132,14 +131,14 @@ textarea {
 #opacity-slider label {
     font-family: 'Open Sans', sans-serif;
     font-weight: bold;
-    margin-right: 5px;
-    font-size: 16px;
+    margin-right: 4px;
+    font-size: 14px;
 }
 
 .cp-label {
     font-weight: bold;
-    margin-right: 5px;
-    font-size: 16px;
+    margin-right: 4px;
+    font-size: 14px;
 }
 
 #opacity-range {
@@ -263,7 +262,8 @@ textarea {
     margin: 10px;
 }
 
-#layout-title {
+#layout-title,
+#app-title {
     height: 60px;
     padding: 10px;
     margin-bottom: 1px;
@@ -289,7 +289,14 @@ textarea {
     height: 100%;
 }
 
-.row-1 {
+.header-row {
+    width:230mm;
+    margin: 3px auto 3px auto;
+    box-sizing: border-box;
+}
+
+.row-1,
+.header-row {
     display:flex;
     flex-direction: row; /* horizontal layout */
     height:15mm;
@@ -333,15 +340,11 @@ textarea {
     padding: 1mm;
 }       
 
-#legend-title {
-    font-weight: bold;
-    margin-bottom: 8px;
-}
 
 .legend {
     display: flex;
     flex-direction: column;
-    margin: 10px;
+    margin: 5px;
     align-self: center;
 }
 
@@ -349,7 +352,7 @@ textarea {
     display: flex;
     align-items: center;
     font-size: 14px;
-    margin:5px;
+    margin:3px;
 }
 
 .legend-color {
@@ -357,19 +360,7 @@ textarea {
     height: 18px;
     margin-right: 8px;
     border: 1px solid #ccc;
-}
-
-/* Legend colors */
-.legend-color.high {
-    background-color: #d7191b;
-}
-
-.legend-color.medium {
-    background-color: #ffad5d;
-}
-
-.legend-color.low {
-    background-color: #fffebd;
+    display: none;
 }
 
 
@@ -420,7 +411,8 @@ textarea {
 }
 
 #active-raster,
-#legend-title {
+#hazard-legend-title,
+#admin-legend-title {
     font-weight: bold;
     margin-bottom: 5px;
     margin-top: 2px;

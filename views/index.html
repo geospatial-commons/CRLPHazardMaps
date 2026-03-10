@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>CRLP AF HA Maps</title>
+    <title>CRLP AF Hazard Maps</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href=/css/leaflet.css />
@@ -20,11 +20,10 @@
     </div>
 
     <div id="entire-page">
-        <div id="user-instructions">
-            <!-- <span id="greeting">Welcome to the CRLP Hazard Mapping Application!</span><br>Use the controls below to
-            explore hazard layers across Afghanistan. Select a province to zoom in and view district-level data. You can
-            also take a snapshot of the map or download the current view as a PDF report. -->
-        </div>
+            <div class="header-row">
+                <img id="wb-logo" src="/assets/img/globe.png" alt="World Bank Logo" />
+                <div id="app-title">Afghanistan Community Resilience and Livelihoods Project - Map Generator</div>
+            </div>
         <div id="control-panel">
             <div id="map-settings">
                 <div class="dropdown-row">
@@ -94,21 +93,39 @@
                 <div id="map-container"></div>
                 <div id="right-panel">
                     <div id="right-panel-row-1">
-                        <p id="legend-title">Legend</p>
+                        <p id="hazard-legend-title"></p>
                         <div class="legend">
                             <div class="legend-item">
                                 <span class="legend-color high"></span>
-                                <span class="legend-label">High</span>
+                                <span class="legend-label high"></span>
                             </div>
-
                             <div class="legend-item">
                                 <span class="legend-color medium"></span>
-                                <span class="legend-label">Medium</span>
+                                <span class="legend-label medium"></span>
                             </div>
 
                             <div class="legend-item">
                                 <span class="legend-color low"></span>
-                                <span class="legend-label">Low</span>
+                                <span class="legend-label low"></span>
+                            </div>
+                            <!-- <div class="legend-item">
+                                <span class="legend-color no-data"></span>
+                                <span class="legend-label no-data"></span>
+                            </div> -->
+                            <p id="admin-legend-title"></p>
+                            <div>
+                                <div class="legend-item">
+                                    <span class="legend-color admin-prov"></span>
+                                    <span class="legend-label admin-prov"></span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color admin-dist"></span>
+                                    <span class="legend-label admin-dist"></span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color admin-comm"></span>
+                                    <span class="legend-label admin-comm"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
