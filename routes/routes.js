@@ -40,7 +40,9 @@ router.get('/tiles/:layer/:z/:x/:y.png', (req, res) => {
             res.setHeader('Content-Type', 'image/png');
             res.send(tile.tile_data);
         } else {
-            res.status(404).send("Tile not found");
+            res.sendFile(path.join(__dirname, '..', 'public', 'assets', 'img', 'transparent256.png'));
+            return;
+            // res.status(404).send("Tile not found");
         }
 
     } catch (err) {
