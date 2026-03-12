@@ -11,6 +11,8 @@
     <!-- App CSS -->
     <link rel="stylesheet" href="/css/styles.css" />
 
+    <link rel="stylesheet" href="/css/mbtiles-filters.css" />
+
 </head>
 
 <body>
@@ -20,10 +22,10 @@
     </div>
 
     <div id="entire-page">
-            <div class="header-row">
-                <img id="wb-logo" src="/assets/img/globe.png" alt="World Bank Logo" />
-                <div id="app-title">Afghanistan Community Resilience and Livelihoods Project - Map Generator</div>
-            </div>
+        <div class="header-row">
+            <img id="wb-logo" src="/assets/img/globe.png" alt="World Bank Logo" />
+            <div id="app-title">Afghanistan Community Resilience and Livelihoods Project - Map Generator</div>
+        </div>
         <div id="control-panel">
             <div id="map-settings">
                 <div class="dropdown-row">
@@ -44,112 +46,132 @@
                     </div>
                 </div>
                 <div id="raster-list">
-                    <p class="cp-label">Hazard Layer: </p>
+                    <div class="hazard-buttons" style="display: flex;">
+                        <p class="cp-label">Hazard Layer: </p>
 
-                    <label class="raster-option">
-                        <input type="radio" name="hazard-layer" value="none" checked>
-                        None
-                    </label>
+                        <label class="raster-option">
+                            <input type="radio" name="hazard-layer" value="none" checked>
+                            None
+                        </label>
 
-                    <label class="raster-option">
-                        <input type="radio" name="hazard-layer" value="flood">
-                        Flood
-                    </label>
+                        <label class="raster-option">
+                            <input type="radio" name="hazard-layer" value="flood">
+                            Flood
+                        </label>
 
-                    <label class="raster-option">
-                        <input type="radio" name="hazard-layer" value="avalanche">
-                        Avalanche
-                    </label>
+                        <label class="raster-option">
+                            <input type="radio" name="hazard-layer" value="avalanche">
+                            Avalanche
+                        </label>
 
-                    <label class="raster-option">
-                        <input type="radio" name="hazard-layer" value="landslide">
-                        Landslide
-                    </label>
-                    <label class="raster-option">
-                        <input type="radio" name="hazard-layer" value="earthquake">
-                        Earthquake
-                    </label>
-                    <div id="opacity-slider">
-                        <label for="opacity-range" id="opacity-label">Opacity:</label>
-                        <input type="range" id="opacity-range" min="0" max="100" step="1" value="50">
-                        <span id="opacity-value">50%</span>
+                        <label class="raster-option">
+                            <input type="radio" name="hazard-layer" value="landslide">
+                            Landslide
+                        </label>
+                        <label class="raster-option">
+                            <input type="radio" name="hazard-layer" value="earthquake">
+                            Earthquake
+                        </label>
                     </div>
+                    <div style="display: block; align-items: center;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <button onclick="changeMapTint('red-tint-layer')">Red Tint</button>
+                            <button onclick="changeMapTint('blue-tint-layer')">Blue Tint</button>
+                            <button onclick="changeMapTint('no-tint-layer')">Reset</button>
+                        </div>
+                        <div id="opacity-slider">
+                            <label for="opacity-range" id="opacity-label">Opacity:</label>
+                            <input type="range" id="opacity-range" min="0" max="100" step="1" value="50">
+                            <span id="opacity-value">50%</span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
             <div id="action-button">
-                <div><button id="download-pdf-btn">Download as PDF</button></div>
+                <div>
+                    <button class="action-btn download-btn" id="preview-pdf-btn">
+                        <span style="font-size: 13px;">🔍</span> Preview PDF
+                    </button>
+                </div>
+                <div>
+                    <button class="action-btn download-btn" id="download-pdf-btn">
+                        <span style="font-size: 13px;">📥</span> Download PDF
+                    </button>
+                </div>
             </div>
         </div>
         <div id="main-container">
             <div id="map"></div>
         </div>
 
-        <div id="pdf-content">
-            <div class="row-1">
-                <img id="wb-logo" src="/assets/img/globe.png" alt="World Bank Logo" />
-                <div id="layout-title"></div>
+        <div id="pdf-wrapper">
+            <div class="preview-action-buttons">
+                <button class="action-btn download-btn" onclick="downloadPdf()">
+                    <span style="font-size: 16px;">📥</span> Download PDF
+                </button>
+                <button class="action-btn close-btn" onclick="hidePreview()">
+                    <span style="font-size: 16px;">✖</span> Close
+                </button>
             </div>
-            <div class="row-2">
-                <div id="map-container"></div>
-                <div id="right-panel">
-                    <div id="right-panel-row-1">
-                        <p id="hazard-legend-title"></p>
-                        <div class="legend">
-                            <div class="legend-item">
-                                <span class="legend-color high"></span>
-                                <span class="legend-label high"></span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-color medium"></span>
-                                <span class="legend-label medium"></span>
-                            </div>
+            <div id="pdf-content">
+                <div class="row-1">
+                    <img id="wb-logo" src="/assets/img/globe.png" alt="World Bank Logo" />
+                    <div id="layout-title"></div>
+                </div>
+                <div class="row-2">
+                    <div id="map-container"></div>
+                    <div id="right-panel">
+                        <div id="right-panel-row-1">
+                            <p id="hazard-legend-title"></p>
 
-                            <div class="legend-item">
-                                <span class="legend-color low"></span>
-                                <span class="legend-label low"></span>
-                            </div>
-                            <!-- <div class="legend-item">
-                                <span class="legend-color no-data"></span>
-                                <span class="legend-label no-data"></span>
-                            </div> -->
-                            <p id="admin-legend-title"></p>
-                            <div>
-                                <div class="legend-item">
-                                    <span class="legend-color admin-prov"></span>
-                                    <span class="legend-label admin-prov"></span>
+                            <div class="legend">
+                                <div id="hazard-legend-items">
+                                    <div class="legend-item">
+                                        <span class="legend-color"></span>
+                                        <span class="legend-label"></span>
+                                    </div>
                                 </div>
-                                <div class="legend-item">
-                                    <span class="legend-color admin-dist"></span>
-                                    <span class="legend-label admin-dist"></span>
-                                </div>
-                                <div class="legend-item">
-                                    <span class="legend-color admin-comm"></span>
-                                    <span class="legend-label admin-comm"></span>
+                                <p id="admin-legend-title"></p>
+                                <div>
+                                    <div class="legend-item">
+                                        <span class="legend-color admin-prov"></span>
+                                        <span class="legend-label admin-prov"></span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color admin-dist"></span>
+                                        <span class="legend-label admin-dist"></span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color admin-comm"></span>
+                                        <span class="legend-label admin-comm"></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div id="right-panel-row-2">
-                        <p id="active-raster"></p>
-                        <p id="raster-info"></p>
-                    </div>
-                </div>
-            </div>
-            <div id="footer" class="row-3">
-                <div id="footer-column-1">
-                    <p id="footer-text">The boundaries and names shown and the designations used on this map do not
-                        imply official endorsement or acceptance by the World Bank Group.</p>
-                    <div id="foot-c1-r2">
-                        <p id="footer-date"></p>
-                        <p id="footer-contact"><span style="font-weight:bold">Feedback: </span><a
-                                href="mailto:rariadelafosse@worldbank.org">rariadelafosse@worldbank.org</a></p>
+                        <div id="right-panel-row-2">
+                            <p id="active-raster"></p>
+                            <textarea id="raster-info"></textarea>
+                        </div>
                     </div>
                 </div>
-                <div id="footer-column-2">
-                    <div id="scale-bar"></div>
+                <div id="footer" class="row-3">
+                    <div id="footer-column-1">
+                        <p id="footer-text">The boundaries and names shown and the designations used on this map do not
+                            imply official endorsement or acceptance by the World Bank Group.</p>
+                        <div id="foot-c1-r2">
+                            <p id="footer-date"></p>
+                            <p id="footer-contact"><span style="font-weight:bold">Feedback: </span><a
+                                    href="mailto:rariadelafosse@worldbank.org">rariadelafosse@worldbank.org</a></p>
+                        </div>
+                    </div>
+                    <div id="footer-column-2">
+                        <div id="scale-bar"></div>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 
     <!-- External Libraries -->
@@ -161,6 +183,37 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- App JS -->
     <script src="js/map.js"></script>
+
+    <script>
+        var globalTintClass = '';
+
+        document.getElementById('preview-pdf-btn').addEventListener('click', previewPDF);
+        // Script for previewing the snapshot result
+        function previewPDF() {
+            createPDFLayout(false)
+            document.getElementById('pdf-wrapper').style.zIndex = 1000;
+        }
+        function hidePreview() {
+            document.getElementById('pdf-wrapper').style.zIndex = -1;
+        }
+
+        // 2. Function to change the tint
+        function changeMapTint(colorClass) {
+
+            let container = currentHazardLayer.getContainer();
+
+            // Remove any existing tint classes
+            container.classList.remove('red-tint-layer', 'blue-tint-layer', 'no-tint-layer');
+
+            // Add the new tint class
+            container.classList.add(colorClass);
+
+            // Add filter to Legend items
+            globalTintClass = colorClass;
+
+        }
+
+    </script>
 </body>
 
 </html>

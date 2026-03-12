@@ -5,13 +5,10 @@
             "description": "No hazard Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
         },
         "legend": {
-            "title": "No Hazard",
-            "highLabel": "",
-            "mediumLabel": "",
-            "lowLabel": "",
-            "highColor": "",
-            "mediumColor": "",
-            "lowColor": ""
+            "title": "No Hazard Selected",
+            "type": "categorical",
+            "labels": [],
+            "colors": []
         }
     },
     "Flood Hazard": {
@@ -21,12 +18,9 @@
         },
         "legend": {
             "title": "Flood Hazard",
-            "highLabel": "",
-            "mediumLabel": "",
-            "lowLabel": "",
-            "highColor": "",
-            "mediumColor": "",
-            "lowColor": ""
+            "type": "categorical",
+            "labels": ["high", "medium", "low"],
+            "colors": ["#000000", "#7f7f7f", "#ffffff"]
         }
     },
     "Avalanche Hazard": {
@@ -36,6 +30,7 @@
         },
         "legend": {
             "title": "Avalanche Hazard",
+            "type": "range",
             "highLabel": "",
             "mediumLabel": "",
             "lowLabel": "",
@@ -51,12 +46,9 @@
         },
         "legend": {
             "title": "Landslide Hazard (100-Year Return Period)",
-            "highLabel": "High Probability",
-            "mediumLabel": "Moderate Probability",
-            "lowLabel": "Low Probability",
-            "highColor": "#d7191b",
-            "mediumColor": "#ffad5d",
-            "lowColor": "#fffebd"
+            "type": "categorical",
+            "labels": ["Very low susceptibility", "Low susceptibility", "Moderate susceptibility", "Significant susceptibility"],
+            "colors": ["#abdda4", "#ffffbf", "#fdae61", "#bd1e20"]
         }
     },
     "Earthquake Hazard": {
@@ -66,12 +58,9 @@
         },
         "legend": {
             "title": "Earthquake Hazard",
-            "highLabel": "",
-            "mediumLabel": "",
-            "lowLabel": "",
-            "highColor": "",
-            "mediumColor": "",
-            "lowColor": ""
+            "type": "range",
+            "labels": ["High Probability", "Low Probability"],
+            "colors": ["#afafaf", "#111111"]
         }
     }
 }
