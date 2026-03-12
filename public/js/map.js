@@ -5,7 +5,7 @@ let map;
 let overlayLayers = {};
 let provincesData, districtsData;
 let provincesLayer, districtsLayer, communityLayer;
-let provincesColor = "#000000"; 
+let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
 let communitiesStroke = "#000000";
 let communitiesFill = "#bd1616";
@@ -71,7 +71,7 @@ function initMap() {
         overlay.style.display = 'none';
         enableMapInteraction();
     }); // Load simplified provinces first for faster initial load 
-    
+
     // ---- INITIALIZE LAYER CONTROL ----
     // Layer control will be initialized after baseMaps are set up
     layerControl = L.control.layers(baseMaps, overlayLayers, { position: 'topright' });
@@ -110,7 +110,7 @@ function getProvinces(quality, callback) {
             if (quality == 0) {
                 callback();  // Show map after simplified provinces load
                 getProvinces(1); // Load detailed provinces in background
-            } else  {
+            } else {
                 if (callback) callback();
             }
 
@@ -235,7 +235,7 @@ function renderCommunities(distId) {
                 },
                 onEachFeature: function (f, l) {
                     // console.log(f.properties);
-                    l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup'});
+                    l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
                 }
             }).addTo(map);
             overlayLayers['Communities'] = communityLayer;
@@ -349,6 +349,8 @@ document.querySelectorAll('input[name="hazard-layer"]')
             document.getElementById('active-raster').textContent = hazardLabel;
             document.getElementById('raster-info').textContent = hazardConfig[hazardLabel].text.description;
 
+            globalTintClass = ""
+
             toggleRaster(hazardLayer);
         });
     });
@@ -404,7 +406,51 @@ function buildLegend(activeAdminLayers = []) {
     let hazardLabel = rasterLabels[document.querySelector('input[name="hazard-layer"]:checked').value];
     let mapConfig = hazardConfig[hazardLabel];
     document.getElementById('hazard-legend-title').textContent = mapConfig.legend.title;
-    document.querySelector(".legend-color.high").style.backgroundColor = mapConfig.legend.highColor;
+    let legItemsContainer = document.getElementById('hazard-legend-items');
+    legItemsContainer.innerHTML = '';
+    
+
+    // Dynamically populate hte legend
+    if (mapConfig.legend.type === 'categorical') {
+        for (let i = 0; i < mapConfig.legend.labels.length; i++) {
+            let label = mapConfig.legend.labels[i];
+            let color = mapConfig.legend.colors[i];
+
+            let opacityVal = document.getElementById('opacity-range').value;
+
+            legItemsContainer.innerHTML += `
+            <div class="legend-item">
+                <span class="legend-color ${globalTintClass}" style="background-color: ${color}; display: block; opacity: ${opacityVal/100}"></span>
+                <span class="legend-label">${label}</span>
+            </div>
+            `
+
+        }
+    } else if (mapConfig.legend.type === 'range') {
+        let opacityVal = document.getElementById('opacity-range').value;
+        let colors = mapConfig.legend.colors;
+        let labels = mapConfig.legend.labels;
+        
+        // Joins the array of colors into a CSS gradient string 
+        // Example output: "linear-gradient(to bottom, #d7191b, #fffebd)"
+        let gradientString = `linear-gradient(to bottom, ${colors.join(', ')})`;
+
+        // Create the labels HTML by mapping over the labels array
+        let labelsHtml = labels.map(label => `<span class="legend-label">${label}</span>`).join('');
+
+        legItemsContainer.innerHTML += `
+        <div class="legend-item-range" style="display: flex; align-items: stretch; gap: 10px; margin-top: 5px;">
+            <div class="legend-gradient-bar ${globalTintClass}" 
+                 style="background: ${gradientString}; width: 24px; min-height: 80px; opacity: ${opacityVal/100}; border-radius: 4px;">
+            </div>
+            <div class="legend-range-labels" style="display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0;">
+                ${labelsHtml}
+            </div>
+        </div>
+        `;
+    }
+
+    /*document.querySelector(".legend-color.high").style.backgroundColor = mapConfig.legend.highColor;
     document.querySelector(".legend-label.high").textContent = mapConfig.legend.highLabel;
     document.querySelector(".legend-color.high").style.display = 'block';
 
@@ -415,8 +461,9 @@ function buildLegend(activeAdminLayers = []) {
 
     document.querySelector(".legend-color.low").style.backgroundColor = mapConfig.legend.lowColor;
     document.querySelector(".legend-label.low").textContent = mapConfig.legend.lowLabel;
-    document.querySelector(".legend-color.low").style.display = 'block';
+    document.querySelector(".legend-color.low").style.display = 'block';*/
 
+    //add admin legend data
     if (activeAdminLayers.length > 0) {
         document.getElementById('admin-legend-title').textContent = 'Administrative Data';
         activeAdminLayers.forEach(layerName => {
@@ -434,7 +481,7 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.admin-comm").style.backgroundColor = communitiesFill;
                 document.querySelector(".legend-label.admin-comm").textContent = 'Community';
             }
-        
+
         });
     }
 };
@@ -448,10 +495,10 @@ function resetLegend() {
 
 
 // ----------------------
-// DOWNLOAD
+// CREATE PDF LAYOUT
 // ----------------------
-downloadPdfBtn.addEventListener('click', function () {
 
+function createPDFLayout(download = true) {
     // const checkedRaster = document.querySelector('input[name="hazard-layer"]:checked');
     const mapElement = document.getElementById('map');
     const zoomControl = document.querySelector(".leaflet-control-zoom");
@@ -475,14 +522,14 @@ downloadPdfBtn.addEventListener('click', function () {
     // ---------------
     // BUILD LEGEND
     // ---------------
-    
+
     // Get list of active overlay layers to include in the legend
     let activeAdminLayers = Object.entries(overlayLayers)
         .filter(([key, layer]) => map.hasLayer(layer))
         .map(([key]) => key);
-    
+
     console.log("Active layers for legend:", activeAdminLayers);
-    
+
     buildLegend(activeAdminLayers);
 
 
@@ -492,10 +539,7 @@ downloadPdfBtn.addEventListener('click', function () {
     scaleBar.style.display = 'none';
 
     // Store original margins and remove them for capture (they include whitespace)
-    const originalMarginLeft = mapElement.style.marginLeft;
-    const originalMarginRight = mapElement.style.marginRight;
-    mapElement.style.marginLeft = '0';
-    mapElement.style.marginRight = '0';
+
 
     htmlToImage.toPng(mapElement)
         .then(function (dataUrl) {
@@ -504,8 +548,6 @@ downloadPdfBtn.addEventListener('click', function () {
             zoomControl.style.display = '';
             layerControl.style.display = '';
             scaleBar.style.display = '';
-            mapElement.style.marginLeft = originalMarginLeft;
-            mapElement.style.marginRight = originalMarginRight;
 
             const mapImg = new Image();
             mapImg.src = dataUrl;
@@ -543,8 +585,10 @@ downloadPdfBtn.addEventListener('click', function () {
 
             titleDiv.textContent = titleText;
             console.log("The Map Image has loaded, now generating PDF...");
-            downloadPdf();
-            
+
+            if (download) {
+                downloadPdf();
+            }
 
         })
 
@@ -555,6 +599,11 @@ downloadPdfBtn.addEventListener('click', function () {
             mapElement.style.marginRight = originalMarginRight;
             console.error('Failed:', err);
         });
+}
+
+
+downloadPdfBtn.addEventListener('click', function () {
+    createPDFLayout()
 });
 
 // ----------------------
@@ -576,7 +625,7 @@ function downloadPdf() {
             const margin = 5;
             pdf.addImage(dataUrl, 'PNG', margin, margin, 287, 200);
             pdf.save(`${titleText || 'hazard-map'}.pdf`);
-            resetLegend(); // Clear legend after PDF generation
+            //resetLegend(); // Clear legend after PDF generation
         })
         .catch(err => {
             // Restore original height in case of error

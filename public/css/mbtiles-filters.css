@@ -1,0 +1,19 @@
+/* Color Filters Mapping */
+.hazard-red, .red-tint-layer{ 
+  /* 1. contrast(0.5) pulls pure black and pure white into gray.
+    2. Your specific sepia, hue-rotate, saturate, and brightness apply the red tint.
+    3. contrast(2) pushes the dynamic range back out.
+  */
+  filter: contrast(0.55) sepia(100%) hue-rotate(-50deg) saturate(600%) brightness(0.8) contrast(2); 
+}
+
+.hazard-blue, .blue-tint-layer{ 
+  /* 1. contrast(0.5) turns black into dark gray and white into light gray.
+    2. sepia, hue-rotate, and saturate apply the blue tint to those new grays.
+    3. contrast(2) stretches the dynamic range back out so it doesn't look washed out.
+  */
+  filter: contrast(0.5) sepia(100%) hue-rotate(180deg) saturate(500%) contrast(2); 
+}
+.hazard-green, .green-tint-layer{ 
+    filter: sepia(100%) hue-rotate(80deg) saturate(400%) brightness(0.9); 
+}
