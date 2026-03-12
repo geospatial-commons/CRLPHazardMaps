@@ -47,8 +47,8 @@
         "legend": {
             "title": "Landslide Hazard (100-Year Return Period)",
             "type": "categorical",
-            "labels": ["High Probability", "Moderate Probability", "Low Probability", "No Probability"],
-            "colors": ["#d7191b", "#ffad5d", "#fffebd", "#0788d0"]
+            "labels": ["Very low susceptibility", "Low susceptibility", "Moderate susceptibility", "Significant susceptibility"],
+            "colors": ["#abdda4", "#ffffbf", "#fdae61", "#bd1e20"]
         }
     },
     "Earthquake Hazard": {
