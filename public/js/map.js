@@ -5,6 +5,10 @@ let map;
 let overlayLayers = {};
 let provincesData, districtsData;
 let provincesLayer, districtsLayer, communityLayer;
+let provincesColor = "#000000"; 
+let districtsColor = "#00E5FF";
+let communitiesStroke = "#000000";
+let communitiesFill = "#bd1616";
 let hazardLayer, currentHazardLayer;
 let hazardConfig = {};
 
@@ -125,14 +129,19 @@ function renderProvinces(selectedProvId) {
     if (!provincesData) return;
 
     provincesLayer = L.geoJSON(provincesData, {
-        style: function (f) {
-            var isHighlighted = (selectedProvId !== 'all' && f.properties.provID === selectedProvId);
-            return {
-                color: isHighlighted ? "#ff0000" : "#000000",
-                weight: isHighlighted ? 2 : 1,
-                fillOpacity: isHighlighted ? 0.0 : 0.0
-            };
+        style: {
+            color: provincesColor,
+            weight: 2,
+            fillOpacity: 0
         },
+        // style: function (f) {
+        //     var isHighlighted = (selectedProvId !== 'all' && f.properties.provID === selectedProvId);
+        //     return {
+        //         color: isHighlighted ? "#ff0000" : provincesColor,
+        //         weight: isHighlighted ? 2 : 1,
+        //         fillOpacity: isHighlighted ? 0.0 : 0.0
+        //     };
+        // },
         onEachFeature: function (f, l) {
             l.bindPopup(`<b>Province:</b> ${f.properties.name}`);
         }
@@ -158,16 +167,21 @@ function renderDistricts(data, selectedDistId) {
     console.log("Data passed to renderDistricts:", data);
 
     districtsLayer = L.geoJSON(data, {
-        style: function (f) {
-            // If a specific district is selected, highlight it and give it a thicker border. 
-            // Otherwise, show all districts with default styling. isHighlighted returns boolean.
-            var isHighlighted = (selectedDistId !== 'all' && f.properties.distID == selectedDistId);
-            return {
-                color: isHighlighted ? "#00eeff" : "#ffffff", // White borders for districts
-                weight: isHighlighted ? 3 : 1,
-                fillOpacity: isHighlighted ? 0 : 0
-            };
+        style: {
+            color: districtsColor,
+            weight: 1,
+            fillOpacity: 0
         },
+        // style: function (f) {
+        //     // If a specific district is selected, highlight it and give it a thicker border. 
+        //     // Otherwise, show all districts with default styling. isHighlighted returns boolean.
+        //     var isHighlighted = (selectedDistId !== 'all' && f.properties.distID == selectedDistId);
+        //     return {
+        //         color: isHighlighted ? "#00eeff" : districtsColor, // White borders for districts
+        //         weight: isHighlighted ? 3 : 1,
+        //         fillOpacity: isHighlighted ? 0 : 0
+        //     };
+        // },
         onEachFeature: function (f, l) {
             l.bindPopup(`<b>District:</b> ${f.properties.name}`);
         }
@@ -213,15 +227,15 @@ function renderCommunities(distId) {
                 pointToLayer: function (feature, latlng) {
                     return L.circleMarker(latlng, {
                         radius: 3,
-                        fillColor: "#ffffff",
-                        color: "#000000",
+                        fillColor: communitiesFill,
+                        color: communitiesStroke,
                         weight: 1,
                         fillOpacity: 0.9
                     });
                 },
                 onEachFeature: function (f, l) {
                     // console.log(f.properties);
-                    l.bindPopup(`<b>Community:</b> ${f.properties.name}`);
+                    l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup'});
                 }
             }).addTo(map);
             overlayLayers['Communities'] = communityLayer;
@@ -386,26 +400,53 @@ opacityRange.addEventListener('input', function () {
     }
 });
 
-function buildLegend() {
+function buildLegend(activeAdminLayers = []) {
     let hazardLabel = rasterLabels[document.querySelector('input[name="hazard-layer"]:checked').value];
     let mapConfig = hazardConfig[hazardLabel];
     document.getElementById('hazard-legend-title').textContent = mapConfig.legend.title;
-    document.getElementsByClassName("legend-color high")[0].style.backgroundColor = mapConfig.legend.highColor;
-    document.getElementsByClassName("legend-label high")[0].textContent = mapConfig.legend.highLabel;
-    document.getElementsByClassName("legend-color high")[0].style.display = 'block';
+    document.querySelector(".legend-color.high").style.backgroundColor = mapConfig.legend.highColor;
+    document.querySelector(".legend-label.high").textContent = mapConfig.legend.highLabel;
+    document.querySelector(".legend-color.high").style.display = 'block';
 
-    document.getElementsByClassName("legend-color medium")[0].style.backgroundColor = mapConfig.legend.mediumColor;
-    document.getElementsByClassName("legend-label medium")[0].textContent = mapConfig.legend.mediumLabel;
-    document.getElementsByClassName("legend-color medium")[0].style.display = 'block';
+    document.querySelector(".legend-color.medium").style.backgroundColor = mapConfig.legend.mediumColor;
+    document.querySelector(".legend-label.medium").textContent = mapConfig.legend.mediumLabel;
+    document.querySelector(".legend-color.medium").style.display = 'block';
 
 
-    document.getElementsByClassName("legend-color low")[0].style.backgroundColor = mapConfig.legend.lowColor;
-    document.getElementsByClassName("legend-label low")[0].textContent = mapConfig.legend.lowLabel;
-    document.getElementsByClassName("legend-color low")[0].style.display = 'block';
+    document.querySelector(".legend-color.low").style.backgroundColor = mapConfig.legend.lowColor;
+    document.querySelector(".legend-label.low").textContent = mapConfig.legend.lowLabel;
+    document.querySelector(".legend-color.low").style.display = 'block';
 
-    console.log("Selected hazard hazardLabel for legend:", hazardLabel);
+    if (activeAdminLayers.length > 0) {
+        document.getElementById('admin-legend-title').textContent = 'Administrative Data';
+        activeAdminLayers.forEach(layerName => {
+            if (layerName === 'Provinces') {
+                document.querySelector(".legend-color.admin-prov").style.display = 'block';
+                document.querySelector(".legend-color.admin-prov").style.border = `2px solid ${provincesColor}`;
+                document.querySelector(".legend-label.admin-prov").textContent = 'Province';
+            } else if (layerName === 'Districts') {
+                document.querySelector(".legend-color.admin-dist").style.display = 'block';
+                document.querySelector(".legend-color.admin-dist").style.border = `2px solid ${districtsColor}`;
+                document.querySelector(".legend-label.admin-dist").textContent = 'District';
+            } else if (layerName === 'Communities') {
+                document.querySelector(".legend-color.admin-comm").style.display = 'block';
+                document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
+                document.querySelector(".legend-color.admin-comm").style.backgroundColor = communitiesFill;
+                document.querySelector(".legend-label.admin-comm").textContent = 'Community';
+            }
+        
+        });
+    }
+};
 
-}
+function resetLegend() {
+    document.getElementById('hazard-legend-title').textContent = '';
+    document.querySelectorAll('.legend-color').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.legend-label').forEach(el => el.textContent = '');
+    document.getElementById('admin-legend-title').textContent = '';
+};
+
+
 // ----------------------
 // DOWNLOAD
 // ----------------------
@@ -436,13 +477,13 @@ downloadPdfBtn.addEventListener('click', function () {
     // ---------------
     
     // Get list of active overlay layers to include in the legend
-    let activeLayers = Object.entries(overlayLayers)
+    let activeAdminLayers = Object.entries(overlayLayers)
         .filter(([key, layer]) => map.hasLayer(layer))
         .map(([key]) => key);
     
-    console.log("Active layers for legend:", activeLayers);
+    console.log("Active layers for legend:", activeAdminLayers);
     
-    buildLegend();
+    buildLegend(activeAdminLayers);
 
 
     // Hide zoom and layer control for screenshot
@@ -503,6 +544,7 @@ downloadPdfBtn.addEventListener('click', function () {
             titleDiv.textContent = titleText;
             console.log("The Map Image has loaded, now generating PDF...");
             downloadPdf();
+            
 
         })
 
@@ -534,6 +576,7 @@ function downloadPdf() {
             const margin = 5;
             pdf.addImage(dataUrl, 'PNG', margin, margin, 287, 200);
             pdf.save(`${titleText || 'hazard-map'}.pdf`);
+            resetLegend(); // Clear legend after PDF generation
         })
         .catch(err => {
             // Restore original height in case of error
