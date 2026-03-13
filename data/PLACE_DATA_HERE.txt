@@ -1,0 +1,12 @@
+Place the following data files in this directory:
+
+  - afghanistan_data.gpkg
+  - hzd-agf-fl_20rp-fathom.mbtiles
+  - landslide.mbtiles
+  - afg-ls_lav_100rp.mbtiles
+  - afg_eq-GEM.mbtiles
+
+Files are available on SharePoint at:
+~/Documents/Map Automator Development/CRLPHazardMaps Data
+
+See README.md for full setup instructions.
