@@ -21,6 +21,7 @@ const commSelect = document.getElementById('comm-select');
 const opacityRange = document.getElementById('opacity-range');
 const opacityValue = document.getElementById('opacity-value');
 const downloadPdfBtn = document.getElementById('download-pdf-btn')
+const resetFiltersBtn = document.getElementById('reset-filters-btn')
 const overlay = document.getElementById('loadingOverlay');
 
 
@@ -322,6 +323,34 @@ distSelect.addEventListener('change', function () {
     }
 });
 
+
+resetFiltersBtn.addEventListener('click', function () {
+    provSelect.value = 'all';
+    distSelect.innerHTML = '<option value="all">-- Select a Province --</option>';
+    commSelect.innerHTML = '<option value="all">-- Select a District --</option>';
+
+    districtsData = null;
+
+    if (districtsLayer) {
+        map.removeLayer(districtsLayer);
+        if (overlayLayers['Districts']) {
+            layerControl.removeLayer(districtsLayer);
+            delete overlayLayers['Districts'];
+        }
+        districtsLayer = null;
+    }
+    if (communityLayer) {
+        map.removeLayer(communityLayer);
+        if (overlayLayers['Communities']) {
+            layerControl.removeLayer(communityLayer);
+            delete overlayLayers['Communities'];
+        }
+        communityLayer = null;
+    }
+
+    renderProvinces('all');
+    map.setView([33.93, 67.68], 6);
+});
 
 commSelect.addEventListener('change', function () {
     if (this.value === 'all') return;

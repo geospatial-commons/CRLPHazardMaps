@@ -619,3 +619,14 @@ button {
     background-color: #dc3545;
     /* Turns red to indicate closing/canceling */
 }
+
+.reset-filters-btn {
+    background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
+    margin-left: 10px;
+    align-self: center;
+    white-space: nowrap;
+}
+
+.reset-filters-btn:hover {
+    background: linear-gradient(135deg, #5a6268 0%, #6c757d 100%);
+}
