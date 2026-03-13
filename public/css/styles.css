@@ -435,6 +435,25 @@ button {
     display: none;
 }
 
+.legend-gradient-bar {
+    width: 24px;
+    min-height: 80px;
+    border-radius: 4px;
+    margin-top: 11px; 
+    margin-bottom: 10px;
+}
+
+.legend-range-labels {
+    display: flex; 
+    flex-direction: 
+    column; justify-content: 
+    space-between; 
+    padding: 2px 0;
+}
+
+.legend-label {
+    font-size: 13px;
+}
 
 #footer-column-1 {
     flex: 4;
@@ -492,7 +511,7 @@ button {
 
 
 #raster-info {
-    font-size: 12px;
+    font-size: 13px;
     font-family: 'Open Sans Condensed', sans-serif;
     height: 90%;
     width: 100%;

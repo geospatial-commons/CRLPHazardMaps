@@ -441,9 +441,9 @@ function buildLegend(activeAdminLayers = []) {
         legItemsContainer.innerHTML += `
         <div class="legend-item-range" style="display: flex; align-items: stretch; gap: 10px; margin-top: 5px;">
             <div class="legend-gradient-bar ${globalTintClass}" 
-                 style="background: ${gradientString}; width: 24px; min-height: 80px; opacity: ${opacityVal/100}; border-radius: 4px;">
+                 style="background: ${gradientString}; opacity: ${opacityVal/100};">
             </div>
-            <div class="legend-range-labels" style="display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0;">
+            <div class="legend-range-labels" style="">
                 ${labelsHtml}
             </div>
         </div>

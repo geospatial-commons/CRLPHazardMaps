@@ -14,7 +14,7 @@
     "Flood Hazard": {
         "hazardLayer": "flood",
         "text": {
-            "description": "Flood Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo."
+            "description": "Flood: Fathom - 20 / 50 years Baseline Return Period"
         },
         "legend": {
             "title": "Flood Hazard",
@@ -26,26 +26,22 @@
     "Avalanche Hazard": {
         "hazardLayer": "avalanche",
         "text": {
-            "description": "Avalanche Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem."
+            "description": "Avalanche:MHRA - (100-Year Return Period)"       
         },
         "legend": {
             "title": "Avalanche Hazard",
             "type": "range",
-            "highLabel": "",
-            "mediumLabel": "",
-            "lowLabel": "",
-            "highColor": "",
-            "mediumColor": "",
-            "lowColor": ""
+            "labels": ["Very high hazard", "Very low hazard"],
+            "colors": ["#aaaaaa", "#000000"]
         }
     },
     "Landslide Hazard": {
         "hazardLayer": "landslide",
         "text": {
-            "description": "Landslide Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut quid ex ea commodi consequatur. Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur. At vero eos et accusamus et iusto odio dignissimos ducimus."
+            "description": "Landslide - Rainfall induced: GIRI/NGI - (20-Year Return Period)"
         },
         "legend": {
-            "title": "Landslide Hazard (100-Year Return Period)",
+            "title": "Landslide Hazard",
             "type": "categorical",
             "labels": ["Very low susceptibility", "Low susceptibility", "Moderate susceptibility", "Significant susceptibility"],
             "colors": ["#abdda4", "#ffffbf", "#fdae61", "#bd1e20"]
@@ -59,7 +55,7 @@
         "legend": {
             "title": "Earthquake Hazard",
             "type": "range",
-            "labels": ["High Probability", "Low Probability"],
+            "labels": ["-extreme shaking", "-violent shaking", "-severe shaking" , "-very strong shaking", "-moderate shaking"],
             "colors": ["#afafaf", "#111111"]
         }
     }
