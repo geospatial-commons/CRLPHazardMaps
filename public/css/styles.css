@@ -286,6 +286,7 @@ button {
     height: 100vh;
     z-index: -1;
     background: #000d;
+    box-sizing: border-box
 }
 
 #pdf-content {

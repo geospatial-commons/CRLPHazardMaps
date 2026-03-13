@@ -53,9 +53,9 @@
             "description": "Earthquake: openquake - (475 years Return Period)" },
         "legend": {
             "title": "Earthquake Hazard",
-            "type": "range",
-            "labels": ["-extreme shaking", "-violent shaking", "-severe shaking" , "-very strong shaking", "-moderate shaking"],
-            "colors": ["#afafaf", "#111111"]
+            "type": "categorical",
+            "labels": ["extreme shaking", "violent shaking", "severe shaking" , "very strong shaking", "moderate shaking"],
+            "colors": ["#8F0013", "#BD1E20", "#FDAE61", "#FFFFBF", "#ABDDA4"]
         }
     }
 }

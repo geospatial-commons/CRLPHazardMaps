@@ -280,6 +280,7 @@ provSelect.addEventListener('change', function () {
     if (provId === 'all') return; // Stop here if "Show All" was selected
 
     // Fetch districts belonging to this Province ID
+    overlay.style.display = 'flex'; //show loading it might take time to download district data
     fetch(`/api/districts/${provId}`)
         .then(res => res.json())
         .then(data => {
@@ -297,8 +298,9 @@ provSelect.addEventListener('change', function () {
             sortedDists.forEach(d => distSelect.appendChild(new Option(d.name, d.distId)));
 
             // Draw the new districts layer on top of the province layer
-            // console.log("triggering renderDistricts with data: ", data);
+            overlay.style.display = 'none'; // remove loading screen only after all data has been downlaoded and prcessed
             renderDistricts(data, 'all');
+
         })
         .catch(err => console.error("Error loading districts:", err));
 });
