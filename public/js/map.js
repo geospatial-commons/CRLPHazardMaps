@@ -350,7 +350,7 @@ document.querySelectorAll('input[name="hazard-layer"]')
             document.getElementById('raster-info').textContent = hazardConfig[hazardLabel].text.description;
 
             globalTintClass = ""
-
+            resetLegend(); // Clear legend before building new one with correct labels/colors
             toggleRaster(hazardLayer);
         });
     });
