@@ -2,7 +2,7 @@
 
 A semi-automated web application for generating hazard risk maps for community-level disaster resilience planning in Afghanistan. Developed for the World Bank's **Community Resilience and Livelihoods Program (CRLP)** in partnership with **UNOPS**.
 
-**Purpose:** Enable field teams to quickly produce professional, print-ready hazard maps for use in community consultations with disaster risk management groups — herders, elders, masons, builders, and farmers.
+**Purpose:** Enable field teams to quickly produce professional, print-ready hazard maps for use in community consultations with disaster risk management groups.
 
 ---
 
@@ -10,11 +10,11 @@ A semi-automated web application for generating hazard risk maps for community-l
 
 - Web-based interface for on-demand map generation
 - Multi-hazard layer support: earthquake, flood, landslide, avalanche, heat stress
-- Drill-down location selection: Province → District → Community
+- Drill-down location selection: Province -> District -> Community
 - Automated legend and scale generation
 - PDF export optimized for print
 - Integration with Fathom flood data, GEM earthquake data, ESA land cover, and other hazard datasets
-- Tile serving from local MBTiles files — no external tile service required
+- Tile serving from local MBTiles files, no external tile service required
 
 ---
 
@@ -90,13 +90,9 @@ This compiles the native `better-sqlite3` addon and installs all packages listed
 
 ### 3. Add the Data Files
 
-The spatial data files are not tracked in git and must be obtained separately. **Contact the project team for access** — files are available on SharePoint at:
+The spatial data files are not tracked in git and must be obtained separately. **Contact the project team for access**. Files are available on SharePoint at:
 
-```
-~/Documents/Map Automator Development/CRLPHazardMaps Data
-```
-
-Create a `data/` directory at the project root and place the following files inside it:
+Go to, or create, the `data/` directory at the project root and place the following files inside it:
 
 ```
 CRLPHazardMaps/
@@ -203,26 +199,6 @@ The server exposes the following endpoints (used internally by the map client):
 
 ---
 
-## Troubleshooting
-
-### `npm install` fails with a build error
-
-This is almost always a missing C++ toolchain. See the [Prerequisites](#2-c-build-tools-required-for-better-sqlite3) section. On Windows, make sure you have Visual Studio Build Tools with the C++ workload and that Python is on your PATH.
-
-### Server crashes on startup with a database error
-
-Check that all five files in the `data/` directory are present and named exactly as specified. The server opens each file at startup and will throw an error if any are missing or misnamed.
-
-### Map tiles do not appear
-
-Verify the MBTiles files are in `data/` and the server is running. Open the browser developer console (F12) and check the Network tab for failed `/tiles/...` requests.
-
-### `http://localhost:3000` shows "This site can't be reached"
-
-The server is not running. Run `node server.js` in the project directory and leave the terminal open while using the app.
-
----
-
 ## Contributing
 
-This repository is maintained by the CRLP geospatial team (Ivo and Adam). For issues or contributions, open a pull request or contact the team via the project SharePoint.
+This repository is maintained by the Afghanistan DRM team at the World Bank (@rydela | @Tomread87 | @adm-gis). For issues or contributions, open a pull request or contact the team via the project SharePoint and email. 
