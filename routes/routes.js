@@ -50,6 +50,38 @@ router.get('/tiles/:layer/:z/:x/:y.png', (req, res) => {
         res.status(500).send("Tile error");
     }
 });
+
+router.get('/tiles/contours/:z/:x/:y.pbf', (req, res) => {
+    
+    const z = parseInt(req.params.z);
+    const x = parseInt(req.params.x);
+    const y = Math.pow(2, z) - 1 - parseInt(req.params.y);
+
+    try {
+        const stmt = mbtilesDb['contours'].prepare(`
+            SELECT tile_data FROM tiles
+            WHERE zoom_level = ?
+            AND tile_column = ?
+            AND tile_row = ?
+        `);
+
+        const tile = stmt.get(z, x, y);
+        if (!tile) {
+            return res.status(204).end();
+        }
+
+        res.setHeader('Content-Type', 'application/x-protobuf');
+        res.setHeader('Content-Encoding', 'gzip');
+
+
+        res.send(tile.tile_data);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Tile error");
+    }
+});
+
 // API route to fetch all provinces
 router.get('/api/provinces/:quality', (req, res) => {
     const quality = req.params.quality; // 'simplified' or 'detailed'
@@ -160,5 +192,5 @@ router.get('/api/communities/:distId', (req, res) => {
         res.status(500).send("Database Error");
     }
 });
- 
+
 module.exports = router;

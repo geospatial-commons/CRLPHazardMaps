@@ -86,7 +86,25 @@ function initMap() {
 
     scaleBar.addTo(map);
     layerControl.addTo(map);
+
+    const contourLayer = L.vectorGrid.protobuf('/tiles/contours/{z}/{x}/{y}.pbf', {
+        minZoom: 12,
+        maxNativeZoom: 15,
+        maxZoom: 18,
+
+        vectorTileLayerStyles: {
+            contours: {
+                weight: 0.5,
+                color: '#080808'
+            }
+        }
+    });
+    overlayLayers['Contours'] = contourLayer;
+    layerControl.addOverlay(contourLayer, 'Contours');
 }
+
+
+
 
 function getProvinces(quality, callback) {
     fetch(`api/provinces/${quality}`)
@@ -439,7 +457,7 @@ function buildLegend(activeAdminLayers = []) {
     document.getElementById('hazard-legend-title').textContent = mapConfig.legend.title;
     let legItemsContainer = document.getElementById('hazard-legend-items');
     legItemsContainer.innerHTML = '';
-    
+
 
     // Dynamically populate hte legend
     if (mapConfig.legend.type === 'categorical') {
@@ -451,7 +469,7 @@ function buildLegend(activeAdminLayers = []) {
 
             legItemsContainer.innerHTML += `
             <div class="legend-item">
-                <span class="legend-color ${globalTintClass}" style="background-color: ${color}; display: block; opacity: ${opacityVal/100}"></span>
+                <span class="legend-color ${globalTintClass}" style="background-color: ${color}; display: block; opacity: ${opacityVal / 100}"></span>
                 <span class="legend-label">${label}</span>
             </div>
             `
@@ -461,7 +479,7 @@ function buildLegend(activeAdminLayers = []) {
         let opacityVal = document.getElementById('opacity-range').value;
         let colors = mapConfig.legend.colors;
         let labels = mapConfig.legend.labels;
-        
+
         // Joins the array of colors into a CSS gradient string 
         // Example output: "linear-gradient(to bottom, #d7191b, #fffebd)"
         let gradientString = `linear-gradient(to bottom, ${colors.join(', ')})`;
@@ -472,7 +490,7 @@ function buildLegend(activeAdminLayers = []) {
         legItemsContainer.innerHTML += `
         <div class="legend-item-range" style="display: flex; align-items: stretch; gap: 10px; margin-top: 5px;">
             <div class="legend-gradient-bar ${globalTintClass}" 
-                 style="background: ${gradientString}; opacity: ${opacityVal/100};">
+                 style="background: ${gradientString}; opacity: ${opacityVal / 100};">
             </div>
             <div class="legend-range-labels" style="">
                 ${labelsHtml}
