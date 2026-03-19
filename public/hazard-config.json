@@ -19,7 +19,7 @@
         "legend": {
             "title": "Flood Hazard",
             "type": "categorical",
-            "labels": ["high", "medium", "low"],
+            "labels": ["High hazard", "Medium hazard", "Low hazard"],
             "colors": ["#000000", "#7f7f7f", "#ffffff"]
         }
     },
@@ -30,9 +30,9 @@
         },
         "legend": {
             "title": "Avalanche Hazard",
-            "type": "range",
-            "labels": ["Very high hazard", "Very low hazard"],
-            "colors": ["#aaaaaa", "#000000"]
+            "type": "categorical",
+            "labels": ["Very high hazard", "High hazard", "Medium hazard", "Low hazard", "Very low hazard"],
+            "colors": ["#b14e5b", "#d16364", "#fec690", "#ffffc0", "#c4e7bf"]
         }
     },
     "Landslide Hazard": {
@@ -43,8 +43,8 @@
         "legend": {
             "title": "Landslide Hazard",
             "type": "categorical",
-            "labels": ["Very low susceptibility", "Low susceptibility", "Moderate susceptibility", "Significant susceptibility"],
-            "colors": ["#abdda4", "#ffffbf", "#fdae61", "#bd1e20"]
+            "labels": ["Significant susceptibility","Moderate susceptibility","Low susceptibility","Very low susceptibility"],
+            "colors": ["#bd1e20","#fdae61", "#ffffbf", "#abdda4" ]
         }
     },
     "Earthquake Hazard": {
@@ -54,8 +54,8 @@
         "legend": {
             "title": "Earthquake Hazard",
             "type": "categorical",
-            "labels": ["extreme shaking", "violent shaking", "severe shaking" , "very strong shaking", "moderate shaking"],
-            "colors": ["#8F0013", "#BD1E20", "#FDAE61", "#FFFFBF", "#ABDDA4"]
+            "labels": ["Extreme shaking", "Violent shaking", "Severe shaking" , "Very strong shaking", "Strong shaking", "Moderate shaking"],
+            "colors": ["#8F0013", "#BD1E20", "#FDAE61", "#FFFFBF", "#ABDDA4", "#669d2d"]
         }
     }
 }

@@ -104,8 +104,6 @@ function initMap() {
 }
 
 
-
-
 function getProvinces(quality, callback) {
     fetch(`api/provinces/${quality}`)
         .then(res => res.json())
@@ -498,19 +496,6 @@ function buildLegend(activeAdminLayers = []) {
         </div>
         `;
     }
-
-    /*document.querySelector(".legend-color.high").style.backgroundColor = mapConfig.legend.highColor;
-    document.querySelector(".legend-label.high").textContent = mapConfig.legend.highLabel;
-    document.querySelector(".legend-color.high").style.display = 'block';
-
-    document.querySelector(".legend-color.medium").style.backgroundColor = mapConfig.legend.mediumColor;
-    document.querySelector(".legend-label.medium").textContent = mapConfig.legend.mediumLabel;
-    document.querySelector(".legend-color.medium").style.display = 'block';
-
-
-    document.querySelector(".legend-color.low").style.backgroundColor = mapConfig.legend.lowColor;
-    document.querySelector(".legend-label.low").textContent = mapConfig.legend.lowLabel;
-    document.querySelector(".legend-color.low").style.display = 'block';*/
 
     //add admin legend data
     if (activeAdminLayers.length > 0) {
