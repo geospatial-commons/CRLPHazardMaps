@@ -238,6 +238,14 @@ function renderCommunities(distId) {
 
                 // Create Option: Store coordinates as a string value "lat,lon"
                 var opt = new Option(name, `${coords[1]},${coords[0]}`);
+
+                // Create a unique string combining name and coordinates
+                var uniqueIdentifier = `${name}_${coords[1]},${coords[0]}`;
+
+                // Set the data-combined attribute
+                opt.dataset.combined = uniqueIdentifier;
+                // (This outputs HTML like: data-combined="CommunityName_Lat,Lon")
+
                 commSelect.appendChild(opt);
             });
             communityLayer = L.geoJSON(data, {
@@ -253,6 +261,24 @@ function renderCommunities(distId) {
                 onEachFeature: function (f, l) {
                     // console.log(f.properties);
                     l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
+
+                    // Add the click event listener
+                    l.on('click', function (e) {
+                        const clickedName = f.properties.name;
+                        const clickedCoords = f.geometry.coordinates;
+
+                        // Reconstruct the exact same unique string for the clicked feature
+                        const targetCombined = `${clickedName}_${clickedCoords[1]},${clickedCoords[0]}`;
+
+                        // Loop through options and match against the new dataset attribute
+                        for (let i = 0; i < commSelect.options.length; i++) {
+                            if (commSelect.options[i].dataset.combined === targetCombined) {
+                                commSelect.selectedIndex = i;
+                                commSelect.dispatchEvent(new Event('change'));
+                                break;
+                            }
+                        }
+                    });
                 }
             }).addTo(map);
             overlayLayers['Communities'] = communityLayer;
@@ -634,7 +660,6 @@ function createPDFLayout(download = true) {
             console.error('Failed:', err);
         });
 }
-
 
 downloadPdfBtn.addEventListener('click', function () {
     createPDFLayout()
