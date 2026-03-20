@@ -529,6 +529,7 @@ button {
     height: 90%;
     width: 100%;
     box-sizing: border-box;
+    resize: none;
 }
 
 #loadingOverlay {
@@ -609,7 +610,8 @@ button {
 }
 
 /* Primary Action: Download Button */
-.download-btn {
+.download-btn,
+.preview-btn {
     background: linear-gradient(135deg, #004972 0%, #336D8E 100%);
     /* Professional Blue */
 }

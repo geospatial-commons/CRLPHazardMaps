@@ -22,6 +22,7 @@ const opacityRange = document.getElementById('opacity-range');
 const opacityValue = document.getElementById('opacity-value');
 const downloadPdfBtn = document.getElementById('download-pdf-btn')
 const resetFiltersBtn = document.getElementById('reset-filters-btn')
+const closeBtn = document.getElementById('close-btn');
 const overlay = document.getElementById('loadingOverlay');
 
 
@@ -559,6 +560,13 @@ function resetLegend() {
 // ----------------------
 
 function createPDFLayout(download = true) {
+    // Reset raster-info to default description
+    let checkedHazard = document.querySelector('input[name="hazard-layer"]:checked');
+    if (checkedHazard) {
+        let hazardLabel = rasterLabels[checkedHazard.value];
+        document.getElementById('raster-info').value = hazardConfig[hazardLabel].text.description;
+    }
+
     // const checkedRaster = document.querySelector('input[name="hazard-layer"]:checked');
     const mapElement = document.getElementById('map');
     const zoomControl = document.querySelector(".leaflet-control-zoom");
@@ -665,6 +673,14 @@ downloadPdfBtn.addEventListener('click', function () {
     createPDFLayout()
 });
 
+// closeBtn.addEventListener('click', function () {
+//     let checkedHazard = document.querySelector('input[name="hazard-layer"]:checked');
+//     if (checkedHazard) {
+//         let hazardLabel = rasterLabels[checkedHazard.value];
+//         console.log("closeBtn clicked - Hazard Label:", hazardLabel);
+//         document.getElementById('raster-info').value = hazardConfig[hazardLabel].text.description;
+//     }
+// });
 // ----------------------
 // DOWNLOAD PDF
 // ----------------------
@@ -774,7 +790,7 @@ async function downloadPdf() {
 
         // Draw Hazard Title
         pdf.setTextColor(0, 0, 0);
-        pdf.setFont("helvetica", "bold");
+        pdf.setFont('Open Sans', 'normal');
         pdf.setFontSize(11);
         pdf.text(mapConfig.legend.title, legendX, legendY);
         legendY += 8;
@@ -873,6 +889,15 @@ async function downloadPdf() {
         });
     }
 
+    // Include textarea with id raster-info in the PDF
+    const rasterInfo = document.getElementById('raster-info').value;
+    if (rasterInfo) {
+        const infoLines = pdf.splitTextToSize(rasterInfo, pdfWidth - mapWidth - margin * 4);
+        pdf.setFont("Open Sans", "normal");
+        pdf.setFontSize(10);
+        pdf.text(infoLines, legendX, legendY + 5);
+    }
+
     // --- D. DRAW THE FOOTER ---
     const footerY = margin * 3 + headerHeight + mapHeight;
     const footerSpacing = 4;
@@ -892,10 +917,11 @@ async function downloadPdf() {
     pdf.text(dateText, margin + padding, footerY + padding + footerSpacing * 2);
 
     pdf.setTextColor(0, 0, 255);
-    pdf.textWithLink("Feedback: rariadelafosse@worldbank.org", margin + padding, footerY + padding + footerSpacing * 3, { url: "mailto:rariadelafosse@worldbank.org" });
+    pdf.textWithLink("Feedback: INSERT EMAIL HERE", margin + padding, footerY + padding + footerSpacing * 3, { url: "mailto:tbd@worldbank.org" });
 
     // --- E. SAVE THE PDF ---
     pdf.save(`${titleText}.pdf`);
+
 }
 // Helper function to fetch a font file and convert it to Base64
 async function fetchFontAsBase64(url) {
