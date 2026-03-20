@@ -20,7 +20,7 @@
             "title": "Flood Hazard",
             "type": "categorical",
             "labels": ["High hazard", "Medium hazard", "Low hazard"],
-            "colors": ["#000000", "#7f7f7f", "#ffffff"]
+            "colors": ["#fdae61", "#ffffbf", "#abdda4"]
         }
     },
     "Avalanche Hazard": {

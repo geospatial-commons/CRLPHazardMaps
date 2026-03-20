@@ -10,7 +10,7 @@ const db = new Database(path.join(__dirname, 'data/afghanistan_data.gpkg'), {
 
 const mbtilesDb =
 {
-    flood:      new Database(path.join(__dirname, 'data/hzd-agf-fl_20rp-fathom.mbtiles'), { readonly: true }),
+    flood:      new Database(path.join(__dirname, 'data/RC-Agf-fl-FAT_20rp.mbtiles'), { readonly: true }),
     landslide:  new Database(path.join(__dirname, 'data/landslide_20rp.mbtiles'), { readonly: true }),
     avalanche:  new Database(path.join(__dirname, 'data/avalanche_100rp.mbtiles'), { readonly: true }),
     earthquake: new Database(path.join(__dirname, 'data/v2023_1_pga_475_rock_3min_afg_rc_3857.mbtiles'), { readonly: true }),
