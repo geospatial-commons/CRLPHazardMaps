@@ -108,7 +108,7 @@
 
         <div id="pdf-wrapper">
             <div class="preview-action-buttons">
-                <button class="action-btn download-btn" onclick="downloadPdf()">
+                <button class="action-btn download-btn" onclick="createPdfLayout(true)">
                     <span style="font-size: 16px;">📥</span> Download PDF
                 </button>
                 <button class="action-btn close-btn" id="close-btn" onclick="hidePreview()">
@@ -184,7 +184,8 @@
         crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- App JS -->
-    <script src="js/map.js"></script>
+    <script type="module" src="js/pdf-export.js"></script>
+    <script type="module" src="js/map.js"></script>
 
     <script>
         var globalTintClass = '';
@@ -192,7 +193,7 @@
         document.getElementById('preview-pdf-btn').addEventListener('click', previewPDF);
         // Script for previewing the snapshot result
         function previewPDF() {
-            createPDFLayout(false)
+            createPdfLayout(false)
             document.getElementById('pdf-wrapper').style.zIndex = 1000;
         }
         function hidePreview() {
