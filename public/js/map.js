@@ -559,6 +559,10 @@ function resetLegend() {
 // CREATE PDF LAYOUT
 // ----------------------
 
+let mapImgWidthPx = null;
+let scaleBarText = null;
+let scaleBarWidth = null;
+
 function createPDFLayout(download = true) {
     // Reset raster-info to default description
     let checkedHazard = document.querySelector('input[name="hazard-layer"]:checked');
@@ -572,8 +576,9 @@ function createPDFLayout(download = true) {
     const zoomControl = document.querySelector(".leaflet-control-zoom");
     const layerControl = document.querySelector(".leaflet-control-layers");
     const scaleBar = document.querySelector(".leaflet-control-scale-line");
-    const scaleBarWidth = document.querySelector(".leaflet-control-scale-line").style.width;
-    const scaleBarText = document.querySelector(".leaflet-control-scale-line").textContent;
+    scaleBarWidth = document.querySelector(".leaflet-control-scale-line").style.width;
+    scaleBarText = document.querySelector(".leaflet-control-scale-line").textContent;
+
 
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
@@ -607,7 +612,10 @@ function createPDFLayout(download = true) {
     scaleBar.style.display = 'none';
 
     // Store original margins and remove them for capture (they include whitespace)
-
+    const originalMarginLeft = mapElement.style.marginLeft;
+    const originalMarginRight = mapElement.style.marginRight;
+    mapElement.style.marginLeft = '0';
+    mapElement.style.marginRight = '0';
 
     htmlToImage.toPng(mapElement)
         .then(function (dataUrl) {
@@ -620,6 +628,7 @@ function createPDFLayout(download = true) {
             const mapImg = new Image();
             mapImg.src = dataUrl;
             mapImg.id = "map-image";
+
 
 
             mapContainerLayout.innerHTML = '';
@@ -722,7 +731,6 @@ async function downloadPdf() {
     const logoImg = document.getElementById('wb-logo');
     const titleText = document.getElementById('layout-title').textContent || 'Map';
     const dateText = document.getElementById('footer-date').innerText || '';
-
     const { jsPDF, GState } = window.jspdf;
     const pdf = new jsPDF({
         orientation: 'landscape',
@@ -736,6 +744,16 @@ async function downloadPdf() {
     const mapWidth = 220;
     const pdfWidth = 297;
     const padding = 2;
+    mapImgWidthPx = document.getElementById('map-image').naturalWidth; // Get the original pixel width of the map image
+    const mmPerPixel = mapWidth / mapImgWidthPx; // Convert pixel dimensions to mm for PDF
+    console.log("Map image width in pixels:", mapImgWidthPx);
+    console.log("Calculated mm per pixel:", mmPerPixel);
+    let scaleBarWidthmm = parseFloat(scaleBarWidth) * mmPerPixel; // Convert scale bar width from pixels to mm for PDF
+    console.log("Scale bar width in mm for PDF:", scaleBarWidthmm);
+
+    let checkedHazard = document.querySelector('input[name="hazard-layer"]:checked');
+    let hazardLabel = rasterLabels[checkedHazard.value];
+    let mapConfig = hazardConfig[hazardLabel];
 
     // --- LOAD CUSTOM FONT ---
     try {
@@ -746,6 +764,23 @@ async function downloadPdf() {
     } catch (err) {
         console.error("Could not load Open Sans font", err);
         pdf.setFont('helvetica', 'normal');
+    }
+
+    // // LOAD CUSTOM BOLD FONT
+    try {
+        const fontBase64Bold = await fetchFontAsBase64('/assets/fonts/OpenSans-Bold.ttf');
+        pdf.addFileToVFS('OpenSans-Bold.ttf', fontBase64Bold);
+        pdf.addFont('OpenSans-Bold.ttf', 'Open Sans', 'bold');
+    } catch (err) {
+        console.error("Could not load Open Sans Bold font", err);
+    }
+
+    try {
+        const fontBase64Condensed = await fetchFontAsBase64('/assets/fonts/OpenSans_Condensed-Regular.ttf');
+        pdf.addFileToVFS('OpenSans_Condensed-Regular.ttf', fontBase64Condensed);
+        pdf.addFont('OpenSans_Condensed-Regular.ttf', 'Open Sans Condensed', 'normal');
+    } catch (err) {
+        console.error("Could not load Open Sans Condensed font", err);
     }
 
     pdf.setDrawColor(50, 50, 50);
@@ -759,9 +794,11 @@ async function downloadPdf() {
         pdf.addImage(logoImg, 'PNG', margin + 2, margin + 2, 8, 8);
     }
 
+    pdf.setFont('Open Sans', 'bold');
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(15);
     pdf.text(titleText, margin + 15, margin + 8);
+    pdf.setFont('Open Sans', 'normal');
 
     // --- B. ADD THE MAP IMAGE ---
     const mapY = margin + 14;
@@ -776,11 +813,8 @@ async function downloadPdf() {
     pdf.rect(legendX - 2, mapY, pdfWidth - mapWidth - margin * 3, mapHeight, 'S');
 
     // 1. Get Hazard Data
-    let checkedHazard = document.querySelector('input[name="hazard-layer"]:checked');
-    if (checkedHazard) {
-        let hazardLabel = rasterLabels[checkedHazard.value];
-        let mapConfig = hazardConfig[hazardLabel];
 
+    if (checkedHazard) {
         // Grab the opacity value from your slider (convert from 0-100 to 0.0-1.0)
         let opacityVal = document.getElementById('opacity-range').value / 100;
 
@@ -790,7 +824,7 @@ async function downloadPdf() {
 
         // Draw Hazard Title
         pdf.setTextColor(0, 0, 0);
-        pdf.setFont('Open Sans', 'normal');
+        pdf.setFont('Open Sans', 'bold');
         pdf.setFontSize(11);
         pdf.text(mapConfig.legend.title, legendX, legendY);
         legendY += 8;
@@ -817,7 +851,6 @@ async function downloadPdf() {
                 legendY += 7; // Move down for the next item
             }
         }
-        // Draw Range Labels (Simulate Gradient)
         // Draw Range Labels (Simulate Gradient)
         else if (mapConfig.legend.type === 'range') {
             let colors = mapConfig.legend.colors;
@@ -856,11 +889,10 @@ async function downloadPdf() {
     if (activeAdminLayers.length > 0) {
         legendY += 5; // Add spacing before admin section
 
-        pdf.setFont("helvetica", "bold");
+        pdf.setFont("Open Sans", "bold");
         pdf.setFontSize(11);
         pdf.text('Administrative Data', legendX, legendY);
         legendY += 8;
-
         pdf.setFont("Open Sans", "normal");
         pdf.setFontSize(10);
 
@@ -889,12 +921,17 @@ async function downloadPdf() {
         });
     }
 
+    console.log(mapConfig)
+    pdf.setFont("Open Sans", "bold");
+    pdf.setFontSize(11);
+    pdf.text(mapConfig.legend.title, legendX, legendY + 5);
+    legendY += 8;
     // Include textarea with id raster-info in the PDF
     const rasterInfo = document.getElementById('raster-info').value;
     if (rasterInfo) {
-        const infoLines = pdf.splitTextToSize(rasterInfo, pdfWidth - mapWidth - margin * 4);
-        pdf.setFont("Open Sans", "normal");
+        pdf.setFont('Open Sans Condensed', 'normal');
         pdf.setFontSize(10);
+        const infoLines = pdf.splitTextToSize(rasterInfo, pdfWidth - mapWidth - margin * 4);
         pdf.text(infoLines, legendX, legendY + 5);
     }
 
@@ -909,15 +946,31 @@ async function downloadPdf() {
 
     pdf.setFontSize(8);
 
-    pdf.setFont("helvetica", "italic");
-    pdf.text(`The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the World Bank Group.`, margin + padding, footerY + padding + footerSpacing);
-
     pdf.setFont("Open Sans", "normal");
+    pdf.text(`The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the World Bank Group.`, margin + padding, footerY + padding + footerSpacing);
     pdf.setTextColor(0, 0, 0);
     pdf.text(dateText, margin + padding, footerY + padding + footerSpacing * 2);
-
     pdf.setTextColor(0, 0, 255);
     pdf.textWithLink("Feedback: INSERT EMAIL HERE", margin + padding, footerY + padding + footerSpacing * 3, { url: "mailto:tbd@worldbank.org" });
+    
+
+    // ADD SCALE BAR
+    const scaleSegmentWidth = scaleBarWidthmm / 2;
+    const scaleHeight = 4;
+    const rightEdge = pdfWidth - margin * 2;
+    const scaleCentreX = (legendX + rightEdge) / 2;
+    const scaleStartX = scaleCentreX - scaleSegmentWidth;
+    // left (filled)
+    pdf.setFillColor('#004972');
+    pdf.rect(scaleStartX, footerY + footerSpacing * 2, scaleSegmentWidth, scaleHeight, "F");
+    // right (empty)
+    pdf.setDrawColor('#004972');
+    pdf.rect(scaleCentreX, footerY + footerSpacing * 2, scaleSegmentWidth, scaleHeight);
+    pdf.setTextColor('#004972')
+    pdf.setFont('Open Sans', 'bold');
+    console.log(scaleBarText);
+    pdf.text(scaleBarText, scaleCentreX, footerY + 7, {align: 'center'});
+
 
     // --- E. SAVE THE PDF ---
     pdf.save(`${titleText}.pdf`);
