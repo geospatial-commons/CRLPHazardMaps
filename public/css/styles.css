@@ -42,7 +42,7 @@ button {
     flex-direction: column;
     min-height: 100vh;
     width: 100%;
-    background-color: #fff;
+    background-color: #dddddd;
 }
 
 #main-container {
@@ -66,31 +66,24 @@ button {
     flex-direction: row;
     width: 100%;
     box-sizing: border-box;
-    /* overflow-y: auto; */
     background: #B2C8D5;
     border: 1px solid #004972;
-    /* border-radius: 4px; */
     padding: 4px;
     margin: 0px 0px 3px 0px;
-    ;
     margin-left: auto;
     margin-right: auto;
     justify-content: center;
 }
 
-
-
 #opacity-slider {
     display: flex;
     align-items: center;
-    /*margin-left: 20px;*/
 }
 
 #greeting {
     font-size: 1.2em;
     font-weight: bold;
     margin-bottom: 10px;
-
 }
 
 #map-settings {
@@ -190,7 +183,6 @@ button {
 #opacity-range::-webkit-slider-thumb:hover {
     transform: scale(1.2);
 }
-
 
 .raster-option {
     display: block;
@@ -567,12 +559,6 @@ button {
 .loading-text {
     margin-top: 15px;
 }
-
-
-/* Hide helper class
-.hidden {
-  display: none !important;
-} */
 
 
 /* Container to group and position the buttons */

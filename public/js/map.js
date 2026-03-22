@@ -1,5 +1,4 @@
-
-import { downloadPdf, fetchFontAsBase64 } from './pdf-export.js';
+import { downloadPdf } from './pdf-export.js';
 
 // ----------------------
 // GLOBAL VARIABLES
@@ -15,9 +14,10 @@ let communitiesFill = "#bd1616";
 let hazardLayer, currentHazardLayer;
 let hazardConfig = {};
 let layoutConfig = {};
-
 let baseMaps = {};
 let layerControl;
+let scaleBarText;
+let scaleBarWidth;
 
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
@@ -26,10 +26,7 @@ const opacityRange = document.getElementById('opacity-range');
 const opacityValue = document.getElementById('opacity-value');
 const downloadPdfBtn = document.getElementById('download-pdf-btn')
 const resetFiltersBtn = document.getElementById('reset-filters-btn')
-const closeBtn = document.getElementById('close-btn');
 const overlay = document.getElementById('loadingOverlay');
-
-
 const rasterLabels = {
     'none': 'None',
     'flood': 'Flood Hazard',
@@ -37,7 +34,6 @@ const rasterLabels = {
     'landslide': 'Landslide Hazard',
     'earthquake': 'Earthquake Hazard'
 };
-
 
 // ----------------------
 // INITIALIZE MAP
@@ -71,7 +67,6 @@ function initMap() {
         .then(data => {
             hazardConfig = data;
         });
-
 
     getProvinces(0, () => {
         overlay.style.display = 'none';
@@ -108,7 +103,6 @@ function initMap() {
     layerControl.addOverlay(contourLayer, 'Contours');
 }
 
-
 function getProvinces(quality, callback) {
     fetch(`api/provinces/${quality}`)
         .then(res => res.json())
@@ -127,11 +121,12 @@ function getProvinces(quality, callback) {
                 });
             }
 
-            renderProvinces('all');
+            renderProvinces('all', quality); // Zoom to country level only for simplified provinces
 
             if (quality == 0) {
                 callback();  // Show map after simplified provinces load
-                getProvinces(1); // Load detailed provinces in background
+                quality = 1; // Then load detailed provinces in background without blocking the UI
+                getProvinces(quality); // Load detailed provinces in background
             } else {
                 if (callback) callback();
             }
@@ -143,7 +138,7 @@ function getProvinces(quality, callback) {
         });
 }
 
-function renderProvinces(selectedProvId) {
+function renderProvinces(selectedProvId, quality) {
     if (provincesLayer) {
         map.removeLayer(provincesLayer);
         layerControl.removeLayer(provincesLayer);
@@ -160,15 +155,15 @@ function renderProvinces(selectedProvId) {
             l.bindPopup(`<b>Province:</b> ${f.properties.name}`);
         }
     }).addTo(map)
+
     overlayLayers['Provinces'] = provincesLayer;
     layerControl.addOverlay(provincesLayer, 'Provinces');
 
     // Zoom to whole country if 'all' is selected
-    // if (selectedProvId === 'all' && provincesLayer.getLayers().length > 0) {
-    //     map.fitBounds(provincesLayer.getBounds(), { padding: [30, 30] });
-    // }
+    if (selectedProvId === 'all' && quality == 0) {
+        map.fitBounds(provincesLayer.getBounds(), { padding: [30, 30] });
+    }
 };
-
 
 // Renders the fetched Districts ON TOP of the Province
 function renderDistricts(data, selectedDistId) {
@@ -206,7 +201,6 @@ function renderDistricts(data, selectedDistId) {
 }
 
 function renderCommunities(distId) {
-    // console.log(distId);
     if (communityLayer) map.removeLayer(communityLayer);
     if (!distId) return;
 
@@ -246,7 +240,6 @@ function renderCommunities(distId) {
                     });
                 },
                 onEachFeature: function (f, l) {
-                    // console.log(f.properties);
                     l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
 
                     // Add the click event listener
@@ -272,7 +265,6 @@ function renderCommunities(distId) {
             layerControl.addOverlay(communityLayer, 'Communities');
         });
 }
-
 
 function disableMapInteraction() {
     map.dragging.disable();
@@ -306,7 +298,10 @@ provSelect.addEventListener('change', function () {
 
     renderProvinces(provId);
 
-    if (provId === 'all') return; // Stop here if "Show All" was selected
+    if (provId === 'all') {
+        map.fitBounds(provincesLayer.getBounds(), { padding: [30, 30] });
+        return;
+    }
 
     // Fetch districts belonging to this Province ID
     overlay.style.display = 'flex'; //show loading it might take time to download district data
@@ -314,7 +309,6 @@ provSelect.addEventListener('change', function () {
         .then(res => res.json())
         .then(data => {
             districtsData = data;
-            // console.log("Fetched districts: ", districtsData.features);
 
             // Populate District Dropdown with Dist_Id_24 as the value
             let sortedDists = data.features.map(f => ({
@@ -322,7 +316,6 @@ provSelect.addEventListener('change', function () {
                 provId: f.properties.provID,
                 distId: f.properties.distID
             })).sort((a, b) => a.name.localeCompare(b.name));
-            // console.log(districtsData);
 
             sortedDists.forEach(d => distSelect.appendChild(new Option(d.name, d.distId)));
 
@@ -345,13 +338,11 @@ distSelect.addEventListener('change', function () {
         if (communityLayer) {
             map.removeLayer(communityLayer);
             layerControl.removeLayer(communityLayer);
-            console.log("Removed existing community layer before rendering new one");
         }
         renderCommunities(distId);
         commSelect.innerHTML = '<option value="all">-- Select District --</option>';
-    } 
+    }
 });
-
 
 resetFiltersBtn.addEventListener('click', function () {
     provSelect.value = 'all';
@@ -417,8 +408,6 @@ document.querySelectorAll('input[name="hazard-layer"]')
 
 
 function toggleRaster(hazardLayer) {
-    // console.log("Toggling raster layer:", hazardLayer);
-
     if (currentHazardLayer) {
         map.removeLayer(currentHazardLayer);
         currentHazardLayer = null;
@@ -428,7 +417,6 @@ function toggleRaster(hazardLayer) {
 }
 
 function showRaster(hazardLayer) {
-    // console.log("Showing raster layer:", hazardLayer);
     if (hazardLayer === 'none') return;
 
     overlay.style.display = 'flex';
@@ -469,13 +457,11 @@ function buildLegend(activeAdminLayers = []) {
     let legItemsContainer = document.getElementById('hazard-legend-items');
     legItemsContainer.innerHTML = '';
 
-
-    // Dynamically populate hte legend
+    // Dynamically populate the legend
     if (mapConfig.legend.type === 'categorical') {
         for (let i = 0; i < mapConfig.legend.labels.length; i++) {
             let label = mapConfig.legend.labels[i];
             let color = mapConfig.legend.colors[i];
-
             let opacityVal = document.getElementById('opacity-range').value;
 
             legItemsContainer.innerHTML += `
@@ -484,7 +470,6 @@ function buildLegend(activeAdminLayers = []) {
                 <span class="legend-label">${label}</span>
             </div>
             `
-
         }
     } else if (mapConfig.legend.type === 'range') {
         let opacityVal = document.getElementById('opacity-range').value;
@@ -540,13 +525,9 @@ function resetLegend() {
     document.getElementById('admin-legend-title').textContent = '';
 };
 
-
 // ----------------------
-// CREATE PDF LAYOUT
+// CREATE PDF PREVIEW LAYOUT
 // ----------------------
-let scaleBarText = null;
-let scaleBarWidth = null;
-
 function createPdfLayout(download = true) {
     // Reset raster-info to default description
     let checkedHazard = document.querySelector('input[name="hazard-layer"]:checked');
@@ -555,38 +536,32 @@ function createPdfLayout(download = true) {
         document.getElementById('raster-info').value = hazardConfig[hazardLabel].text.description;
     }
 
-    // const checkedRaster = document.querySelector('input[name="hazard-layer"]:checked');
     const mapElement = document.getElementById('map');
     const zoomControl = document.querySelector(".leaflet-control-zoom");
     const layerControl = document.querySelector(".leaflet-control-layers");
     const scaleBar = document.querySelector(".leaflet-control-scale-line");
-    scaleBarWidth = document.querySelector(".leaflet-control-scale-line").style.width;
-    scaleBarText = document.querySelector(".leaflet-control-scale-line").textContent;
-
-
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
-
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
     });
-    document.getElementById('footer-date').innerHTML = `<strong>Date Created: </strong> ${formattedDate}`;
 
-    // ---------------
-    // BUILD LEGEND
-    // ---------------
+    document.getElementById('footer-date').innerHTML = `<strong>Date Created: </strong> ${formattedDate}`;
+    
+    scaleBarWidth = document.querySelector(".leaflet-control-scale-line").style.width;
+    scaleBarText = document.querySelector(".leaflet-control-scale-line").textContent;
+    // -------------------------
+    // BUILD LEGEND FOR PREVIEW
+    // -------------------------
     // Get list of active overlay layers to include in the legend
     let activeAdminLayers = Object.entries(overlayLayers)
         .filter(([key, layer]) => map.hasLayer(layer))
         .map(([key]) => key);
 
-    console.log("Active layers for legend:", activeAdminLayers);
-
     buildLegend(activeAdminLayers);
-
 
     // Hide zoom and layer control for screenshot
     zoomControl.style.display = 'none';
@@ -611,8 +586,6 @@ function createPdfLayout(download = true) {
             mapImg.src = dataUrl;
             mapImg.id = "map-image";
 
-
-
             mapContainerLayout.innerHTML = '';
             mapContainerLayout.appendChild(mapImg);
 
@@ -624,9 +597,7 @@ function createPdfLayout(download = true) {
                     </div>
             `;
 
-
             const titleDiv = document.getElementById('layout-title');
-
             const provName = provSelect.options[provSelect.selectedIndex].text;
             const distName = distSelect.options[distSelect.selectedIndex].text;
             const commName = commSelect.options[commSelect.selectedIndex].text;
@@ -643,7 +614,6 @@ function createPdfLayout(download = true) {
             }
 
             titleDiv.textContent = titleText;
-            console.log("The Map Image has loaded, now generating PDF...");
 
             if (download) {
                 layoutConfig = {
@@ -661,9 +631,7 @@ function createPdfLayout(download = true) {
                 console.log("layoutConfig:", layoutConfig);
                 downloadPdf(layoutConfig);
             }
-
         })
-
         .catch(err => {
             // Show zoom control if error occurs and restore margins
             zoomControl.style.display = '';
@@ -679,7 +647,6 @@ downloadPdfBtn.addEventListener('click', function () {
 
 window.createPdfLayout = createPdfLayout;
 window.downloadPdf = downloadPdf;
-// window.rasterLabels = rasterLabels;
 
 // ----------------------
 // START APP

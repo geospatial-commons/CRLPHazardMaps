@@ -14,21 +14,23 @@ async function downloadPdf(layoutConfig) {
 
     const logoImg = document.getElementById('wb-logo');
     const titleText = document.getElementById('layout-title').textContent || 'Map';
-    const dateText = document.getElementById('footer-date').innerText || '';
     const { jsPDF, GState } = window.jspdf;
     const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
     });
-
+    
     const margin = 2;
-    const headerHeight = 12;
+    const headerHeight = 14;
     const mapHeight = 170;
-    const mapWidth = 220;
+    const mapWidth = 230;
     const pdfWidth = 297;
     const padding = 2;
+    const footerHeight = 17;
     
+    let dateText = document.getElementById('footer-date').innerText || '';
+    dateText = dateText.split(': ')[1] || 'Unknown Date';
     let mapImgWidthPx = document.getElementById('map-image').naturalWidth; // Get the original pixel width of the map image
     let mmPerPixel = mapWidth / mapImgWidthPx; // Convert pixel dimensions to mm for PDF
     console.log("Calculated mm per pixel:", mmPerPixel);
@@ -69,25 +71,32 @@ async function downloadPdf(layoutConfig) {
         console.error("Could not load Open Sans Condensed font", err);
     }
 
-    pdf.setDrawColor(50, 50, 50);
+    try {
+        const fontBase64Italic = await fetchFontAsBase64('/assets/fonts/OpenSans-Italic.ttf');
+        pdf.addFileToVFS('OpenSans-Italic.ttf', fontBase64Italic);
+        pdf.addFont('OpenSans-Italic.ttf', 'Open Sans', 'italic');
+    } catch (err) {
+        console.error("Could not load Open Sans Italic font", err);
+    }
+
+    pdf.setDrawColor('#323232');
     pdf.setLineWidth(0.2);
 
     // --- A. HEADER ---
-    pdf.setFillColor(28, 69, 110);
+    pdf.setFillColor('#004972');
     pdf.rect(margin, margin, pdfWidth - margin * 2, headerHeight, 'FD');
 
     if (logoImg) {
-        pdf.addImage(logoImg, 'PNG', margin + 2, margin + 2, 8, 8);
+        pdf.addImage(logoImg, 'PNG', margin + 2, margin + 2, 10.5, 10.5);
     }
 
-    pdf.setFont('Open Sans', 'bold');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(15);
-    pdf.text(titleText, margin + 15, margin + 8);
     pdf.setFont('Open Sans', 'normal');
+    pdf.setTextColor('#ffffff');
+    pdf.setFontSize(18);
+    pdf.text(titleText, margin + 15, margin + 9);
 
     // --- B. ADD THE MAP IMAGE ---
-    const mapY = margin + 14;
+    const mapY = margin + headerHeight + padding;
     pdf.addImage(mapDataUrl, 'PNG', margin, mapY, mapWidth, mapHeight);
     pdf.rect(margin, mapY, mapWidth, mapHeight, 'S'); // Map Border
 
@@ -109,7 +118,7 @@ async function downloadPdf(layoutConfig) {
         const normalState = new GState({ opacity: 1.0 });
 
         // Draw Hazard Title
-        pdf.setTextColor(0, 0, 0);
+        pdf.setTextColor('#000000');
         pdf.setFont('Open Sans', 'bold');
         pdf.setFontSize(11);
         pdf.text(mapConfig.legend.title, legendX, legendY);
@@ -125,16 +134,18 @@ async function downloadPdf(layoutConfig) {
                 let color = mapConfig.legend.colors[i];
 
                 pdf.setFillColor(color);
+                pdf.setDrawColor('#cccccc');
+                pdf.setLineWidth(0.1);
 
                 // Turn ON opacity
                 pdf.setGState(transparentState);
-                pdf.rect(legendX, legendY - 3, 5, 5, 'F');
+                pdf.rect(legendX, legendY - 3, 5, 5, 'FD');
 
                 // Turn OFF opacity so the text isn't transparent!
                 pdf.setGState(normalState);
 
                 pdf.text(label, legendX + 8, legendY + 1);
-                legendY += 7; // Move down for the next item
+                legendY += 6; // Move down for the next item
             }
         }
         // Draw Range Labels (Simulate Gradient)
@@ -181,7 +192,7 @@ async function downloadPdf(layoutConfig) {
         layoutConfig.activeAdminLayers.forEach(layerName => {
             if (layerName === 'Provinces') {
                 pdf.setDrawColor(layoutConfig.provincesColor); // Make sure this variable is accessible!
-                pdf.setLineWidth(0.8);
+                pdf.setLineWidth(0.4);
                 pdf.rect(legendX, legendY - 3, 5, 5, 'S'); // 'S' for Stroke only
                 pdf.text('Province', legendX + 8, legendY + 1);
                 legendY += 7;
@@ -196,7 +207,7 @@ async function downloadPdf(layoutConfig) {
                 pdf.setDrawColor(layoutConfig.communitiesStroke);
                 pdf.setLineWidth(0.2);
                 // pdf.circle(x, y, radius, style) - x,y are the center point
-                pdf.circle(legendX + 2.5, legendY - 0.5, 2.5, 'FD');
+                pdf.circle(legendX + 2.5, legendY - 0.5, 1, 'FD');
                 pdf.text('Community', legendX + 8, legendY + 1);
                 legendY += 7;
             }
@@ -221,19 +232,24 @@ async function downloadPdf(layoutConfig) {
     const footerY = margin * 3 + headerHeight + mapHeight;
     const footerSpacing = 4;
 
-    pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(50, 50, 50);
+    pdf.setFillColor('#ffffff');
+    pdf.setDrawColor('#323232');
     pdf.setLineWidth(0.2);
-    pdf.rect(margin, footerY, 293, 20, 'FD');
+    pdf.rect(margin, footerY, pdfWidth - margin * 2, footerHeight, 'FD');
 
     pdf.setFontSize(8);
 
-    pdf.setFont("Open Sans", "normal");
+    pdf.setFont("Open Sans", "italic");
+    pdf.setTextColor('#000000');
     pdf.text(`The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the World Bank Group.`, margin + padding, footerY + padding + footerSpacing);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text(dateText, margin + padding, footerY + padding + footerSpacing * 2);
-    pdf.setTextColor(0, 0, 255);
-    pdf.textWithLink("Feedback: INSERT EMAIL HERE", margin + padding, footerY + padding + footerSpacing * 3, { url: "mailto:tbd@worldbank.org" });
+    pdf.setFont("Open Sans", "normal");
+    pdf.text(dateText, margin + padding + 20, footerY + padding + footerSpacing * 2);
+    pdf.setFont("Open Sans", "bold");
+    pdf.text('Date Created: ', margin + padding, footerY + padding + footerSpacing * 2);
+    pdf.text('Feedback: ', margin + padding, footerY + padding + footerSpacing * 3)
+    pdf.setTextColor('#0000ff');
+    pdf.setFont("Open Sans", "italic");
+    pdf.textWithLink("INSERT EMAIL HERE", margin + padding + 15, footerY + padding + footerSpacing * 3, { url: "mailto:tbd@worldbank.org" });
     
 
     // ADD SCALE BAR
@@ -270,4 +286,4 @@ async function fetchFontAsBase64(url) {
     return window.btoa(binary);
 }
 
-export { downloadPdf, fetchFontAsBase64 };
+export { downloadPdf };
