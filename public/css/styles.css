@@ -284,7 +284,7 @@ button { cursor: pointer; }
 .hazard-source {
     font-size: 11px;
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.5);
     line-height: 1.4;
     margin-top: 2px;
 }
@@ -295,7 +295,7 @@ button { cursor: pointer; }
 
 .hazard-option:has(input[type="radio"]:focus-visible) {
     outline: 2px solid var(--wb-blue);
-    outline-offset: 1px;
+    outline-offset: 2px;
 }
 
 /* Selected hazard: WB Blue left-border */
@@ -496,7 +496,7 @@ button { cursor: pointer; }
 }
 
 #sidebar input[type="text"]#map-title::placeholder {
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.45);
     font-style: italic;
 }
 
