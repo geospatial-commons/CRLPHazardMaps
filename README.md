@@ -9,12 +9,14 @@ A semi-automated web application for generating hazard risk maps for community-l
 ## Key Features
 
 - Web-based interface for on-demand map generation
-- Multi-hazard layer support: earthquake, flood, landslide, avalanche, heat stress
-- Drill-down location selection: Province -> District -> Community
+- Multi-hazard layer support: earthquake, flood, landslide, avalanche
+- Drill-down location selection: Province → District → Community
 - Automated legend and scale generation
-- PDF export optimized for print
-- Integration with Fathom flood data, GEM earthquake data, ESA land cover, and other hazard datasets
-- Tile serving from local MBTiles files, no external tile service required
+- PDF export with preview: print-ready A4 layout with legend, scale bar, and WB disclaimer
+- Context layers (admin boundaries, configurable via `public/context-config.json`)
+- Opacity and color-tint controls for hazard layers
+- Tile serving from local MBTiles files — no external tile service required
+- Offline-capable: export libraries vendored locally (no CDN dependency for PDF generation)
 
 ---
 
@@ -131,9 +133,10 @@ Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 ## Usage
 
 1. **Landing page** — click **Enter Application** to open the map.
-2. **Select a location** — use the dropdowns to filter by Province, District, and Community. The map zooms to your selection.
-3. **Toggle a hazard layer** — use the radio buttons in the side panel to overlay flood, landslide, avalanche, or earthquake data.
-4. **Export to PDF** — click the PDF export button to generate a print-ready map of the current view.
+2. **Select a location** — use the Province → District → Settlement dropdowns. The map zooms to your selection.
+3. **Toggle a hazard layer** — use the radio buttons to overlay flood, landslide, avalanche, or earthquake data. Adjust opacity and color tint as needed.
+4. **Toggle context layers** — show/hide admin boundaries and other reference layers from the CONTEXT LAYERS section.
+5. **Export to PDF** — click **Preview** to review the A4 layout, or **Export PDF** to download directly. The export includes the legend, scale bar, and WB disclaimer.
 
 ---
 
@@ -149,9 +152,14 @@ CRLPHazardMaps/
 │   ├── landing.html            # Splash/landing page
 │   └── index.html              # Main map application
 ├── public/
+│   ├── context-config.json     # Context layer configuration (toggleable overlays)
 │   ├── hazard-config.json      # Hazard layer configuration (legends, colors, descriptions)
-│   ├── js/map.js               # Client-side Leaflet map logic
-│   └── css/                    # Stylesheets
+│   ├── js/
+│   │   ├── map.js              # Client-side Leaflet map logic
+│   │   ├── pdf-export.js       # PDF layout and export logic
+│   │   ├── html-to-image.min.js    # Vendored (offline-safe)
+│   │   └── jspdf.umd.min.js        # Vendored (offline-safe)
+│   └── css/                    # Stylesheets (WB Design System tokens)
 └── data/                       # NOT in git — add manually (see above)
     ├── afghanistan_data.gpkg
     ├── hzd-agf-fl_20rp-fathom.mbtiles
