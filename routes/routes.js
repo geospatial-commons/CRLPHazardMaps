@@ -52,7 +52,8 @@ router.get('/tiles/:layer/:z/:x/:y.png', (req, res) => {
 });
 
 router.get('/tiles/contours/:z/:x/:y.pbf', (req, res) => {
-    
+    if (!mbtilesDb['contours']) return res.status(404).end();
+
     const z = parseInt(req.params.z);
     const x = parseInt(req.params.x);
     const y = Math.pow(2, z) - 1 - parseInt(req.params.y);

@@ -1,0 +1,4 @@
+[
+  { "id": "admin-boundaries", "name": "Admin Boundaries", "type": "geojson", "url": "/api/provinces/0", "default": true, "minZoom": 5, "maxZoom": 14 },
+  { "id": "district-capitals", "name": "District Capitals", "type": "geojson", "url": "/data/district-capitals.geojson", "default": false, "minZoom": 8, "maxZoom": 14 }
+]

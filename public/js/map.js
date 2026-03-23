@@ -15,18 +15,23 @@ let hazardLayer, currentHazardLayer;
 let hazardConfig = {};
 let layoutConfig = {};
 let baseMaps = {};
-let layerControl;
 let scaleBarText;
 let scaleBarWidth;
+let currentHazardDescription = '';
 
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
 const commSelect = document.getElementById('comm-select');
 const opacityRange = document.getElementById('opacity-range');
 const opacityValue = document.getElementById('opacity-value');
-const downloadPdfBtn = document.getElementById('download-pdf-btn')
-const resetFiltersBtn = document.getElementById('reset-filters-btn')
+const downloadPdfBtn = document.getElementById('download-pdf-btn');
+const previewPdfBtn = document.getElementById('preview-pdf-btn');
+const downloadFromPreviewBtn = document.getElementById('download-from-preview-btn');
+const resetFiltersBtn = document.getElementById('reset-filters-btn');
 const overlay = document.getElementById('loadingOverlay');
+const hazardDescEl = document.getElementById('hazard-description');
+const legendContent = document.getElementById('legend-content');
+
 const rasterLabels = {
     'none': 'None',
     'flood': 'Flood Hazard',
@@ -43,8 +48,8 @@ function initMap() {
 
     overlay.style.display = 'flex';
     disableMapInteraction();
+
     // ---- SET UP BASEMAPS ----
-    // Add more basemaps here in the future by following this pattern:
     baseMaps['Esri Satellite'] = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
@@ -59,7 +64,6 @@ function initMap() {
         zIndex: 1
     });
 
-    // Set default basemap
     baseMaps['Esri Satellite'].addTo(map);
 
     fetch('hazard-config.json')
@@ -68,41 +72,221 @@ function initMap() {
             hazardConfig = data;
         });
 
-    getProvinces(0, () => {
-        overlay.style.display = 'none';
-        enableMapInteraction();
-    }); // Load simplified provinces first for faster initial load 
-
-    // ---- INITIALIZE LAYER CONTROL ----
-    // Layer control will be initialized after baseMaps are set up
-    layerControl = L.control.layers(baseMaps, overlayLayers, { position: 'topright' });
-
     const scaleBar = L.control.scale({
         position: 'bottomright',
         metric: true,
         imperial: false,
         maxWidth: 200
-    })
-
+    });
     scaleBar.addTo(map);
-    layerControl.addTo(map);
 
     const contourLayer = L.vectorGrid.protobuf('/tiles/contours/{z}/{x}/{y}.pbf', {
         minZoom: 12,
         maxNativeZoom: 15,
         maxZoom: 18,
-
         vectorTileLayerStyles: {
-            contours: {
-                weight: 0.5,
-                color: '#080808'
-            }
+            contours: { weight: 0.5, color: '#080808' }
         }
     });
     overlayLayers['Contours'] = contourLayer;
-    layerControl.addOverlay(contourLayer, 'Contours');
+
+    getProvinces(0, () => {
+        overlay.style.display = 'none';
+        enableMapInteraction();
+        // Trigger invalidateSize after layout settles
+        setTimeout(() => map.invalidateSize(), 150);
+        // Load context layers after map is ready
+        loadContextLayers();
+    });
 }
 
+// ----------------------
+// CONTEXT LAYERS
+// ----------------------
+// Tracks loaded Leaflet layers keyed by context layer id
+const contextLayerInstances = {};
+
+function loadContextLayers() {
+    const container = document.getElementById('context-layers');
+
+    fetch('/context-config.json')
+        .then(res => res.json())
+        .then(layers => {
+            container.innerHTML = '';
+            layers.forEach(layerConfig => {
+                buildContextToggle(container, layerConfig);
+            });
+        })
+        .catch(() => {
+            // context-config.json missing or malformed — no crash, no context layers
+            container.innerHTML = '<p class="loading-note">Context layers unavailable</p>';
+        });
+}
+
+function buildContextToggle(container, layerConfig) {
+    const row = document.createElement('div');
+    row.className = 'context-toggle-row';
+    row.dataset.id = layerConfig.id;
+
+    const label = document.createElement('label');
+    label.className = 'context-toggle-label';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = layerConfig.default;
+    checkbox.dataset.id = layerConfig.id;
+    checkbox.setAttribute('aria-label', layerConfig.name);
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = layerConfig.name;
+
+    label.appendChild(checkbox);
+    label.appendChild(nameSpan);
+    row.appendChild(label);
+    container.appendChild(row);
+
+    // If default=true, load immediately
+    if (layerConfig.default) {
+        fetchAndAddContextLayer(layerConfig, checkbox, row);
+    }
+
+    checkbox.addEventListener('change', function () {
+        if (this.checked) {
+            fetchAndAddContextLayer(layerConfig, checkbox, row);
+        } else {
+            removeContextLayer(layerConfig.id);
+        }
+    });
+
+    // Update zoom note on map zoom
+    map.on('zoomend', () => updateZoomNote(row, layerConfig));
+    updateZoomNote(row, layerConfig);
+}
+
+function fetchAndAddContextLayer(layerConfig, checkbox, row) {
+    // Guard against double-add
+    if (contextLayerInstances[layerConfig.id] && map.hasLayer(contextLayerInstances[layerConfig.id])) {
+        return;
+    }
+
+    // Remove stale zoom note / unavailable note
+    const existingNote = row.querySelector('.context-zoom-note, .context-unavailable, .context-loading');
+    if (existingNote) existingNote.remove();
+
+    const loadingNote = document.createElement('p');
+    loadingNote.className = 'context-zoom-note context-loading';
+    loadingNote.textContent = 'Loading...';
+    checkbox.disabled = true;
+    row.appendChild(loadingNote);
+
+    if (layerConfig.type === 'geojson') {
+        fetch(layerConfig.url)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                loadingNote.remove();
+                checkbox.disabled = false;
+
+                const leafletLayer = L.geoJSON(data, {
+                    style: layerConfig.id === 'admin-boundaries' ? {
+                        color: provincesColor,
+                        weight: 2,
+                        fillOpacity: 0
+                    } : undefined,
+                    pointToLayer: layerConfig.id === 'district-capitals' ? function (feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: 4,
+                            fillColor: '#FFD700',
+                            color: '#000',
+                            weight: 1,
+                            fillOpacity: 0.9
+                        });
+                    } : undefined,
+                    onEachFeature: function (f, l) {
+                        if (f.properties && f.properties.name) {
+                            l.bindPopup(`<b>${f.properties.name}</b>`);
+                        }
+                    }
+                });
+
+                contextLayerInstances[layerConfig.id] = leafletLayer;
+                if (checkbox.checked) {
+                    leafletLayer.addTo(map);
+                }
+                overlayLayers[layerConfig.name] = leafletLayer;
+                updateZoomNote(row, layerConfig);
+            })
+            .catch(() => {
+                loadingNote.remove();
+                checkbox.disabled = false;
+                checkbox.checked = false;
+                const errNote = document.createElement('p');
+                errNote.className = 'context-unavailable';
+                errNote.textContent = `${layerConfig.name} unavailable`;
+                row.appendChild(errNote);
+            });
+    } else if (layerConfig.type === 'raster') {
+        loadingNote.remove();
+        checkbox.disabled = false;
+        const rasterLayer = L.tileLayer(layerConfig.url, {
+            minZoom: layerConfig.minZoom || 1,
+            maxZoom: layerConfig.maxZoom || 18,
+            opacity: 0.7,
+            zIndex: 150
+        });
+        contextLayerInstances[layerConfig.id] = rasterLayer;
+        if (checkbox.checked) {
+            rasterLayer.addTo(map);
+        }
+        overlayLayers[layerConfig.name] = rasterLayer;
+        updateZoomNote(row, layerConfig);
+    }
+}
+
+function removeContextLayer(id) {
+    const layer = contextLayerInstances[id];
+    if (layer && map.hasLayer(layer)) {
+        map.removeLayer(layer);
+    }
+}
+
+function updateZoomNote(row, layerConfig) {
+    if (!map) return;
+    const existingNote = row.querySelector('.context-zoom-note:not(.context-loading)');
+    const currentZoom = map.getZoom();
+    if (layerConfig.minZoom && currentZoom < layerConfig.minZoom) {
+        if (!existingNote) {
+            const note = document.createElement('p');
+            note.className = 'context-zoom-note';
+            note.textContent = 'Zoom in to view';
+            row.appendChild(note);
+        }
+    } else {
+        if (existingNote) existingNote.remove();
+    }
+}
+
+// ----------------------
+// BASEMAP SWITCHER
+// ----------------------
+document.querySelectorAll('.basemap-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const target = this.dataset.basemap;
+        if (!baseMaps[target]) return;
+        Object.values(baseMaps).forEach(bm => {
+            if (map.hasLayer(bm)) map.removeLayer(bm);
+        });
+        baseMaps[target].addTo(map);
+        document.querySelectorAll('.basemap-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+// ----------------------
+// PROVINCES
+// ----------------------
 function getProvinces(quality, callback) {
     fetch(`api/provinces/${quality}`)
         .then(res => res.json())
@@ -114,23 +298,21 @@ function getProvinces(quality, callback) {
                 data.features.forEach(f => {
                     provMap.set(f.properties.provID, f.properties.name);
                 });
-
                 let sortedProvs = Array.from(provMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
                 sortedProvs.forEach(([provID, name]) => {
                     provSelect.appendChild(new Option(name, provID));
                 });
             }
 
-            renderProvinces('all', quality); // Zoom to country level only for simplified provinces
+            renderProvinces('all', quality);
 
             if (quality == 0) {
-                callback();  // Show map after simplified provinces load
-                quality = 1; // Then load detailed provinces in background without blocking the UI
-                getProvinces(quality); // Load detailed provinces in background
+                callback();
+                quality = 1;
+                getProvinces(quality);
             } else {
                 if (callback) callback();
             }
-
         })
         .catch(err => {
             console.error("Error loading provinces:", err);
@@ -141,7 +323,6 @@ function getProvinces(quality, callback) {
 function renderProvinces(selectedProvId, quality) {
     if (provincesLayer) {
         map.removeLayer(provincesLayer);
-        layerControl.removeLayer(provincesLayer);
     }
     if (!provincesData) return;
 
@@ -154,26 +335,24 @@ function renderProvinces(selectedProvId, quality) {
         onEachFeature: function (f, l) {
             l.bindPopup(`<b>Province:</b> ${f.properties.name}`);
         }
-    }).addTo(map)
+    }).addTo(map);
 
     overlayLayers['Provinces'] = provincesLayer;
-    layerControl.addOverlay(provincesLayer, 'Provinces');
 
-    // Zoom to whole country if 'all' is selected
     if (selectedProvId === 'all' && quality == 0) {
         map.fitBounds(provincesLayer.getBounds(), { padding: [30, 30] });
     }
-};
+}
 
-// Renders the fetched Districts ON TOP of the Province
+// ----------------------
+// DISTRICTS
+// ----------------------
 function renderDistricts(data, selectedDistId) {
     console.log("Rendering districts with selectedDistId:", selectedDistId);
     if (districtsLayer) {
         map.removeLayer(districtsLayer);
-        layerControl.removeLayer(districtsLayer)
-    };
+    }
     if (!data) return;
-    console.log("Data passed to renderDistricts:", data);
 
     districtsLayer = L.geoJSON(data, {
         style: {
@@ -185,54 +364,46 @@ function renderDistricts(data, selectedDistId) {
             l.bindPopup(`<b>District:</b> ${f.properties.name}`);
         }
     }).addTo(map);
+
     overlayLayers['Districts'] = districtsLayer;
-    layerControl.addOverlay(districtsLayer, 'Districts');
-    // Zoom Logic
+
     if (districtsLayer.getLayers().length > 0) {
         if (selectedDistId !== 'all') {
-            // Zoom to specific district
             let distLayer = districtsLayer.getLayers().find(l => l.feature.properties.distID == selectedDistId);
             if (distLayer) map.fitBounds(distLayer.getBounds(), { padding: [30, 30] });
         } else {
-            // Zoom to all districts (the whole province)
             map.fitBounds(districtsLayer.getBounds(), { padding: [30, 30] });
         }
     }
 }
 
+// ----------------------
+// COMMUNITIES
+// ----------------------
 function renderCommunities(distId) {
     if (communityLayer) map.removeLayer(communityLayer);
     if (!distId) return;
 
-    // Fetch ONLY the data for the selected district from our new SQL API
     fetch(`/api/communities/${distId}`)
         .then(res => res.json())
         .then(data => {
-            // Populate the Dropdown
             commSelect.innerHTML = '<option value="all">-- All Communities --</option>';
             var sortedCommunities = data.features.sort((a, b) =>
                 a.properties.name.localeCompare(b.properties.name)
             );
             sortedCommunities.forEach(f => {
                 var name = f.properties.name;
-                var coords = f.geometry.coordinates; // [lon, lat]
-
-                // Create Option: Store coordinates as a string value "lat,lon"
+                var coords = f.geometry.coordinates;
                 var opt = new Option(name, `${coords[1]},${coords[0]}`);
-
-                // Create a unique string combining name and coordinates
                 var uniqueIdentifier = `${name}_${coords[1]},${coords[0]}`;
-
-                // Set the data-combined attribute
                 opt.dataset.combined = uniqueIdentifier;
-                // (This outputs HTML like: data-combined="CommunityName_Lat,Lon")
-
                 commSelect.appendChild(opt);
             });
+
             communityLayer = L.geoJSON(data, {
                 pointToLayer: function (feature, latlng) {
                     return L.circleMarker(latlng, {
-                        radius: 3,
+                        radius: 5,
                         fillColor: communitiesFill,
                         color: communitiesStroke,
                         weight: 1,
@@ -240,17 +411,11 @@ function renderCommunities(distId) {
                     });
                 },
                 onEachFeature: function (f, l) {
-                    l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
-
-                    // Add the click event listener
-                    l.on('click', function (e) {
+                    l.bindPopup(`<b>Settlement:</b> ${f.properties.name}`, { className: 'community-popup' });
+                    l.on('click', function () {
                         const clickedName = f.properties.name;
                         const clickedCoords = f.geometry.coordinates;
-
-                        // Reconstruct the exact same unique string for the clicked feature
                         const targetCombined = `${clickedName}_${clickedCoords[1]},${clickedCoords[0]}`;
-
-                        // Loop through options and match against the new dataset attribute
                         for (let i = 0; i < commSelect.options.length; i++) {
                             if (commSelect.options[i].dataset.combined === targetCombined) {
                                 commSelect.selectedIndex = i;
@@ -261,11 +426,15 @@ function renderCommunities(distId) {
                     });
                 }
             }).addTo(map);
+
             overlayLayers['Communities'] = communityLayer;
-            layerControl.addOverlay(communityLayer, 'Communities');
+            commSelect.disabled = false;
         });
 }
 
+// ----------------------
+// MAP INTERACTION
+// ----------------------
 function disableMapInteraction() {
     map.dragging.disable();
     map.scrollWheelZoom.disable();
@@ -287,12 +456,14 @@ function enableMapInteraction() {
 // ----------------------
 // EVENT LISTENERS
 // ----------------------
-
 provSelect.addEventListener('change', function () {
     const provId = this.value;
 
     distSelect.innerHTML = '<option value="all">-- All Districts --</option>';
+    distSelect.disabled = provId === 'all';
     commSelect.innerHTML = '<option value="all">-- Select District --</option>';
+    commSelect.disabled = true;
+
     if (districtsLayer) map.removeLayer(districtsLayer);
     if (communityLayer) map.removeLayer(communityLayer);
 
@@ -303,70 +474,71 @@ provSelect.addEventListener('change', function () {
         return;
     }
 
-    // Fetch districts belonging to this Province ID
-    overlay.style.display = 'flex'; //show loading it might take time to download district data
+    overlay.style.display = 'flex';
     fetch(`/api/districts/${provId}`)
         .then(res => res.json())
         .then(data => {
             districtsData = data;
-
-            // Populate District Dropdown with Dist_Id_24 as the value
             let sortedDists = data.features.map(f => ({
                 name: f.properties.name,
                 provId: f.properties.provID,
                 distId: f.properties.distID
             })).sort((a, b) => a.name.localeCompare(b.name));
-
             sortedDists.forEach(d => distSelect.appendChild(new Option(d.name, d.distId)));
-
-            // Draw the new districts layer on top of the province layer
-            overlay.style.display = 'none'; // remove loading screen only after all data has been downlaoded and prcessed
+            overlay.style.display = 'none';
             renderDistricts(data, 'all');
-
         })
         .catch(err => console.error("Error loading districts:", err));
 });
 
-
-// DISTRICT SELECTED -> Highlight & Fetch Community
 distSelect.addEventListener('change', function () {
     const distId = this.value;
-
-    // Redraw districts to show the highlight/zoom
     renderDistricts(districtsData, distId);
     if (distId !== 'all') {
         if (communityLayer) {
             map.removeLayer(communityLayer);
-            layerControl.removeLayer(communityLayer);
         }
         renderCommunities(distId);
         commSelect.innerHTML = '<option value="all">-- Select District --</option>';
+        commSelect.disabled = true;
     }
 });
 
 resetFiltersBtn.addEventListener('click', function () {
     provSelect.value = 'all';
     distSelect.innerHTML = '<option value="all">-- Select a Province --</option>';
+    distSelect.disabled = true;
     commSelect.innerHTML = '<option value="all">-- Select a District --</option>';
+    commSelect.disabled = true;
 
     districtsData = null;
 
     if (districtsLayer) {
         map.removeLayer(districtsLayer);
-        if (overlayLayers['Districts']) {
-            layerControl.removeLayer(districtsLayer);
-            delete overlayLayers['Districts'];
-        }
+        delete overlayLayers['Districts'];
         districtsLayer = null;
     }
     if (communityLayer) {
         map.removeLayer(communityLayer);
-        if (overlayLayers['Communities']) {
-            layerControl.removeLayer(communityLayer);
-            delete overlayLayers['Communities'];
-        }
+        delete overlayLayers['Communities'];
         communityLayer = null;
     }
+
+    // Reset hazard layer
+    if (currentHazardLayer) {
+        map.removeLayer(currentHazardLayer);
+        currentHazardLayer = null;
+    }
+    hazardLayer = null;
+    currentHazardDescription = '';
+    if (hazardDescEl) hazardDescEl.textContent = '';
+
+    // Reset hazard radio to None
+    const noneRadio = document.querySelector('input[name="hazard-layer"][value="none"]');
+    if (noneRadio) noneRadio.checked = true;
+
+    // Reset legend bar
+    updateLegendBar('none');
 
     renderProvinces('all');
     map.setView([33.93, 67.68], 6);
@@ -374,38 +546,53 @@ resetFiltersBtn.addEventListener('click', function () {
 
 commSelect.addEventListener('change', function () {
     if (this.value === 'all') return;
-
-    // Split the "lat,lon" value back into an array
     var coords = this.value.split(',').map(Number);
-    var lat = coords[0];
-    var lon = coords[1];
+    const selectedCombined = this.options[this.selectedIndex].dataset.combined;
 
-    // Fly to the point
-    map.flyTo([lat, lon], 16, {
-        animate: true,
-        duration: 1.5 // seconds
+    map.flyTo([coords[0], coords[1]], 16, { animate: true, duration: 1.5 });
+
+    // After fly completes, open the popup for the matching marker
+    map.once('moveend', function () {
+        if (!communityLayer) return;
+        communityLayer.eachLayer(function (layer) {
+            const f = layer.feature;
+            const c = f.geometry.coordinates;
+            const combined = `${f.properties.name}_${c[1]},${c[0]}`;
+            if (combined === selectedCombined) {
+                layer.openPopup();
+            }
+        });
     });
 });
 
 // ----------------------
-// RASTER LAYER
+// RASTER / HAZARD LAYER
 // ----------------------
 document.querySelectorAll('input[name="hazard-layer"]')
     .forEach(radio => {
         radio.addEventListener('change', function () {
             let hazardLabel = rasterLabels[this.value];
-            hazardLayer = hazardConfig[hazardLabel].hazardLayer
+            hazardLayer = hazardConfig[hazardLabel] ? hazardConfig[hazardLabel].hazardLayer : null;
 
-            // Update pdf-content
+            if (hazardConfig[hazardLabel]) {
+                currentHazardDescription = hazardConfig[hazardLabel].text.description;
+                if (hazardDescEl) hazardDescEl.textContent = currentHazardDescription;
+            } else {
+                currentHazardDescription = '';
+                if (hazardDescEl) hazardDescEl.textContent = '';
+            }
+
+            // Update PDF content active raster label
             document.getElementById('active-raster').textContent = hazardLabel;
-            document.getElementById('raster-info').textContent = hazardConfig[hazardLabel].text.description;
 
-            globalTintClass = ""
-            resetLegend(); // Clear legend before building new one with correct labels/colors
+            globalTintClass = '';
+            if (tintBlueBtn) tintBlueBtn.classList.remove('active');
+            if (tintRedBtn) tintRedBtn.classList.remove('active');
+            resetLegend();
+            updateLegendBar(this.value);
             toggleRaster(hazardLayer);
         });
     });
-
 
 function toggleRaster(hazardLayer) {
     if (currentHazardLayer) {
@@ -434,6 +621,8 @@ function showRaster(hazardLayer) {
     layer.on('load', () => {
         overlay.style.display = 'none';
         enableMapInteraction();
+        // Re-apply tint if one was active before this layer loaded
+        if (globalTintClass) applyTint(globalTintClass);
     });
 
     layer.on('tileerror', (err) => {
@@ -450,6 +639,80 @@ opacityRange.addEventListener('input', function () {
     }
 });
 
+// ---- TINT BUTTONS ----
+const tintBlueBtn = document.getElementById('tint-blue-btn');
+const tintRedBtn = document.getElementById('tint-red-btn');
+const tintResetBtn = document.getElementById('tint-reset-btn');
+
+function applyTint(tintClass) {
+    globalTintClass = tintClass;
+
+    if (currentHazardLayer) {
+        const container = currentHazardLayer.getContainer();
+        if (container) {
+            container.classList.remove('red-tint-layer', 'blue-tint-layer');
+            if (tintClass === 'hazard-blue') container.classList.add('blue-tint-layer');
+            if (tintClass === 'hazard-red') container.classList.add('red-tint-layer');
+        }
+    }
+
+    // Update button active state
+    [tintBlueBtn, tintRedBtn].forEach(btn => btn.classList.remove('active'));
+    if (tintClass === 'hazard-blue') tintBlueBtn.classList.add('active');
+    if (tintClass === 'hazard-red') tintRedBtn.classList.add('active');
+}
+
+if (tintBlueBtn) tintBlueBtn.addEventListener('click', () => applyTint('hazard-blue'));
+if (tintRedBtn) tintRedBtn.addEventListener('click', () => applyTint('hazard-red'));
+if (tintResetBtn) tintResetBtn.addEventListener('click', () => applyTint(''));
+
+// ----------------------
+// LEGEND BAR (above map)
+// ----------------------
+function updateLegendBar(hazardValue) {
+    if (!legendContent) return;
+
+    if (hazardValue === 'none' || !hazardConfig) {
+        legendContent.innerHTML = '<em>Select a hazard layer to view the legend</em>';
+        return;
+    }
+
+    const hazardLabel = rasterLabels[hazardValue];
+    const mapConfig = hazardConfig[hazardLabel];
+    if (!mapConfig || !mapConfig.legend) {
+        legendContent.innerHTML = '<em>Select a hazard layer to view the legend</em>';
+        return;
+    }
+
+    const opacityVal = opacityRange.value / 100;
+    let html = `<span class="legend-bar-label">${mapConfig.legend.title}</span>`;
+
+    if (mapConfig.legend.type === 'categorical') {
+        mapConfig.legend.labels.forEach((label, i) => {
+            const color = mapConfig.legend.colors[i];
+            html += `<span class="legend-bar-swatch">
+                <span class="legend-bar-swatch-color" style="background:${color};opacity:${opacityVal}"></span>
+                ${label}
+            </span>`;
+        });
+    } else if (mapConfig.legend.type === 'range') {
+        const colors = mapConfig.legend.colors;
+        const labels = mapConfig.legend.labels;
+        const gradient = `linear-gradient(to right, ${colors.join(', ')})`;
+        html += `<span class="legend-bar-swatch">
+            <span class="legend-bar-swatch-color" style="background:${gradient};width:48px;opacity:${opacityVal};border-radius:2px"></span>
+            <span>${labels[labels.length - 1]}</span>
+            <span style="color:var(--wb-gray-500)">→</span>
+            <span>${labels[0]}</span>
+        </span>`;
+    }
+
+    legendContent.innerHTML = html;
+}
+
+// ----------------------
+// PDF LEGEND (in pdf-wrapper)
+// ----------------------
 function buildLegend(activeAdminLayers = []) {
     let hazardLabel = rasterLabels[document.querySelector('input[name="hazard-layer"]:checked').value];
     let mapConfig = hazardConfig[hazardLabel];
@@ -457,45 +720,32 @@ function buildLegend(activeAdminLayers = []) {
     let legItemsContainer = document.getElementById('hazard-legend-items');
     legItemsContainer.innerHTML = '';
 
-    // Dynamically populate the legend
     if (mapConfig.legend.type === 'categorical') {
         for (let i = 0; i < mapConfig.legend.labels.length; i++) {
             let label = mapConfig.legend.labels[i];
             let color = mapConfig.legend.colors[i];
             let opacityVal = document.getElementById('opacity-range').value;
-
             legItemsContainer.innerHTML += `
             <div class="legend-item">
                 <span class="legend-color ${globalTintClass}" style="background-color: ${color}; display: block; opacity: ${opacityVal / 100}"></span>
                 <span class="legend-label">${label}</span>
-            </div>
-            `
+            </div>`;
         }
     } else if (mapConfig.legend.type === 'range') {
         let opacityVal = document.getElementById('opacity-range').value;
         let colors = mapConfig.legend.colors;
         let labels = mapConfig.legend.labels;
-
-        // Joins the array of colors into a CSS gradient string 
-        // Example output: "linear-gradient(to bottom, #d7191b, #fffebd)"
         let gradientString = `linear-gradient(to bottom, ${colors.join(', ')})`;
-
-        // Create the labels HTML by mapping over the labels array
         let labelsHtml = labels.map(label => `<span class="legend-label">${label}</span>`).join('');
-
         legItemsContainer.innerHTML += `
         <div class="legend-item-range" style="display: flex; align-items: stretch; gap: 10px; margin-top: 5px;">
-            <div class="legend-gradient-bar ${globalTintClass}" 
+            <div class="legend-gradient-bar ${globalTintClass}"
                  style="background: ${gradientString}; opacity: ${opacityVal / 100};">
             </div>
-            <div class="legend-range-labels" style="">
-                ${labelsHtml}
-            </div>
-        </div>
-        `;
+            <div class="legend-range-labels">${labelsHtml}</div>
+        </div>`;
     }
 
-    //add admin legend data
     if (activeAdminLayers.length > 0) {
         document.getElementById('admin-legend-title').textContent = 'Administrative Data';
         activeAdminLayers.forEach(layerName => {
@@ -511,76 +761,70 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.admin-comm").style.display = 'block';
                 document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
                 document.querySelector(".legend-color.admin-comm").style.backgroundColor = communitiesFill;
-                document.querySelector(".legend-label.admin-comm").textContent = 'Community';
+                document.querySelector(".legend-label.admin-comm").textContent = 'Settlement';
             }
-
         });
     }
-};
+}
 
 function resetLegend() {
     document.getElementById('hazard-legend-title').textContent = '';
     document.querySelectorAll('.legend-color').forEach(el => el.style.display = 'none');
     document.querySelectorAll('.legend-label').forEach(el => el.textContent = '');
     document.getElementById('admin-legend-title').textContent = '';
-};
+}
 
 // ----------------------
-// CREATE PDF PREVIEW LAYOUT
+// CREATE PDF LAYOUT
 // ----------------------
 function createPdfLayout(download = true) {
-    // Reset raster-info to default description
-    let checkedHazard = document.querySelector('input[name="hazard-layer"]:checked');
-    if (checkedHazard) {
-        let hazardLabel = rasterLabels[checkedHazard.value];
-        document.getElementById('raster-info').value = hazardConfig[hazardLabel].text.description;
-    }
-
     const mapElement = document.getElementById('map');
     const zoomControl = document.querySelector(".leaflet-control-zoom");
-    const layerControl = document.querySelector(".leaflet-control-layers");
     const scaleBar = document.querySelector(".leaflet-control-scale-line");
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+        year: 'numeric', month: 'long', day: 'numeric'
     });
 
     document.getElementById('footer-date').innerHTML = `<strong>Date Created: </strong> ${formattedDate}`;
-    
+
     scaleBarWidth = document.querySelector(".leaflet-control-scale-line").style.width;
     scaleBarText = document.querySelector(".leaflet-control-scale-line").textContent;
-    // -------------------------
-    // BUILD LEGEND FOR PREVIEW
-    // -------------------------
-    // Get list of active overlay layers to include in the legend
+
     let activeAdminLayers = Object.entries(overlayLayers)
         .filter(([key, layer]) => map.hasLayer(layer))
         .map(([key]) => key);
 
     buildLegend(activeAdminLayers);
 
-    // Hide zoom and layer control for screenshot
-    zoomControl.style.display = 'none';
-    layerControl.style.display = 'none';
-    scaleBar.style.display = 'none';
+    // Hide zoom and scale controls for clean screenshot
+    if (zoomControl) zoomControl.style.display = 'none';
+    if (scaleBar) scaleBar.style.display = 'none';
 
-    // Store original margins and remove them for capture (they include whitespace)
-    const originalMarginLeft = mapElement.style.marginLeft;
-    const originalMarginRight = mapElement.style.marginRight;
-    mapElement.style.marginLeft = '0';
-    mapElement.style.marginRight = '0';
+    // Temporarily resize map to exact PDF dimensions (230mm × 150mm at 96dpi)
+    // 1mm = 3.7795px → 230mm = 869px, 150mm = 567px
+    const PDF_MAP_W = 869;
+    const PDF_MAP_H = 567;
+    const origWidth  = mapElement.style.width;
+    const origHeight = mapElement.style.height;
+    const origFlex   = mapElement.style.flex;
+    mapElement.style.width  = PDF_MAP_W + 'px';
+    mapElement.style.height = PDF_MAP_H + 'px';
+    mapElement.style.flex   = 'none';
+    map.invalidateSize({ animate: false });
 
-    htmlToImage.toPng(mapElement)
+    htmlToImage.toPng(mapElement, { width: PDF_MAP_W, height: PDF_MAP_H, pixelRatio: 2 })
         .then(function (dataUrl) {
+            // Restore map dimensions
+            mapElement.style.width  = origWidth;
+            mapElement.style.height = origHeight;
+            mapElement.style.flex   = origFlex;
+            map.invalidateSize({ animate: false });
 
-            // Show zoom control again and restore margins
-            zoomControl.style.display = '';
-            layerControl.style.display = '';
-            scaleBar.style.display = '';
+            if (zoomControl) zoomControl.style.display = '';
+            if (scaleBar) scaleBar.style.display = '';
 
             const mapImg = new Image();
             mapImg.src = dataUrl;
@@ -590,12 +834,11 @@ function createPdfLayout(download = true) {
             mapContainerLayout.appendChild(mapImg);
 
             scaleBarLayout.innerHTML = `
-                    <div class="custom-scale-text">${scaleBarText}</div>
-                    <div class="custom-scale-bar" style="width:${scaleBarWidth}">
-                        <div class="custom-scale-tick left"></div>
-                        <div class="custom-scale-tick right"></div>
-                    </div>
-            `;
+                <div class="custom-scale-text">${scaleBarText}</div>
+                <div class="custom-scale-bar" style="width:${scaleBarWidth}">
+                    <div class="custom-scale-tick left"></div>
+                    <div class="custom-scale-tick right"></div>
+                </div>`;
 
             const titleDiv = document.getElementById('layout-title');
             const provName = provSelect.options[provSelect.selectedIndex].text;
@@ -615,35 +858,61 @@ function createPdfLayout(download = true) {
 
             titleDiv.textContent = titleText;
 
+            // mapTitle: use user-entered value or fall back to location string
+            const mapTitleInput = document.getElementById('map-title');
+            const mapTitle = (mapTitleInput && mapTitleInput.value.trim()) ? mapTitleInput.value.trim() : titleText;
+
+            layoutConfig = {
+                hazardConfig: hazardConfig,
+                rasterLabels: rasterLabels,
+                scaleBarWidth: parseFloat(scaleBarWidth),
+                scaleBarText: scaleBarText,
+                overlayLayers: overlayLayers,
+                activeAdminLayers: activeAdminLayers,
+                provincesColor: provincesColor,
+                districtsColor: districtsColor,
+                communitiesStroke: communitiesStroke,
+                communitiesFill: communitiesFill,
+                hazardDescription: currentHazardDescription,
+                mapTitle: mapTitle,
+            };
+
             if (download) {
-                layoutConfig = {
-                    hazardConfig: hazardConfig,
-                    rasterLabels: rasterLabels,
-                    scaleBarWidth: parseFloat(scaleBarWidth),
-                    scaleBarText: scaleBarText,
-                    overlayLayers: overlayLayers,
-                    activeAdminLayers: activeAdminLayers,
-                    provincesColor: provincesColor,
-                    districtsColor: districtsColor,
-                    communitiesStroke: communitiesStroke,
-                    communitiesFill: communitiesFill,
-                }
-                console.log("layoutConfig:", layoutConfig);
                 downloadPdf(layoutConfig);
+            } else {
+                // Show preview modal
+                const wrapper = document.getElementById('pdf-wrapper');
+                wrapper.style.zIndex = 1000;
             }
         })
         .catch(err => {
-            // Show zoom control if error occurs and restore margins
-            zoomControl.style.display = '';
-            mapElement.style.marginLeft = originalMarginLeft;
-            mapElement.style.marginRight = originalMarginRight;
-            console.error('Failed:', err);
+            mapElement.style.width  = origWidth;
+            mapElement.style.height = origHeight;
+            mapElement.style.flex   = origFlex;
+            map.invalidateSize({ animate: false });
+            if (zoomControl) zoomControl.style.display = '';
+            if (scaleBar) scaleBar.style.display = '';
+            console.error('PDF capture failed:', err);
         });
 }
 
 downloadPdfBtn.addEventListener('click', function () {
-    createPdfLayout()
+    createPdfLayout(true);
 });
+
+if (previewPdfBtn) {
+    previewPdfBtn.addEventListener('click', function () {
+        createPdfLayout(false);
+    });
+}
+
+if (downloadFromPreviewBtn) {
+    downloadFromPreviewBtn.addEventListener('click', function () {
+        if (layoutConfig && layoutConfig.hazardConfig) {
+            downloadPdf(layoutConfig);
+        }
+    });
+}
 
 window.createPdfLayout = createPdfLayout;
 window.downloadPdf = downloadPdf;
@@ -653,4 +922,9 @@ window.downloadPdf = downloadPdf;
 // ----------------------
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
+});
+
+// Invalidate map size on window resize to prevent tile clipping
+window.addEventListener('resize', () => {
+    if (map) map.invalidateSize();
 });

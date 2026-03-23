@@ -13,7 +13,7 @@ async function downloadPdf(layoutConfig) {
     const mapDataUrl = mapImgElement.src;
 
     const logoImg = document.getElementById('wb-logo');
-    const titleText = document.getElementById('layout-title').textContent || 'Map';
+    const titleText = layoutConfig.mapTitle || document.getElementById('layout-title').textContent || 'Map';
     const { jsPDF, GState } = window.jspdf;
     const pdf = new jsPDF({
         orientation: 'landscape',
@@ -83,7 +83,7 @@ async function downloadPdf(layoutConfig) {
     pdf.setLineWidth(0.2);
 
     // --- A. HEADER ---
-    pdf.setFillColor('#004972');
+    pdf.setFillColor('#002244');
     pdf.rect(margin, margin, pdfWidth - margin * 2, headerHeight, 'FD');
 
     if (logoImg) {
@@ -208,7 +208,7 @@ async function downloadPdf(layoutConfig) {
                 pdf.setLineWidth(0.2);
                 // pdf.circle(x, y, radius, style) - x,y are the center point
                 pdf.circle(legendX + 2.5, legendY - 0.5, 1, 'FD');
-                pdf.text('Community', legendX + 8, legendY + 1);
+                pdf.text('Settlement', legendX + 8, legendY + 1);
                 legendY += 7;
             }
         });
@@ -219,8 +219,8 @@ async function downloadPdf(layoutConfig) {
     pdf.setFontSize(11);
     pdf.text(mapConfig.legend.title, legendX, legendY + 5);
     legendY += 8;
-    // Include textarea with id raster-info in the PDF
-    const rasterInfo = document.getElementById('raster-info').value;
+    // Include hazard description in the PDF (from JS state, not DOM)
+    const rasterInfo = layoutConfig.hazardDescription || '';
     if (rasterInfo) {
         pdf.setFont('Open Sans Condensed', 'normal');
         pdf.setFontSize(10);
@@ -259,12 +259,12 @@ async function downloadPdf(layoutConfig) {
     const scaleCentreX = (legendX + rightEdge) / 2;
     const scaleStartX = scaleCentreX - scaleSegmentWidth;
     // left (filled)
-    pdf.setFillColor('#004972');
+    pdf.setFillColor('#002244');
     pdf.rect(scaleStartX, footerY + footerSpacing * 2, scaleSegmentWidth, scaleHeight, "F");
     // right (empty)
-    pdf.setDrawColor('#004972');
+    pdf.setDrawColor('#002244');
     pdf.rect(scaleCentreX, footerY + footerSpacing * 2, scaleSegmentWidth, scaleHeight);
-    pdf.setTextColor('#004972')
+    pdf.setTextColor('#002244')
     pdf.setFont('Open Sans', 'bold');
     console.log(layoutConfig.scaleBarText);
     pdf.text(layoutConfig.scaleBarText, scaleCentreX, footerY + 7, {align: 'center'});

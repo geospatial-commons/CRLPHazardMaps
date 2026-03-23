@@ -1,5 +1,5 @@
 node_modules/
 afg_pop_2020_CN_100m_R2024B_v1.tif
-districts.geojson 
+districts.geojson
 data/*
 !data/PLACE_DATA_HERE.txt
