@@ -251,6 +251,11 @@
         // PDF preview helpers (global scope — called from pdf-wrapper buttons)
         function hidePreview() {
             document.getElementById('pdf-wrapper').style.zIndex = -1;
+            // Restore Leaflet controls that were hidden during map capture
+            const scaleLine = document.querySelector('.leaflet-control-scale-line');
+            const zoomCtrl = document.querySelector('.leaflet-control-zoom');
+            if (scaleLine) scaleLine.style.display = '';
+            if (zoomCtrl) zoomCtrl.style.display = '';
         }
 
         var globalTintClass = '';
