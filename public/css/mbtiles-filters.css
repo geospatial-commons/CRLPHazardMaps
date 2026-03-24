@@ -9,17 +9,7 @@
 }
 
 .hazard-blue, .blue-tint-layer{
-  /* Mirror red's structure exactly:
-     1. contrast(0.55) compresses range so pure black/white become dark/light gray.
-     2. sepia(100%) converts to warm sepia base.
-     3. hue-rotate(180deg) swings from yellow-orange to blue-cyan.
-     4. saturate(700%) compensates — blue needs more saturation than red because
-        sepia's warm base is farther from blue in hue, so the colorization is weaker.
-     5. brightness(0.8) prevents light values from washing out to white,
-        preserving the full range from light-blue to dark-blue.
-     6. contrast(2) pushes the range back out.
-  */
-  filter: contrast(0.55) sepia(100%) hue-rotate(180deg) saturate(700%) brightness(0.8) contrast(2);
+  filter: contrast(0.5) sepia(100%) hue-rotate(180deg) saturate(500%) contrast(2);
 }
 
 .hazard-green, .green-tint-layer{
