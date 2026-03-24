@@ -179,6 +179,22 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
     checkbox.disabled = true;
     row.appendChild(loadingNote);
 
+    // admin-boundaries reuses the existing provincesLayer to avoid a duplicate
+    // fetch and double boundary lines (simplified context copy vs detailed provinces copy)
+    if (layerConfig.id === 'admin-boundaries') {
+        loadingNote.remove();
+        checkbox.disabled = false;
+        if (provincesLayer) {
+            contextLayerInstances['admin-boundaries'] = provincesLayer;
+            overlayLayers[layerConfig.name] = provincesLayer;
+            if (checkbox.checked && !map.hasLayer(provincesLayer)) {
+                provincesLayer.addTo(map);
+            }
+        }
+        updateZoomNote(row, layerConfig);
+        return;
+    }
+
     if (layerConfig.type === 'geojson') {
         fetch(layerConfig.url)
             .then(res => {
@@ -335,9 +351,17 @@ function renderProvinces(selectedProvId, quality) {
         onEachFeature: function (f, l) {
             l.bindPopup(`<b>Province:</b> ${f.properties.name}`);
         }
-    }).addTo(map);
+    });
 
+    // Sync to context layer instance so the toggle controls this layer
+    contextLayerInstances['admin-boundaries'] = provincesLayer;
     overlayLayers['Provinces'] = provincesLayer;
+
+    // Only add to map if the admin-boundaries toggle is checked (or not yet rendered)
+    const adminCheckbox = document.querySelector('input[data-id="admin-boundaries"]');
+    if (!adminCheckbox || adminCheckbox.checked) {
+        provincesLayer.addTo(map);
+    }
 
     if (selectedProvId === 'all' && quality == 0) {
         map.fitBounds(provincesLayer.getBounds(), { padding: [30, 30] });
