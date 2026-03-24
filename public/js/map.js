@@ -637,6 +637,10 @@ opacityRange.addEventListener('input', function () {
     if (currentHazardLayer) {
         currentHazardLayer.setOpacity(this.value / 100);
     }
+    // Sync opacity to live legend swatches
+    document.querySelectorAll('#legend-content .legend-bar-swatch-color').forEach(el => {
+        el.style.opacity = this.value / 100;
+    });
 });
 
 // ---- TINT BUTTONS ----
@@ -655,6 +659,12 @@ function applyTint(tintClass) {
             if (tintClass === 'hazard-red') container.classList.add('red-tint-layer');
         }
     }
+
+    // Sync tint to live legend swatches
+    document.querySelectorAll('#legend-content .legend-bar-swatch-color').forEach(el => {
+        el.classList.remove('hazard-blue', 'hazard-red');
+        if (tintClass) el.classList.add(tintClass);
+    });
 
     // Update button active state
     [tintBlueBtn, tintRedBtn].forEach(btn => btn.classList.remove('active'));
