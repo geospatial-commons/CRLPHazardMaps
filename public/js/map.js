@@ -18,6 +18,7 @@ let baseMaps = {};
 let scaleBarText;
 let scaleBarWidth;
 let currentHazardDescription = '';
+let globalTintClass = '';
 
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
@@ -646,7 +647,7 @@ function showRaster(hazardLayer) {
         overlay.style.display = 'none';
         enableMapInteraction();
         // Re-apply tint if one was active before this layer loaded
-        if (globalTintClass) applyTint(globalTintClass);
+        // if (globalTintClass) applyTint(globalTintClass);
     });
 
     layer.on('tileerror', (err) => {
@@ -683,6 +684,13 @@ function applyTint(tintClass) {
             if (tintClass === 'hazard-red') container.classList.add('red-tint-layer');
         }
     }
+
+    // Apply tint to legend swatches
+    document.querySelectorAll('#legend-content .legend-bar-swatch-color').forEach(el => {
+        el.classList.remove('red-tint-layer', 'blue-tint-layer');
+        if (tintClass === 'hazard-blue') el.classList.add('blue-tint-layer');
+        if (tintClass === 'hazard-red') el.classList.add('red-tint-layer');
+    });
 
     // Update button active state
     [tintBlueBtn, tintRedBtn].forEach(btn => btn.classList.remove('active'));
@@ -755,7 +763,7 @@ function buildLegend(activeAdminLayers = []) {
             let opacityVal = document.getElementById('opacity-range').value;
             legItemsContainer.innerHTML += `
             <div class="legend-item">
-                <span class="legend-color" style="background-color: ${color}; display: block; opacity: ${opacityVal / 100}"></span>
+                <span class="legend-color ${globalTintClass}" style="background-color: ${color}; display: block; opacity: ${opacityVal / 100}"></span>
                 <span class="legend-label">${label}</span>
             </div>`;
         }
