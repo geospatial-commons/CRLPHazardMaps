@@ -88,7 +88,8 @@ function initMap() {
         vectorTileLayerStyles: {
             contours: { weight: 0.5, color: '#080808' }
         }
-    });
+    }).addTo(map);
+    
     overlayLayers['Contours'] = contourLayer;
 
     getProvinces(0, () => {
