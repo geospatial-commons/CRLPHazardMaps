@@ -5,6 +5,7 @@
 // Make the function async so we can await the font loading
 // Add activeAdminLayers as a parameter to the function
 async function downloadPdf(layoutConfig) {
+
     const mapImgElement = document.getElementById('map-image');
     if (!mapImgElement) {
         alert("Map image not ready yet.");
@@ -20,7 +21,7 @@ async function downloadPdf(layoutConfig) {
         unit: 'mm',
         format: 'a4'
     });
-    
+
     const margin = 2;
     const headerHeight = 14;
     const mapHeight = 170;
@@ -28,7 +29,7 @@ async function downloadPdf(layoutConfig) {
     const pdfWidth = 297;
     const padding = 2;
     const footerHeight = 17;
-    
+
     let dateText = document.getElementById('footer-date').innerText || '';
     dateText = dateText.split(': ')[1] || 'Unknown Date';
     let mapImgWidthPx = document.getElementById('map-image').naturalWidth; // Get the original pixel width of the map image
@@ -110,6 +111,9 @@ async function downloadPdf(layoutConfig) {
     // 1. Get Hazard Data
 
     if (checkedHazard) {
+        // grab the legend in the mainpage
+        const legendDomSwatches = document.querySelectorAll('#legend-content .legend-bar-swatch-color');
+
         // Grab the opacity value from your slider (convert from 0-100 to 0.0-1.0)
         let opacityVal = document.getElementById('opacity-range').value / 100;
 
@@ -127,25 +131,47 @@ async function downloadPdf(layoutConfig) {
         pdf.setFont("Open Sans", "normal");
         pdf.setFontSize(10);
 
+
+
         // Draw Categorical Labels
         if (mapConfig.legend.type === 'categorical') {
             for (let i = 0; i < mapConfig.legend.labels.length; i++) {
                 let label = mapConfig.legend.labels[i];
-                let color = mapConfig.legend.colors[i];
 
-                pdf.setFillColor(color);
-                pdf.setDrawColor('#cccccc');
-                pdf.setLineWidth(0.1);
+                if (globalTintClass && legendDomSwatches[i]) {
+                    try {
+                        const swatchDataUrl = await htmlToImage.toPng(legendDomSwatches[i], {
+                            backgroundColor: null,
+                            pixelRatio: 2
+                        });
 
-                // Turn ON opacity
-                pdf.setGState(transparentState);
-                pdf.rect(legendX, legendY - 3, 5, 5, 'FD');
+                        pdf.addImage(swatchDataUrl, 'PNG', legendX, legendY - 3, 5, 5);
+                        pdf.setDrawColor('#cccccc');
+                        pdf.setLineWidth(0.1);
+                        pdf.rect(legendX, legendY - 3, 5, 5, 'S');
+                    } catch (err) {
+                        console.error('Failed to render tinted legend swatch:', err);
 
-                // Turn OFF opacity so the text isn't transparent!
-                pdf.setGState(normalState);
+                        //set original color with opacity if swatch rendering fails
+                        pdf.setFillColor(mapConfig.legend.colors[i]);
+                        pdf.setDrawColor('#cccccc');
+                        pdf.setLineWidth(0.1);
+                        pdf.setGState(transparentState);
+                        pdf.rect(legendX, legendY - 3, 5, 5, 'FD');
+                        pdf.setGState(normalState);
+                    }
+                } else {
+                    pdf.setFillColor(mapConfig.legend.colors[i]);
+                    pdf.setDrawColor('#cccccc');
+                    pdf.setLineWidth(0.1);
+                    pdf.setGState(transparentState);
+                    pdf.rect(legendX, legendY - 3, 5, 5, 'FD');
+                    pdf.setGState(normalState);
+                }
 
+                pdf.setTextColor('#000000');
                 pdf.text(label, legendX + 8, legendY + 1);
-                legendY += 6; // Move down for the next item
+                legendY += 6;
             }
         }
         // Draw Range Labels (Simulate Gradient)
@@ -214,7 +240,6 @@ async function downloadPdf(layoutConfig) {
         });
     }
 
-    console.log(mapConfig)
     pdf.setFont("Open Sans", "bold");
     pdf.setFontSize(11);
     pdf.text(mapConfig.legend.title, legendX, legendY + 5);
@@ -250,7 +275,7 @@ async function downloadPdf(layoutConfig) {
     pdf.setTextColor('#0000ff');
     pdf.setFont("Open Sans", "italic");
     pdf.textWithLink("INSERT EMAIL HERE", margin + padding + 15, footerY + padding + footerSpacing * 3, { url: "mailto:tbd@worldbank.org" });
-    
+
 
     // ADD SCALE BAR
     const scaleSegmentWidth = scaleBarWidthmm / 2;
@@ -266,8 +291,7 @@ async function downloadPdf(layoutConfig) {
     pdf.rect(scaleCentreX, footerY + footerSpacing * 2, scaleSegmentWidth, scaleHeight);
     pdf.setTextColor('#002244')
     pdf.setFont('Open Sans', 'bold');
-    console.log(layoutConfig.scaleBarText);
-    pdf.text(layoutConfig.scaleBarText, scaleCentreX, footerY + 7, {align: 'center'});
+    pdf.text(layoutConfig.scaleBarText, scaleCentreX, footerY + 7, { align: 'center' });
 
 
     // --- E. SAVE THE PDF ---
@@ -285,5 +309,7 @@ async function fetchFontAsBase64(url) {
     }
     return window.btoa(binary);
 }
+
+
 
 export { downloadPdf };
