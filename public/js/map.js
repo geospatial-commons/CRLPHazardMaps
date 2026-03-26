@@ -842,10 +842,10 @@ function createPdfLayout(download = true) {
     if (zoomControl) zoomControl.style.display = 'none';
     if (scaleBar) scaleBar.style.display = 'none';
 
-    // Temporarily resize map to exact PDF dimensions (230mm × 150mm at 96dpi)
-    // 1mm = 3.7795px → 230mm = 869px, 150mm = 567px
+    // Temporarily resize map to exact PDF dimensions (230mm × 170mm at 96dpi)
+    // 1mm = 3.7795px → 230mm = 869px, 170mm = 642px
     const PDF_MAP_W = 869;
-    const PDF_MAP_H = 567;
+    const PDF_MAP_H = 642;
     const origWidth  = mapElement.style.width;
     const origHeight = mapElement.style.height;
     const origFlex   = mapElement.style.flex;

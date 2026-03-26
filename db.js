@@ -19,11 +19,11 @@ function openOptional(filePath) {
 
 const mbtilesDb =
 {
-    flood:      new Database(path.join(__dirname, 'data/hzd-agf-fl_20rp-fathom.mbtiles'), { readonly: true }),
-    landslide:  new Database(path.join(__dirname, 'data/landslide.mbtiles'), { readonly: true }),
-    avalanche:  new Database(path.join(__dirname, 'data/afg-ls_lav_100rp.mbtiles'), { readonly: true }),
-    earthquake: new Database(path.join(__dirname, 'data/afg_eq-GEM.mbtiles'), { readonly: true }),
-    contours :  openOptional(path.join(__dirname, 'data/contours.mbtiles'))
+    flood:      new Database(path.join(__dirname, 'data/flood_rp20.mbtiles'), { readonly: true }),
+    landslide:  new Database(path.join(__dirname, 'data/landslide_rp20.mbtiles'), { readonly: true }),
+    avalanche:  new Database(path.join(__dirname, 'data/avalanche_rp100.mbtiles'), { readonly: true }),
+    earthquake: new Database(path.join(__dirname, 'data/earthquake_rp475.mbtiles'), { readonly: true }),
+    contours :  openOptional(path.join(__dirname, 'data/contours_100m.mbtiles'))
 };
 
 module.exports = { db, mbtilesDb }; 
