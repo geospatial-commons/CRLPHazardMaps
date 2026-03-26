@@ -1,4 +1,30 @@
 [
-  { "id": "admin-boundaries", "name": "Admin Boundaries", "type": "geojson", "url": "/api/provinces/0", "default": true, "minZoom": 5, "maxZoom": 14 },
-  { "id": "district-capitals", "name": "District Capitals", "type": "geojson", "url": "/data/district-capitals.geojson", "default": false, "minZoom": 8, "maxZoom": 14 }
+  {
+    "id": "prov-boundaries",
+    "name": "Province Boundaries",
+    "type": "geojson",
+    "url": "/api/provinces/0",
+    "default": true,
+    "minZoom": 5,
+    "maxZoom": 14
+  },
+  {
+    "id": "district-capitals",
+    "name": "District Capitals",
+    "type": "geojson",
+    "url": "/data/district-capitals.geojson",
+    "default": false,
+    "minZoom": 8,
+    "maxZoom": 14
+  },
+  {
+    "id": "contours",
+    "name": "Contours",
+    "type": "tiles",
+    "url": "/tiles/contours/{z}/{x}/{y}.pbf",
+    "default": false,
+    "minZoom": 12,
+    "maxNativeZoom": 15,
+    "maxZoom": 18
+  }
 ]

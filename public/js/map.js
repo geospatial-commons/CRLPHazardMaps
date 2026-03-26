@@ -11,7 +11,7 @@ let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
 let communitiesStroke = "#000000";
 let communitiesFill = "#bd1616";
-let hazardLayer, currentHazardLayer;
+let hazardLayer, currentHazardLayer, contourLayer;
 let hazardConfig = {};
 let layoutConfig = {};
 let baseMaps = {};
@@ -81,16 +81,16 @@ function initMap() {
     });
     scaleBar.addTo(map);
 
-    const contourLayer = L.vectorGrid.protobuf('/tiles/contours/{z}/{x}/{y}.pbf', {
-        minZoom: 12,
-        maxNativeZoom: 15,
-        maxZoom: 18,
-        vectorTileLayerStyles: {
-            contours: { weight: 0.5, color: '#080808' }
-        }
-    }).addTo(map);
+    // const contourLayer = L.vectorGrid.protobuf('/tiles/contours/{z}/{x}/{y}.pbf', {
+    //     minZoom: 12,
+    //     maxNativeZoom: 15,
+    //     maxZoom: 18,
+    //     vectorTileLayerStyles: {
+    //         contours: { weight: 0.5, color: '#080808' }
+    //     }
+    // }).addTo(map);
     
-    overlayLayers['Contours'] = contourLayer;
+    // overlayLayers['Contours'] = contourLayer;
 
     getProvinces(0, () => {
         overlay.style.display = 'none';
@@ -181,13 +181,13 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
     checkbox.disabled = true;
     row.appendChild(loadingNote);
 
-    // admin-boundaries reuses the existing provincesLayer to avoid a duplicate
+    // prov-boundaries reuses the existing provincesLayer to avoid a duplicate
     // fetch and double boundary lines (simplified context copy vs detailed provinces copy)
-    if (layerConfig.id === 'admin-boundaries') {
+    if (layerConfig.id === 'prov-boundaries') {
         loadingNote.remove();
         checkbox.disabled = false;
         if (provincesLayer) {
-            contextLayerInstances['admin-boundaries'] = provincesLayer;
+            contextLayerInstances['prov-boundaries'] = provincesLayer;
             overlayLayers[layerConfig.name] = provincesLayer;
             if (checkbox.checked && !map.hasLayer(provincesLayer)) {
                 provincesLayer.addTo(map);
@@ -208,7 +208,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 checkbox.disabled = false;
 
                 const leafletLayer = L.geoJSON(data, {
-                    style: layerConfig.id === 'admin-boundaries' ? {
+                    style: layerConfig.id === 'prov-boundaries' ? {
                         color: provincesColor,
                         weight: 2,
                         fillOpacity: 0
@@ -245,22 +245,41 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 errNote.textContent = `${layerConfig.name} unavailable`;
                 row.appendChild(errNote);
             });
-    } else if (layerConfig.type === 'raster') {
+    } 
+    else if (layerConfig.type === 'tiles') {
         loadingNote.remove();
         checkbox.disabled = false;
-        const rasterLayer = L.tileLayer(layerConfig.url, {
-            minZoom: layerConfig.minZoom || 1,
-            maxZoom: layerConfig.maxZoom || 18,
-            opacity: 0.7,
-            zIndex: 150
+        contourLayer = L.vectorGrid.protobuf(layerConfig.url, {
+            minZoom: layerConfig.minZoom,
+            maxNativeZoom: layerConfig.maxNativeZoom,
+            maxZoom: layerConfig.maxZoom,
+            vectorTileLayerStyles: {
+                contours: { weight: 0.5, color: '#080808' }
+            }
         });
-        contextLayerInstances[layerConfig.id] = rasterLayer;
+        contextLayerInstances[layerConfig.id] = contourLayer;
         if (checkbox.checked) {
-            rasterLayer.addTo(map);
+            contourLayer.addTo(map);
         }
-        overlayLayers[layerConfig.name] = rasterLayer;
+        overlayLayers[layerConfig.name] = contourLayer;
         updateZoomNote(row, layerConfig);
     }
+    // else if (layerConfig.type === 'raster') {
+    //     loadingNote.remove();
+    //     checkbox.disabled = false;
+    //     const rasterLayer = L.tileLayer(layerConfig.url, {
+    //         minZoom: layerConfig.minZoom || 1,
+    //         maxZoom: layerConfig.maxZoom || 18,
+    //         opacity: 0.7,
+    //         zIndex: 150
+    //     });
+    //     contextLayerInstances[layerConfig.id] = rasterLayer;
+    //     if (checkbox.checked) {
+    //         rasterLayer.addTo(map);
+    //     }
+    //     overlayLayers[layerConfig.name] = rasterLayer;
+    //     updateZoomNote(row, layerConfig);
+    // }
 }
 
 function removeContextLayer(id) {
@@ -356,11 +375,11 @@ function renderProvinces(selectedProvId, quality) {
     });
 
     // Sync to context layer instance so the toggle controls this layer
-    contextLayerInstances['admin-boundaries'] = provincesLayer;
+    contextLayerInstances['prov-boundaries'] = provincesLayer;
     overlayLayers['Provinces'] = provincesLayer;
 
-    // Only add to map if the admin-boundaries toggle is checked (or not yet rendered)
-    const adminCheckbox = document.querySelector('input[data-id="admin-boundaries"]');
+    // Only add to map if the prov-boundaries toggle is checked (or not yet rendered)
+    const adminCheckbox = document.querySelector('input[data-id="prov-boundaries"]');
     if (!adminCheckbox || adminCheckbox.checked) {
         provincesLayer.addTo(map);
     }
