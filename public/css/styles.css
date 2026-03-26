@@ -752,14 +752,25 @@ button { cursor: pointer; }
     box-sizing: border-box;
     border: 1px solid #000;
     background: white;
+    padding: 3px;
+    border-right: #fff 2px solid;
 }
 
-#wb-logo {
+#wb-logo, #pdf-hazard-icon {
     width: 36px;
     height: 36px;
     object-fit: contain;
     margin: 8px 10px;
     flex-shrink: 0;
+    border-right: #fff solid 1px;
+    padding-right: 10px;
+}
+
+#wb-logo{
+    border-right: none;
+    border-left: #fff solid 1px;
+    padding-left: 10px;
+    padding-right: 0px;
 }
 
 .row-1 {
@@ -771,16 +782,25 @@ button { cursor: pointer; }
     align-items: center;
 }
 
+#pdf-map-title{
+    margin-top: 0;
+    margin-bottom: 0;
+    color: white;
+    font-size: 22px;
+}
+
 #layout-title {
-    height: 60px;
-    padding: 10px;
+    /*height: 60px;
+    padding: 10px;*/
     margin-bottom: 1px;
     text-align: left;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     color: white;
-    font-size: 22px;
+    font-size: 14px;
+    margin-top: 0;
+    font-weight: 300;
 }
 
 .row-2 {
@@ -894,7 +914,18 @@ button { cursor: pointer; }
     padding: 2px 0;
 }
 
-#active-raster,
+#pdf-hazard-description {
+    font-size: 12px;
+    margin-top: 4px;
+    font-style: italic;
+    width: 100%;
+    box-sizing: border-box;
+    height: 90%;
+    position: relative;
+    resize: none;
+} 
+
+#pdf-description-label,
 #hazard-legend-title,
 #admin-legend-title {
     font-weight: bold;

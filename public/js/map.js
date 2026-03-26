@@ -30,8 +30,10 @@ const previewPdfBtn = document.getElementById('preview-pdf-btn');
 const downloadFromPreviewBtn = document.getElementById('download-from-preview-btn');
 const resetFiltersBtn = document.getElementById('reset-filters-btn');
 const overlay = document.getElementById('loadingOverlay');
-const hazardDescEl = document.getElementById('hazard-description');
+const pdfDescription = document.getElementById('pdf-hazard-description');
 const legendContent = document.getElementById('legend-content');
+const pdfHazardTitle = document.getElementById('pdf-map-title');
+const pdfHazardIcon = document.getElementById('pdf-hazard-icon');
 
 const rasterLabels = {
     'none': 'None',
@@ -89,7 +91,7 @@ function initMap() {
     //         contours: { weight: 0.5, color: '#080808' }
     //     }
     // }).addTo(map);
-    
+
     // overlayLayers['Contours'] = contourLayer;
 
     getProvinces(0, () => {
@@ -245,7 +247,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 errNote.textContent = `${layerConfig.name} unavailable`;
                 row.appendChild(errNote);
             });
-    } 
+    }
     else if (layerConfig.type === 'tiles') {
         loadingNote.remove();
         checkbox.disabled = false;
@@ -576,7 +578,7 @@ resetFiltersBtn.addEventListener('click', function () {
     }
     hazardLayer = null;
     currentHazardDescription = '';
-    if (hazardDescEl) hazardDescEl.textContent = '';
+    if (pdfDescription) pdfDescription.textContent = '';
 
     // Reset hazard radio to None
     const noneRadio = document.querySelector('input[name="hazard-layer"][value="none"]');
@@ -621,14 +623,26 @@ document.querySelectorAll('input[name="hazard-layer"]')
 
             if (hazardConfig[hazardLabel]) {
                 currentHazardDescription = hazardConfig[hazardLabel].text.description;
-                if (hazardDescEl) hazardDescEl.textContent = currentHazardDescription;
+                if (pdfDescription) pdfDescription.textContent = currentHazardDescription; // Update hazard description below map
+                if (pdfHazardTitle) pdfHazardTitle.textContent = currentHazardDescription; // Update PDF map title
+                if (pdfHazardIcon) {
+                    pdfHazardIcon.src = `/assets/img/${hazardConfig[hazardLabel].icon}`;
+                    pdfHazardIcon.style.display = "inline-block";
+                }// Update PDF hazard icon}
             } else {
                 currentHazardDescription = '';
-                if (hazardDescEl) hazardDescEl.textContent = '';
+                if (pdfDescription) pdfDescription.textContent = '';
+                if (pdfHazardTitle) {
+                    pdfHazardTitle.textContent = '';
+                    pdfHazardIcon.style.display = "none";
+
+                }
+                if (pdfHazardIcon) pdfHazardIcon.src = '';
+
             }
 
             // Update PDF content active raster label
-            document.getElementById('active-raster').textContent = hazardLabel;
+            //document.getElementById('active-raster').textContent = hazardLabel;
 
             globalTintClass = '';
             if (tintBlueBtn) tintBlueBtn.classList.remove('active');
@@ -636,6 +650,9 @@ document.querySelectorAll('input[name="hazard-layer"]')
             resetLegend();
             updateLegendBar(this.value);
             toggleRaster(hazardLayer);
+
+            //update pdf header title
+
         });
     });
 
@@ -780,7 +797,7 @@ function buildLegend(activeAdminLayers = []) {
         for (let i = 0; i < mapConfig.legend.labels.length; i++) {
             let label = mapConfig.legend.labels[i];
             let color = mapConfig.legend.colors[i];
-            let opacityVal = document.getElementById('opacity-range').value;           
+            let opacityVal = document.getElementById('opacity-range').value;
 
             legItemsContainer.innerHTML += `
             <div class="legend-item">
@@ -847,7 +864,7 @@ function createPdfLayout(download = true) {
 
     document.getElementById('footer-date').innerHTML = `<strong>Date Created: </strong> ${formattedDate}`;
 
-    const scaleLineEl = document.querySelector(".leaflet-control-scale-line");
+    const scaleLineEl = document.querySelector(".leaflet-control-scale-line"); //scalebar element in the leaflet map
     scaleBarWidth = scaleLineEl.style.width || (scaleLineEl.offsetWidth + 'px');
     scaleBarText = scaleLineEl.textContent;
 
@@ -865,20 +882,20 @@ function createPdfLayout(download = true) {
     // 1mm = 3.7795px → 230mm = 869px, 170mm = 642px
     const PDF_MAP_W = 869;
     const PDF_MAP_H = 642;
-    const origWidth  = mapElement.style.width;
+    const origWidth = mapElement.style.width;
     const origHeight = mapElement.style.height;
-    const origFlex   = mapElement.style.flex;
-    mapElement.style.width  = PDF_MAP_W + 'px';
+    const origFlex = mapElement.style.flex;
+    mapElement.style.width = PDF_MAP_W + 'px';
     mapElement.style.height = PDF_MAP_H + 'px';
-    mapElement.style.flex   = 'none';
+    mapElement.style.flex = 'none';
     map.invalidateSize({ animate: false });
 
     htmlToImage.toPng(mapElement, { width: PDF_MAP_W, height: PDF_MAP_H, pixelRatio: 2 })
         .then(function (dataUrl) {
             // Restore map dimensions
-            mapElement.style.width  = origWidth;
+            mapElement.style.width = origWidth;
             mapElement.style.height = origHeight;
-            mapElement.style.flex   = origFlex;
+            mapElement.style.flex = origFlex;
             map.invalidateSize({ animate: false });
 
             if (zoomControl) zoomControl.style.display = '';
@@ -919,6 +936,7 @@ function createPdfLayout(download = true) {
             // mapTitle: use user-entered value or fall back to location string
             const mapTitleInput = document.getElementById('map-title');
             const mapTitle = (mapTitleInput && mapTitleInput.value.trim()) ? mapTitleInput.value.trim() : titleText;
+            const hazardTitle = document.getElementById("pdf-map-title").innerText
 
             layoutConfig = {
                 hazardConfig: hazardConfig,
@@ -932,7 +950,7 @@ function createPdfLayout(download = true) {
                 communitiesStroke: communitiesStroke,
                 communitiesFill: communitiesFill,
                 hazardDescription: currentHazardDescription,
-                mapTitle: mapTitle,
+                mapTitle: [hazardTitle, mapTitle],
             };
 
             if (download) {
@@ -944,9 +962,9 @@ function createPdfLayout(download = true) {
             }
         })
         .catch(err => {
-            mapElement.style.width  = origWidth;
+            mapElement.style.width = origWidth;
             mapElement.style.height = origHeight;
-            mapElement.style.flex   = origFlex;
+            mapElement.style.flex = origFlex;
             map.invalidateSize({ animate: false });
             if (zoomControl) zoomControl.style.display = '';
             if (scaleBar) scaleBar.style.display = '';

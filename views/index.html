@@ -64,8 +64,10 @@
                 <div class="sidebar-section">
                     <h2 class="section-label">BASEMAP</h2>
                     <div id="basemap-switcher">
-                        <button class="basemap-btn active" data-basemap="Esri Satellite" aria-label="Switch to satellite basemap">Satellite</button>
-                        <button class="basemap-btn" data-basemap="OpenStreetMap" aria-label="Switch to streets basemap">Streets</button>
+                        <button class="basemap-btn active" data-basemap="Esri Satellite"
+                            aria-label="Switch to satellite basemap">Satellite</button>
+                        <button class="basemap-btn" data-basemap="OpenStreetMap"
+                            aria-label="Switch to streets basemap">Streets</button>
                     </div>
                 </div>
 
@@ -122,7 +124,8 @@
                         <div id="tint-buttons">
                             <button class="tint-btn" id="tint-blue-btn" aria-label="Apply blue tint">Blue</button>
                             <button class="tint-btn" id="tint-red-btn" aria-label="Apply red tint">Red</button>
-                            <button class="tint-btn tint-reset-btn" id="tint-reset-btn" aria-label="Reset tint">Reset</button>
+                            <button class="tint-btn tint-reset-btn" id="tint-reset-btn"
+                                aria-label="Reset tint">Reset</button>
                         </div>
                     </div>
                 </div>
@@ -144,7 +147,8 @@
                             aria-label="Custom map title for PDF export">
                     </div>
                     <div id="export-buttons">
-                        <button id="preview-pdf-btn" class="preview-btn" aria-label="Preview PDF layout">Preview</button>
+                        <button id="preview-pdf-btn" class="preview-btn"
+                            aria-label="Preview PDF layout">Preview</button>
                         <button id="download-pdf-btn" class="export-btn">Export PDF</button>
                     </div>
                     <p class="export-meta">A4 print · legend &amp; scale included</p>
@@ -178,12 +182,25 @@
             </button>
         </div>
         <div id="pdf-content">
-            <div class="row-1">
+            <!-- Header -->
+            <div class="row-1" style="justify-content: space-between;">
+                <div style="display: flex;">
+                    <img id="pdf-hazard-icon" src="" alt="" style="display:none" />
+                    <div>
+                        <h1 id="pdf-map-title"></h1>
+                        <h2 id="layout-title"></h2>
+                    </div>
+                </div>
                 <img id="wb-logo" src="/assets/img/globe.png" alt="World Bank Group" />
-                <div id="layout-title"></div>
             </div>
+
+            <!-- Body -->
             <div class="row-2">
+
+                <!-- Map Container -->
                 <div id="map-container"></div>
+
+                <!-- Legend Container -->
                 <div id="right-panel">
                     <div id="right-panel-row-1">
                         <p id="hazard-legend-title"></p>
@@ -212,10 +229,13 @@
                         </div>
                     </div>
                     <div id="right-panel-row-2">
-                        <p id="active-raster"></p>
+                        <p id="pdf-description-label">Hazard Description</p>
+                        <textarea name="" id="pdf-hazard-description"></textarea>
                     </div>
                 </div>
             </div>
+
+            <!-- Footer -->
             <div id="footer" class="row-3">
                 <div id="footer-column-1">
                     <p id="footer-text">The boundaries and names shown and the designations used on this map do not
@@ -239,9 +259,11 @@
     <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
     <script src="https://unpkg.com/leaflet.vectorgrid/dist/Leaflet.VectorGrid.bundled.js"></script>
 
+
     <!-- Vendored export libraries (local — offline-safe) -->
     <script src="/js/html-to-image.min.js"></script>
-    <script src="/js/jspdf.umd.min.js"></script>
+    <script src="js/jspdf.umd.min.js"></script>
+    <script src="js/svg2pdf.umd.min.js"></script>
 
     <!-- App JS -->
     <script type="module" src="/js/pdf-export.js"></script>

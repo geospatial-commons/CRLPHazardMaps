@@ -9,7 +9,8 @@
             "type": "categorical",
             "labels": [],
             "colors": []
-        }
+        },
+        "icon": ""
     },
     "Flood Hazard": {
         "hazardLayer": "flood",
@@ -21,7 +22,8 @@
             "type": "categorical",
             "labels": ["High hazard", "Medium hazard", "Low hazard"],
             "colors": ["#fdae61", "#ffffbf", "#abdda4"]
-        }
+        },
+        "icon": "Flash-flood.svg"
     },
     "Avalanche Hazard": {
         "hazardLayer": "avalanche",
@@ -33,19 +35,21 @@
             "type": "categorical",
             "labels": ["Very high hazard", "High hazard", "Medium hazard", "Low hazard", "Very low hazard"],
             "colors": ["#b14e5b", "#d16364", "#fec690", "#ffffc0", "#c4e7bf"]
-        }
+        },
+        "icon": "Snow-avalanche.svg"
     },
     "Landslide Hazard": {
         "hazardLayer": "landslide",
         "text": {
-            "description": "Landslide - Rainfall induced: GIRI/NGI - (20-Year Return Period)"
+            "description": "Landslide - Rainfall induced: GIRI/NGI - 20 Year Return Period"
         },
         "legend": {
             "title": "Landslide Hazard",
             "type": "categorical",
             "labels": ["Significant susceptibility","Moderate susceptibility","Low susceptibility","Very low susceptibility"],
             "colors": ["#bd1e20","#fdae61", "#ffffbf", "#abdda4" ]
-        }
+        },
+        "icon": "Landslide-mudslide.svg"
     },
     "Earthquake Hazard": {
         "hazardLayer": "earthquake",
@@ -56,6 +60,8 @@
             "type": "categorical",
             "labels": ["Extreme shaking", "Violent shaking", "Severe shaking" , "Very strong shaking", "Strong shaking", "Moderate shaking"],
             "colors": ["#8F0013", "#BD1E20", "#FDAE61", "#FFFFBF", "#ABDDA4", "#669d2d"]
-        }
+        },
+        "icon": ""
+        
     }
 }
