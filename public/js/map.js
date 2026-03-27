@@ -11,6 +11,8 @@ let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
 let communitiesStroke = "#000000";
 let communitiesFill = "#bd1616";
+let districtCapitalColor = "#FFD700";
+let districtCapitalStroke = "#000000";
 let hazardLayer, currentHazardLayer, contourLayer;
 let hazardConfig = {};
 let layoutConfig = {};
@@ -218,15 +220,16 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                     pointToLayer: layerConfig.id === 'district-capitals' ? function (feature, latlng) {
                         return L.circleMarker(latlng, {
                             radius: 4,
-                            fillColor: '#FFD700',
-                            color: '#000',
+                            fillColor: districtCapitalColor,
+                            color: districtCapitalStroke,
                             weight: 1,
-                            fillOpacity: 0.9
+                            fillOpacity: 0.9,
+                            zIndex: 150
                         });
                     } : undefined,
                     onEachFeature: function (f, l) {
                         if (f.properties && f.properties.name) {
-                            l.bindPopup(`<b>${f.properties.name}</b>`);
+                            l.bindPopup(`<b>District Capital: </b>${f.properties.name}`);
                         }
                     }
                 });
@@ -454,7 +457,8 @@ function renderCommunities(distId) {
                         fillColor: communitiesFill,
                         color: communitiesStroke,
                         weight: 1,
-                        fillOpacity: 0.9
+                        fillOpacity: 0.9,
+                        zIndex:100
                     });
                 },
                 onEachFeature: function (f, l) {
@@ -546,6 +550,16 @@ distSelect.addEventListener('change', function () {
             map.removeLayer(communityLayer);
         }
         renderCommunities(distId);
+        
+        // Preserve visibility of checked context layers
+        document.querySelectorAll('#context-layers input[type="checkbox"]:checked').forEach(checkbox => {
+            const layerId = checkbox.dataset.id;
+            const layer = contextLayerInstances[layerId];
+            if (layer && !map.hasLayer(layer)) {
+                layer.addTo(map);
+            }
+        });
+        
         commSelect.innerHTML = '<option value="all">-- Select District --</option>';
         commSelect.disabled = true;
     }
@@ -836,7 +850,14 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
                 document.querySelector(".legend-color.admin-comm").style.backgroundColor = communitiesFill;
                 document.querySelector(".legend-label.admin-comm").textContent = 'Settlement';
+            } 
+            else if (layerName === 'District Capitals') {
+                document.querySelector(".legend-color.dist-capital").style.display = 'block';
+                document.querySelector(".legend-color.dist-capital").style.border = `1px solid ${districtCapitalStroke}`;
+                document.querySelector(".legend-color.dist-capital").style.backgroundColor = districtCapitalColor;
+                document.querySelector(".legend-label.dist-capital").textContent = 'District Capital';
             }
+
         });
     }
 }
@@ -871,7 +892,7 @@ function createPdfLayout(download = true) {
     let activeAdminLayers = Object.entries(overlayLayers)
         .filter(([key, layer]) => map.hasLayer(layer))
         .map(([key]) => key);
-
+    console.log("Active admin layers for legend:", activeAdminLayers);
     buildLegend(activeAdminLayers);
 
     // Hide zoom and scale controls for clean screenshot
@@ -949,6 +970,8 @@ function createPdfLayout(download = true) {
                 districtsColor: districtsColor,
                 communitiesStroke: communitiesStroke,
                 communitiesFill: communitiesFill,
+                districtCapitalColor: districtCapitalColor,
+                districtCapitalStroke: districtCapitalStroke, 
                 hazardDescription: currentHazardDescription,
                 mapTitle: [hazardTitle, mapTitle],
             };

@@ -255,6 +255,29 @@ button { cursor: pointer; }
     gap: 2px;
 }
 
+#hazard-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+}
+
+#hazard-list li:has(input[type="radio"]:checked) {
+    background: rgba(0, 159, 218, 0.1);
+}
+
+.hazard-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+#hazard-list li:has(input[type="radio"]:checked) .hazard-icon {
+    opacity: 1;
+}
+
 .hazard-option {
     display: flex;
     flex-direction: column;
@@ -264,6 +287,7 @@ button { cursor: pointer; }
     border-left: 3px solid transparent;
     transition: background 0.15s ease, border-color 0.15s ease;
     position: relative;
+    flex: 1;
 }
 
 /* Hide native radio */
@@ -301,7 +325,6 @@ button { cursor: pointer; }
 /* Selected hazard: WB Blue left-border */
 .hazard-option:has(input[type="radio"]:checked) {
     border-left-color: var(--wb-blue);
-    background: rgba(0, 159, 218, 0.1);
 }
 
 .hazard-option:has(input[type="radio"]:checked) .hazard-name {
@@ -871,7 +894,8 @@ button { cursor: pointer; }
     margin: 3px;
 }
 
-.legend-label.admin-comm {
+.legend-label.admin-comm,
+.legend-label.dist-capital {
     margin-left: 8px;
 }
 
@@ -889,7 +913,8 @@ button { cursor: pointer; }
     display: none;
 }
 
-.legend-color.admin-comm {
+.legend-color.admin-comm,
+.legend-color.dist-capital {
     width: 6px;
     height: 6px;
     margin: 6px;

@@ -194,4 +194,34 @@ router.get('/api/communities/:distId', (req, res) => {
     }
 });
 
+router.get('/api/district-capitals', (req, res) => {
+    try {
+        const query = `
+            SELECT dis_name, POINT_X, POINT_Y
+            FROM AfghanistanAdminCenters
+            WHERE Unit_Type = 'District_Center'
+        `;
+
+        const districtCapitals = db.prepare(query).all();
+
+        const geojson = {
+            type: "FeatureCollection",
+            features: districtCapitals.map(c => ({
+                type: "Feature",
+                properties: { name: c.dis_name },
+                geometry: {
+                    type: "Point",
+                    coordinates: [c.POINT_X, c.POINT_Y]
+                }
+            }))
+        };
+
+        res.json(geojson);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Database Error");
+    }
+});
+
+
 module.exports = router;

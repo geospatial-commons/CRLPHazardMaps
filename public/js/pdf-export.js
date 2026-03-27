@@ -303,7 +303,15 @@ async function downloadPdf(layoutConfig) {
                 pdf.circle(legendX + 2.5, legendY - 0.5, 1, 'FD');
                 pdf.text('Settlement', legendX + 8, legendY + 1);
                 legendY += 7;
+            } else if (layerName === 'District Capitals') {
+                pdf.setFillColor(layoutConfig.districtCapitalColor); // Make sure this variable is accessible!
+                pdf.setDrawColor(layoutConfig.districtCapitalStroke);
+                pdf.setLineWidth(0.2);
+                pdf.circle(legendX + 2.5, legendY - 0.5, 1, 'FD');
+                pdf.text('District Capital', legendX + 8, legendY + 1);
+                legendY += 7;
             }
+
         });
     }
 

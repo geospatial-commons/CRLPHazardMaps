@@ -12,9 +12,9 @@
     "id": "district-capitals",
     "name": "District Capitals",
     "type": "geojson",
-    "url": "/data/district-capitals.geojson",
+    "url": "/api/district-capitals",
     "default": false,
-    "minZoom": 8,
+    "minZoom": 6,
     "maxZoom": 14
   },
   {
