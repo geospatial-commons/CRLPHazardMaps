@@ -19,7 +19,7 @@
   },
   {
     "id": "contours",
-    "name": "Contours",
+    "name": "Contours - 100m",
     "type": "tiles",
     "url": "/tiles/contours/{z}/{x}/{y}.pbf",
     "default": false,
