@@ -134,10 +134,17 @@ async function downloadPdf(layoutConfig) {
                 // Fallback just in case fetch fails
                 pdf.addImage(src, 'PNG', xPos, yPos, logoSizeMM, logoSizeMM);
             }
-        } else if(src) {
+        } else if(!src.toLowerCase().endsWith('app')) {
+            console.log("src",src);
+            
             // --- RASTER LOGIC (PNG/JPG) ---
             // jsPDF's addImage handles URL strings directly
-            pdf.addImage(src, 'PNG', xPos, yPos, logoSizeMM, logoSizeMM);
+            try {
+                pdf.addImage(src, 'PNG', xPos, yPos, logoSizeMM, logoSizeMM);
+            } catch (error) {
+                console.log(error);
+            }
+            
         }
     }
 
