@@ -4,6 +4,25 @@ All notable changes to the CRLP Hazard Mapping Application are documented here.
 
 ---
 
+## [1.1.0] - 2026-03-27
+
+### Added
+- Security middleware: Helmet (HTTP security headers), rate limiting (100 req/15 min per IP), and express-validator param validation on all tile and API routes
+- Contours context layer (100m interval) available as a vector overlay at zoom 12+
+- Earthquake SVG icon added to assets (layer hidden pending national dataset)
+
+### Changed
+- Hazard layer data files renamed to `[hazard]_rp[year]` convention (`flood_rp20`, `landslide_rp20`, `avalanche_rp100`, `earthquake_rp475`, `contours_100m`)
+- Contours renamed to "Contours - 100m" throughout UI, preview legend, and PDF export
+- Earthquake hidden from hazard selector (national earthquake dataset in development)
+- Tint controls (Blue/Red) hidden from sidebar — hazard colors are accurate without tinting
+- Custom map title input hidden from Export section — will be replaced with inline editable field
+
+### Fixed
+- All MBTile connections now use `openOptional()` — server no longer crashes if a layer file is absent; missing layers return 404 instead of 500
+
+---
+
 ## [1.0.0] - 2026-03-23
 
 ### Added

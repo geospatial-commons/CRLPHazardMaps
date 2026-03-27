@@ -9,12 +9,12 @@ A semi-automated web application for generating hazard risk maps for community-l
 ## Key Features
 
 - Web-based interface for on-demand map generation
-- Multi-hazard layer support: earthquake, flood, landslide, avalanche
+- Multi-hazard layer support: flood, landslide, avalanche (earthquake layer available but hidden pending national dataset)
 - Drill-down location selection: Province → District → Community
 - Automated legend and scale generation
 - PDF export with preview: print-ready A4 layout with legend, scale bar, and WB disclaimer
 - Context layers (admin boundaries, configurable via `public/context-config.json`)
-- Opacity and color-tint controls for hazard layers
+- Opacity control for hazard layers
 - Tile serving from local MBTiles files — no external tile service required
 - Offline-capable: export libraries vendored locally (no CDN dependency for PDF generation)
 
@@ -100,21 +100,23 @@ Go to, or create, the `data/` directory at the project root and place the follow
 CRLPHazardMaps/
 └── data/
     ├── afghanistan_data.gpkg
-    ├── hzd-agf-fl_20rp-fathom.mbtiles
-    ├── landslide.mbtiles
-    ├── afg-ls_lav_100rp.mbtiles
-    └── afg_eq-GEM.mbtiles
+    ├── flood_rp20.mbtiles
+    ├── landslide_rp20.mbtiles
+    ├── avalanche_rp100.mbtiles
+    ├── earthquake_rp475.mbtiles
+    └── contours_100m.mbtiles        (optional)
 ```
 
 | File | Contents |
 |---|---|
 | `afghanistan_data.gpkg` | GeoPackage with province, district, and settlement boundaries |
-| `hzd-agf-fl_20rp-fathom.mbtiles` | Flood hazard raster tiles (Fathom, 20-year return period) |
-| `landslide.mbtiles` | Landslide hazard raster tiles |
-| `afg-ls_lav_100rp.mbtiles` | Avalanche hazard raster tiles (100-year return period) |
-| `afg_eq-GEM.mbtiles` | Earthquake hazard raster tiles (GEM/OpenQuake) |
+| `flood_rp20.mbtiles` | Flood hazard raster tiles (Fathom, 20-year return period) |
+| `landslide_rp20.mbtiles` | Landslide hazard raster tiles (GIRI/NGI, 20-year return period) |
+| `avalanche_rp100.mbtiles` | Avalanche hazard raster tiles (MHRA, 100-year return period) |
+| `earthquake_rp475.mbtiles` | Earthquake hazard raster tiles (GEM/OpenQuake, 475-year return period) |
+| `contours_100m.mbtiles` | 100m contour lines — optional, server skips gracefully if absent |
 
-> **Note:** The filenames must match exactly as listed above. The server will fail to start if any file is missing.
+> **Note:** All files except `contours_100m.mbtiles` are required. The server will fail to start if any required file is missing.
 
 ### 4. Start the Server
 
@@ -134,7 +136,7 @@ Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 
 1. **Landing page** — click **Enter Application** to open the map.
 2. **Select a location** — use the Province → District → Settlement dropdowns. The map zooms to your selection.
-3. **Toggle a hazard layer** — use the radio buttons to overlay flood, landslide, avalanche, or earthquake data. Adjust opacity and color tint as needed.
+3. **Toggle a hazard layer** — use the radio buttons to overlay flood, landslide, or avalanche data. Adjust opacity as needed.
 4. **Toggle context layers** — show/hide admin boundaries and other reference layers from the CONTEXT LAYERS section.
 5. **Export to PDF** — click **Preview** to review the A4 layout, or **Export PDF** to download directly. The export includes the legend, scale bar, and WB disclaimer.
 
@@ -147,7 +149,8 @@ CRLPHazardMaps/
 ├── server.js                   # Express server entry point
 ├── db.js                       # Database connections (GeoPackage + MBTiles)
 ├── routes/
-│   └── routes.js               # API routes and tile-serving endpoints
+│   ├── routes.js               # API routes and tile-serving endpoints
+│   └── validationParams.js     # express-validator middleware for route params
 ├── views/
 │   ├── landing.html            # Splash/landing page
 │   └── index.html              # Main map application
@@ -162,10 +165,11 @@ CRLPHazardMaps/
 │   └── css/                    # Stylesheets (WB Design System tokens)
 └── data/                       # NOT in git — add manually (see above)
     ├── afghanistan_data.gpkg
-    ├── hzd-agf-fl_20rp-fathom.mbtiles
-    ├── landslide.mbtiles
-    ├── afg-ls_lav_100rp.mbtiles
-    └── afg_eq-GEM.mbtiles
+    ├── flood_rp20.mbtiles
+    ├── landslide_rp20.mbtiles
+    ├── avalanche_rp100.mbtiles
+    ├── earthquake_rp475.mbtiles
+    └── contours_100m.mbtiles
 ```
 
 ---
@@ -200,10 +204,12 @@ The server exposes the following endpoints (used internally by the map client):
 |---|---|
 | `GET /` | Landing page |
 | `GET /app` | Main map application |
-| `GET /tiles/:layer/:z/:x/:y.png` | Serves raster tiles from MBTiles |
-| `GET /api/provinces/:quality` | Province boundaries as GeoJSON |
+| `GET /tiles/:layer/:z/:x/:y.png` | Serves raster tiles from MBTiles (flood, landslide, avalanche, earthquake) |
+| `GET /tiles/contours/:z/:x/:y.pbf` | Serves vector contour tiles (returns 404 if `contours_100m.mbtiles` is absent) |
+| `GET /api/provinces/:quality` | Province boundaries as GeoJSON (quality: 0=simplified, 1=full) |
 | `GET /api/districts/:provId` | District boundaries for a province |
 | `GET /api/communities/:distId` | Settlement points for a district |
+| `GET /api/district-capitals` | District capital points as GeoJSON (static file) |
 
 ---
 
