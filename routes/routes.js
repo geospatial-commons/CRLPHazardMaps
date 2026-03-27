@@ -235,21 +235,21 @@ router.get('/api/communities/search/name', validationParam.validateSearchName, (
     try {
         const query = `
             SELECT 
-                COALESCE(match_cdc_name, point_name) AS display_name, 
+                point_name AS display_name, 
                 match_cdc_id,
                 norm_dist_code,
                 norm_prov_code,
                 coord_x, 
                 coord_y
             FROM settlements
-            WHERE match_cdc_name LIKE ? OR point_name LIKE ?
-            ORDER BY (match_cdc_name LIKE ?) DESC -- Prioritizes matches in cdc_name first
+            WHERE point_name LIKE ?
+            ORDER BY (point_name LIKE ?) DESC -- Prioritizes matches in point_name first
             LIMIT 50
         `;
 
         const searchTerm = `%${q}%`;
         // We pass searchTerm three times: for match_cdc_name, point_name, and the ORDER BY
-        const results = db.prepare(query).all(searchTerm, searchTerm, searchTerm);
+        const results = db.prepare(query).all(searchTerm, searchTerm);
         res.json(results);
     } catch (err) {
         console.error(err);
@@ -264,7 +264,7 @@ router.get('/api/communities/search/code', validationParam.validateSearchCode, (
     try {
         const query = `
             SELECT 
-                COALESCE(match_cdc_name, point_name) AS display_name, 
+                point_name AS display_name, 
                 match_cdc_id,
                 norm_prov_code,
                 norm_dist_code, 

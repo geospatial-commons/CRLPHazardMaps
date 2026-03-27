@@ -11,6 +11,7 @@ let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
 let communitiesStroke = "#000000";
 let communitiesFill = "#bd1616";
+let selctedCommunityColor = "#FFFF00";
 let districtCapitalColor = "#FFD700";
 let districtCapitalStroke = "#000000";
 let hazardLayer, currentHazardLayer, contourLayer;
@@ -463,12 +464,25 @@ function renderCommunities(distId) {
                         color: communitiesStroke,
                         weight: 1,
                         fillOpacity: 0.9,
-                        zIndex:100
+                        zIndex: 100
                     });
                 },
                 onEachFeature: function (f, l) {
                     l.bindPopup(`<b>Settlement:</b> ${f.properties.name}`, { className: 'community-popup' });
                     l.on('click', function () {
+                        // 1. Reset all markers to the default style first
+                        communityLayer.setStyle({
+                            radius: 5,
+                            fillColor: communitiesFill,
+                            color: communitiesStroke,
+                            weight: 1
+                        });
+
+                        // 2. Set the style for the specific marker that was clicked
+                        l.setStyle({
+                            radius: 6,
+                            fillColor: selctedCommunityColor,
+                        });
                         const clickedName = f.properties.name;
                         const clickedCoords = f.geometry.coordinates;
                         const targetCombined = `${clickedName}_${clickedCoords[1]},${clickedCoords[0]}`;
@@ -555,7 +569,7 @@ distSelect.addEventListener('change', function () {
             map.removeLayer(communityLayer);
         }
         renderCommunities(distId);
-        
+
         // Preserve visibility of checked context layers
         document.querySelectorAll('#context-layers input[type="checkbox"]:checked').forEach(checkbox => {
             const layerId = checkbox.dataset.id;
@@ -564,7 +578,7 @@ distSelect.addEventListener('change', function () {
                 layer.addTo(map);
             }
         });
-        
+
         commSelect.innerHTML = '<option value="all">-- Select District --</option>';
         commSelect.disabled = true;
     }
@@ -611,20 +625,48 @@ resetFiltersBtn.addEventListener('click', function () {
 });
 
 commSelect.addEventListener('change', function () {
-    if (this.value === 'all') return;
+    if (this.value === 'all') {
+        // Reset styles if "all" is selected
+        communityLayer.setStyle({
+            radius: 5,
+            fillColor: communitiesFill,
+            weight: 1
+        });
+        return;
+    }
+
     var coords = this.value.split(',').map(Number);
     const selectedCombined = this.options[this.selectedIndex].dataset.combined;
 
     map.flyTo([coords[0], coords[1]], 16, { animate: true, duration: 1.5 });
 
-    // After fly completes, open the popup for the matching marker
+    // After fly completes, find the marker, style it, and open popup
     map.once('moveend', function () {
         if (!communityLayer) return;
+
+        // 1. First, reset all markers to default style
+        communityLayer.setStyle({
+            radius: 5,
+            fillColor: communitiesFill,
+            color: communitiesStroke,
+            weight: 1
+        });
+
         communityLayer.eachLayer(function (layer) {
             const f = layer.feature;
             const c = f.geometry.coordinates;
             const combined = `${f.properties.name}_${c[1]},${c[0]}`;
+
             if (combined === selectedCombined) {
+                // 2. Highlight the matching marker
+                layer.setStyle({
+                    radius: 6,
+                    fillColor: 'yellow'
+                });
+
+                // If radius doesn't update via setStyle, use:
+                if (layer.setRadius) layer.setRadius(6);
+
                 layer.openPopup();
             }
         });
@@ -639,7 +681,6 @@ document.querySelectorAll('input[name="hazard-layer"]')
         radio.addEventListener('change', function () {
             let hazardLabel = rasterLabels[this.value];
             hazardLayer = hazardConfig[hazardLabel] ? hazardConfig[hazardLabel].hazardLayer : null;
-
             if (!hazardLabel) hazardLabel = "None"
 
             if (hazardConfig[hazardLabel]) {
@@ -675,12 +716,6 @@ document.querySelectorAll('input[name="hazard-layer"]')
 
         });
     });
-
-// make sure None is selected at start
-const noneRadio = document.querySelector('input[name="hazard-layer"][value="none"]');
-if (noneRadio) noneRadio.checked = true;
-noneRadio.dispatchEvent(new Event('change'));
-
 
 function toggleRaster(hazardLayer) {
     if (currentHazardLayer) {
@@ -858,7 +893,7 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
                 document.querySelector(".legend-color.admin-comm").style.backgroundColor = communitiesFill;
                 document.querySelector(".legend-label.admin-comm").textContent = 'Settlement';
-            } 
+            }
             else if (layerName === 'District Capitals') {
                 document.querySelector(".legend-color.dist-capital").style.display = 'block';
                 document.querySelector(".legend-color.dist-capital").style.border = `1px solid ${districtCapitalStroke}`;
@@ -965,7 +1000,7 @@ function createPdfLayout(download = true) {
             // mapTitle: use user-entered value or fall back to location string
             const mapTitleInput = document.getElementById('map-title');
             const mapTitle = (mapTitleInput && mapTitleInput.value.trim()) ? mapTitleInput.value.trim() : titleText;
-            const hazardTitle = document.getElementById("pdf-map-title").innerText
+            const hazardTitle = document.getElementById("pdf-map-title")?.innerText?.trim() || "CRLP Hazard Mapping - No hazard selected";
 
             layoutConfig = {
                 hazardConfig: hazardConfig,
@@ -979,7 +1014,7 @@ function createPdfLayout(download = true) {
                 communitiesStroke: communitiesStroke,
                 communitiesFill: communitiesFill,
                 districtCapitalColor: districtCapitalColor,
-                districtCapitalStroke: districtCapitalStroke, 
+                districtCapitalStroke: districtCapitalStroke,
                 hazardDescription: currentHazardDescription,
                 mapTitle: [hazardTitle, mapTitle],
             };
@@ -1004,7 +1039,7 @@ function createPdfLayout(download = true) {
             console.error('PDF capture failed:', err);
         });
 
-        
+
 }
 
 downloadPdfBtn.addEventListener('click', function () {
