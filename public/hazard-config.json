@@ -52,6 +52,7 @@
         "icon": "Landslide-mudslide.svg"
     },
     "Earthquake Hazard": {
+        "disabled": true,
         "hazardLayer": "earthquake",
         "text": {
             "description": "Earthquake: openquake - (475 years Return Period)" },

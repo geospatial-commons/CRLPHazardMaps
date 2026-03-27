@@ -105,6 +105,7 @@
                                 <span class="hazard-source">GIRI / NGI</span>
                             </label>
                         </li>
+                        <!-- EARTHQUAKE HIDDEN: re-enable when national earthquake map is ready
                         <li>
                             <img src="/assets/img/Earthquake.svg" alt="" class="hazard-icon" />
                             <label class="hazard-option">
@@ -113,6 +114,7 @@
                                 <span class="hazard-source">GEM</span>
                             </label>
                         </li>
+                        -->
                     </ul>
                     <p id="hazard-description" class="hazard-meta"></p>
                     <div id="opacity-slider">
@@ -123,7 +125,7 @@
                         <input type="range" id="opacity-range" min="0" max="100" step="1" value="50"
                             aria-label="Hazard layer opacity">
                     </div>
-                    <div id="tint-controls">
+                    <div id="tint-controls" style="display:none">
                         <span class="field-label">Color Tint</span>
                         <div id="tint-buttons">
                             <button class="tint-btn" id="tint-blue-btn" aria-label="Apply blue tint">Blue</button>
@@ -145,11 +147,13 @@
                 <!-- 5. EXPORT -->
                 <div class="sidebar-section">
                     <h2 class="section-label">EXPORT</h2>
+                    <!-- MAP TITLE HIDDEN: re-enable if custom title input is needed
                     <div class="sidebar-field">
                         <label class="field-label" for="map-title">Map Title</label>
                         <input type="text" id="map-title" placeholder="Optional — auto-filled from location"
                             aria-label="Custom map title for PDF export">
                     </div>
+                    -->
                     <div id="export-buttons">
                         <button id="preview-pdf-btn" class="preview-btn"
                             aria-label="Preview PDF layout">Preview</button>
