@@ -61,7 +61,7 @@
             "labels": ["Extreme shaking", "Violent shaking", "Severe shaking" , "Very strong shaking", "Strong shaking", "Moderate shaking"],
             "colors": ["#8F0013", "#BD1E20", "#FDAE61", "#FFFFBF", "#ABDDA4", "#669d2d"]
         },
-        "icon": ""
+        "icon": "Earthquake.svg"
         
     }
 }
