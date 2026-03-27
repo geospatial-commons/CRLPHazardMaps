@@ -168,10 +168,13 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
         const query = `
             SELECT point_name, norm_dist_code,
                    coord_y,
-                   coord_x
+                   coord_x,
+                   match_cdc_id,
+                   match_cdc_name
             FROM settlements
             WHERE norm_dist_code = ? 
             /*and GPS_Verified = true*/
+            /*and match_cdc_id IS NOT NULL*/
         `;
 
         const communities = db.prepare(query).all(distId);
@@ -222,6 +225,68 @@ router.get('/api/district-capitals', (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send("Database Error");
+    }
+});
+
+// Search by Name (Partial match anywhere)
+router.get('/api/communities/search/name', validationParam.validateSearchName, (req, res) => {
+    const { q } = req.query;
+
+    try {
+        const query = `
+            SELECT 
+                COALESCE(match_cdc_name, point_name) AS display_name, 
+                match_cdc_id,
+                norm_dist_code,
+                norm_prov_code,
+                coord_x, 
+                coord_y
+            FROM settlements
+            WHERE match_cdc_name LIKE ? OR point_name LIKE ?
+            ORDER BY (match_cdc_name LIKE ?) DESC -- Prioritizes matches in cdc_name first
+            LIMIT 50
+        `;
+
+        const searchTerm = `%${q}%`;
+        // We pass searchTerm three times: for match_cdc_name, point_name, and the ORDER BY
+        const results = db.prepare(query).all(searchTerm, searchTerm, searchTerm);
+        res.json(results);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Name search failed" });
+    }
+});
+
+//Search By UNOPS Code (Exact match anywhere in the code)
+router.get('/api/communities/search/code', validationParam.validateSearchCode, (req, res) => {
+    const { q } = req.query;
+
+    try {
+        const query = `
+            SELECT 
+                COALESCE(match_cdc_name, point_name) AS display_name, 
+                match_cdc_id,
+                norm_prov_code,
+                norm_dist_code, 
+                coord_x, 
+                coord_y
+            FROM settlements
+            WHERE match_cdc_id LIKE ?             -- 1st parameter: %q%
+            ORDER BY 
+                CASE 
+                    WHEN match_cdc_id LIKE ? THEN 1 -- 2nd parameter: q%
+                    ELSE 2 
+                END, 
+                match_cdc_id ASC
+            LIMIT 50
+        `;
+
+        // Pass them as individual arguments (or use the array spread operator)
+        const results = db.prepare(query).all(`%${q}%`, `${q}%`);
+        res.json(results);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Code search failed" });
     }
 });
 

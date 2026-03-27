@@ -991,6 +991,8 @@ function createPdfLayout(download = true) {
                 const wrapper = document.getElementById('pdf-wrapper');
                 wrapper.style.zIndex = 1000;
             }
+
+            overlay.style.display = 'none'; // remove overlay once pdf previow is ready
         })
         .catch(err => {
             mapElement.style.width = origWidth;
@@ -1001,14 +1003,20 @@ function createPdfLayout(download = true) {
             if (scaleBar) scaleBar.style.display = '';
             console.error('PDF capture failed:', err);
         });
+
+        
 }
 
 downloadPdfBtn.addEventListener('click', function () {
+    overlay.style.display = 'flex'; // add overlay to prevent interactions during PDF generation
     createPdfLayout(true);
 });
 
 if (previewPdfBtn) {
+
     previewPdfBtn.addEventListener('click', function () {
+
+        overlay.style.display = 'flex'; // add overlay to prevent interactions during PDF generation
         createPdfLayout(false);
     });
 }
