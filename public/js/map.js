@@ -45,6 +45,11 @@ const rasterLabels = {
     'earthquake': 'Earthquake Hazard'
 };
 
+// ---- TINT BUTTONS ----
+const tintBlueBtn = document.getElementById('tint-blue-btn');
+const tintRedBtn = document.getElementById('tint-red-btn');
+const tintResetBtn = document.getElementById('tint-reset-btn');
+
 // ----------------------
 // INITIALIZE MAP
 // ----------------------
@@ -727,10 +732,6 @@ opacityRange.addEventListener('input', function () {
 });
 
 // ---- TINT BUTTONS ----
-const tintBlueBtn = document.getElementById('tint-blue-btn');
-const tintRedBtn = document.getElementById('tint-red-btn');
-const tintResetBtn = document.getElementById('tint-reset-btn');
-
 function applyTint(tintClass) {
     globalTintClass = tintClass;
 
