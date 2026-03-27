@@ -4,6 +4,9 @@ const { db, mbtilesDb } = require('../db');
 const router = express.Router();
 const wellknown = require('wellknown');
 
+// Import your custom validators
+const validationParam = require('./validationParams.js'); // Adjust path as necessary
+
 // Landing page route
 router.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'landing.html'));
@@ -14,13 +17,11 @@ router.get('/app', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'index.html'));
 });
 
-router.get('/tiles/:layer/:z/:x/:y.png', (req, res) => {
+router.get('/tiles/:layer/:z/:x/:y.png', validationParam.validateTiles, (req, res) => {
 
-    const { layer } = req.params;
-    const z = parseInt(req.params.z);
-    const x = parseInt(req.params.x);
+    const { layer, z, x, y: yParam } = req.params;
 
-    if (!mbtilesDb[layer]) {
+    if (!Object.hasOwn(mbtilesDb, layer) || !mbtilesDb[layer]) {
         return res.status(404).send("Layer not found");
     }
     // Flip Y (TMS → XYZ)
@@ -51,11 +52,12 @@ router.get('/tiles/:layer/:z/:x/:y.png', (req, res) => {
     }
 });
 
-router.get('/tiles/contours/:z/:x/:y.pbf', (req, res) => {
-    if (!mbtilesDb['contours']) return res.status(404).end();
+router.get('/tiles/contours/:z/:x/:y.pbf', validationParam.validateContours, (req, res) => {
+    if (!Object.hasOwn(mbtilesDb, 'contours') || !mbtilesDb['contours']) {
+        return res.status(404).end();
+    }
 
-    const z = parseInt(req.params.z);
-    const x = parseInt(req.params.x);
+    const { z, x, y: yParam } = req.params;
     const y = Math.pow(2, z) - 1 - parseInt(req.params.y);
 
     try {
@@ -84,8 +86,8 @@ router.get('/tiles/contours/:z/:x/:y.pbf', (req, res) => {
 });
 
 // API route to fetch all provinces
-router.get('/api/provinces/:quality', (req, res) => {
-    const quality = req.params.quality; // 'simplified' or 'detailed'
+router.get('/api/provinces/:quality', validationParam.validateProvinces, (req, res) => {
+    const { quality } = req.params;
 
     try {
         let query = '';
@@ -122,8 +124,8 @@ router.get('/api/provinces/:quality', (req, res) => {
     }
 });
 
-router.get('/api/districts/:provId', (req, res) => {
-    const provId = req.params.provId;
+router.get('/api/districts/:provId', validationParam.validateDistricts, (req, res) => {
+    const { provId } = req.params;
     try {
         // SQL Query: Fetch only districts matching the province ID
         // Note: Replace 'districts_table' with the actual table name in your GPKG
@@ -157,8 +159,8 @@ router.get('/api/districts/:provId', (req, res) => {
 });
 
 // API route to fetch filtered communities via SQL
-router.get('/api/communities/:distId', (req, res) => {
-    const distId = req.params.distId;
+router.get('/api/communities/:distId', validationParam.validateCommunities, (req, res) => {
+    const { distId } = req.params;
 
     try {
         // SQL Query: Fetch only communities matching the district ID
