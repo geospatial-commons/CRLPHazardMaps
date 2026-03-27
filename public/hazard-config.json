@@ -2,7 +2,7 @@
     "None": {
         "hazardLayer": "none",
         "text": {
-            "description": "No hazard selected."
+            "description": "CRLP Hazard Mapping - No hazard selected"
         },
         "legend": {
             "title": "No Hazard Selected",

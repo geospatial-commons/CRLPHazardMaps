@@ -635,24 +635,25 @@ document.querySelectorAll('input[name="hazard-layer"]')
             let hazardLabel = rasterLabels[this.value];
             hazardLayer = hazardConfig[hazardLabel] ? hazardConfig[hazardLabel].hazardLayer : null;
 
+            if (!hazardLabel) hazardLabel = "None"
+
             if (hazardConfig[hazardLabel]) {
                 currentHazardDescription = hazardConfig[hazardLabel].text.description;
                 if (pdfDescription) pdfDescription.textContent = currentHazardDescription; // Update hazard description below map
                 if (pdfHazardTitle) pdfHazardTitle.textContent = currentHazardDescription; // Update PDF map title
                 if (pdfHazardIcon) {
                     pdfHazardIcon.src = `/assets/img/${hazardConfig[hazardLabel].icon}`;
-                    pdfHazardIcon.style.display = "inline-block";
                 }// Update PDF hazard icon}
             } else {
                 currentHazardDescription = '';
                 if (pdfDescription) pdfDescription.textContent = '';
-                if (pdfHazardTitle) {
+                /*if (pdfHazardTitle) {
                     pdfHazardTitle.textContent = '';
                     pdfHazardIcon.style.display = "none";
 
-                }
-                if (pdfHazardIcon) pdfHazardIcon.src = '';
-
+                }*/
+                //if (pdfHazardIcon) pdfHazardIcon.src = '';
+                pdfHazardIcon.style.display = "inline-block";
             }
 
             // Update PDF content active raster label
@@ -669,6 +670,12 @@ document.querySelectorAll('input[name="hazard-layer"]')
 
         });
     });
+
+// make sure None is selected at start
+const noneRadio = document.querySelector('input[name="hazard-layer"][value="none"]');
+if (noneRadio) noneRadio.checked = true;
+noneRadio.dispatchEvent(new Event('change'));
+
 
 function toggleRaster(hazardLayer) {
     if (currentHazardLayer) {
