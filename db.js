@@ -8,9 +8,9 @@ const db = new Database(path.join(__dirname, 'data/afghanistan_data.gpkg'), {
     fileMustExist: true
 });
 
-function openOptional(filePath) {
+function openOptional(filePath, readonly=true) {
     try {
-        return new Database(filePath, { readonly: true, fileMustExist: true });
+        return new Database(filePath, { readonly: readonly, fileMustExist: true });
     } catch (e) {
         console.warn(`MBTiles not found, skipping: ${filePath}`);
         return null;
@@ -19,10 +19,10 @@ function openOptional(filePath) {
 
 const mbtilesDb =
 {
-    flood:      new Database(path.join(__dirname, 'data/flood_rp20.mbtiles'), { readonly: true }),
-    landslide:  new Database(path.join(__dirname, 'data/landslide_rp20.mbtiles'), { readonly: true }),
-    avalanche:  new Database(path.join(__dirname, 'data/avalanche_rp100.mbtiles'), { readonly: true }),
-    earthquake: new Database(path.join(__dirname, 'data/earthquake_rp475.mbtiles'), { readonly: true }),
+    flood:      openOptional(path.join(__dirname, 'data/flood_rp20.mbtiles')),
+    landslide:  openOptional(path.join(__dirname, 'data/landslide_rp20.mbtiles')),
+    avalanche:  openOptional(path.join(__dirname, 'data/avalanche_rp100.mbtiles')),
+    earthquake: openOptional(path.join(__dirname, 'data/earthquake_rp475.mbtiles')),
     contours :  openOptional(path.join(__dirname, 'data/contours_100m.mbtiles'))
 };
 
