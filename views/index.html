@@ -11,6 +11,7 @@
     <!-- App CSS -->
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/mbtiles-filters.css" />
+    <link rel="stylesheet" href="/css/suggestions.css" />
 
     <link rel="icon" href="/assets/img/globe-icon.png" type="image/png">
 </head>
@@ -58,6 +59,16 @@
                         </select>
                     </div>
                     <button id="reset-filters-btn" class="tertiary-btn">Reset Filters</button>
+
+                    <!-- Search Options by name or by code-->
+                    <div>
+                        <label class="field-label" for="unops-name-search">Search by Name</label>
+                        <input type="text" id="unops-name-search">
+                    </div>
+                    <div>
+                        <label class="field-label" for="unops-code-search">Search by UNOPS Code</label>
+                        <input type="text" id="unops-code-search">
+                    </div>
                 </div>
 
                 <!-- 2. BASEMAP -->
@@ -164,6 +175,14 @@
 
             </nav>
 
+            <!-- SUGGESTIONS PANEL (hidden by default, shown when search results are returned) -->
+            <div id="search-suggestions-panel" class="suggestions-panel hidden">
+                <div class="panel-header">
+                    <span id="panel-title">Suggestions</span>
+                    <button id="close-suggestions" aria-label="Close suggestions">×</button>
+                </div>
+                <div id="suggestions-content"></div>
+            </div>
             <!-- MAIN CONTENT AREA -->
             <main id="main-content">
 
@@ -193,7 +212,7 @@
             <!-- Header -->
             <div class="row-1" style="justify-content: space-between;">
                 <div style="display: flex;">
-                    <img id="pdf-hazard-icon" src="" alt="" onerror="this.src = '/assets/img/Map.svg'"/>
+                    <img id="pdf-hazard-icon" src="" alt="" onerror="this.src = '/assets/img/Map.svg'" />
                     <div>
                         <h1 id="pdf-map-title"></h1>
                         <h2 id="layout-title"></h2>
@@ -280,6 +299,7 @@
     <!-- App JS -->
     <script type="module" src="/js/pdf-export.js"></script>
     <script type="module" src="/js/map.js"></script>
+    <script type="module" src="/js/search.js"></script>
 
     <script>
         // PDF preview helpers (global scope — called from pdf-wrapper buttons)
@@ -294,6 +314,8 @@
 
         var globalTintClass = '';
     </script>
+
+
 </body>
 
 </html>
