@@ -18,8 +18,7 @@ let hazardLayer, currentHazardLayer, contourLayer;
 let hazardConfig = {};
 let layoutConfig = {};
 let baseMaps = {};
-let scaleBarText;
-let scaleBarWidth;
+let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit;
 let currentHazardDescription = '';
 
 
@@ -972,12 +971,24 @@ function createPdfLayout(download = true) {
             mapContainerLayout.innerHTML = '';
             mapContainerLayout.appendChild(mapImg);
 
+            scaleBarStops = [0, 12.5, 25, 50, 75, 100];
+            console.log(scaleBarWidth, scaleBarText);
+            scaleBarUnit = scaleBarText.toLowerCase().endsWith('km') ? 'km' : 'm';
+            
+            scaleBarLabels = scaleBarStops.map(p => {
+                const rawValue = (p / 100) * parseFloat(scaleBarText);
+                const value = scaleBarUnit === 'm' ? Math.round(rawValue) : Math.round(rawValue * 10) / 10;
+                return { position: p, value: value };
+            });
+
             scaleBarLayout.innerHTML = `
-                <div class="custom-scale-text">${scaleBarText}</div>
-                <div class="custom-scale-bar" style="width:${scaleBarWidth}">
-                    <div class="custom-scale-tick left"></div>
-                    <div class="custom-scale-tick right"></div>
-                </div>`;
+                <div class="custom-scale-labels" style="width:${scaleBarWidth}">
+                    ${scaleBarLabels.map(label => `<span style="left:${label.position}%">${label.value}</span>`).join('')}
+                    <span class="unit">&nbsp;${scaleBarUnit}</span>
+                </div>
+                <div class="custom-scale-bar" style="width:${scaleBarWidth}"></div> `
+
+            console.log("Scale bar labels for PDF:", scaleBarLabels);
 
             const titleDiv = document.getElementById('layout-title');
             const provName = provSelect.options[provSelect.selectedIndex].text;
@@ -1006,7 +1017,10 @@ function createPdfLayout(download = true) {
                 hazardConfig: hazardConfig,
                 rasterLabels: rasterLabels,
                 scaleBarWidth: parseFloat(scaleBarWidth),
-                scaleBarText: scaleBarText,
+                scaleBarText: parseFloat(scaleBarText),
+                scaleBarUnit: scaleBarUnit,
+                scaleBarStops: scaleBarStops,
+                scaleBarLabels: scaleBarLabels,
                 overlayLayers: overlayLayers,
                 activeAdminLayers: activeAdminLayers,
                 provincesColor: provincesColor,
