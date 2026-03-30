@@ -845,6 +845,7 @@ button { cursor: pointer; }
 }
 
 #map-container {
+    position: relative;
     width: 230mm;
     flex: 0 0 230mm;
     align-items: stretch;
@@ -975,10 +976,15 @@ button { cursor: pointer; }
 }
 
 #scale-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     display: flex;
     align-items: center;
     flex-direction: column;
     font-family: 'Open Sans Condensed', sans-serif;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 2px 24px 0 8px;
 }
 
 /* .custom-scale-text {
@@ -995,18 +1001,18 @@ button { cursor: pointer; }
 
     background: linear-gradient(to right,
         var(--wb-navy) 0%,
-        var(--wb-navy) 12.5%,
+        var(--wb-navy) 20%,
 
-        #fff 12.5%,
-        #fff 25%,
+        #fff 20%,
+        #fff 40%,
 
-        var(--wb-navy) 25%,
-        var(--wb-navy) 50%,
+        var(--wb-navy) 40%,
+        var(--wb-navy) 60%,
 
-        #fff 50%,
-        #fff 75%,
+        #fff 60%,
+        #fff 80%,
 
-        var(--wb-navy) 75%,
+        var(--wb-navy) 80%,
         var(--wb-navy) 100%
     );
 }

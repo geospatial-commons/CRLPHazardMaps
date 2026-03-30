@@ -15,7 +15,7 @@
     "Flood Hazard": {
         "hazardLayer": "flood",
         "text": {
-            "description": "Flood: Fathom - 20 / 50 years Baseline Return Period"
+            "description": "Flood Hazard - 20 Year Return Period"
         },
         "legend": {
             "title": "Flood Hazard",
@@ -28,7 +28,7 @@
     "Avalanche Hazard": {
         "hazardLayer": "avalanche",
         "text": {
-            "description": "Avalanche:MHRA - (100-Year Return Period)"       
+            "description": "Avalanche Hazard - 100 Year Return Period"
         },
         "legend": {
             "title": "Avalanche Hazard",
@@ -41,7 +41,7 @@
     "Landslide Hazard": {
         "hazardLayer": "landslide",
         "text": {
-            "description": "Landslide - Rainfall induced: GIRI/NGI - 20 Year Return Period"
+            "description": "Landslide Hazard - 20 Year Return Period"
         },
         "legend": {
             "title": "Landslide Hazard",

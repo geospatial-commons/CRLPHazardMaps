@@ -311,7 +311,7 @@ async function downloadPdf(layoutConfig) {
                 pdf.text('District', legendX + 8, legendY + 1);
                 legendY += 7;
             } else if (layerName === 'Communities') {
-                pdf.setFillColor(layoutConfig.communitiesFill); // Make sure this variable is accessible!
+                pdf.setFillColor(layoutConfig.communitiesSelected); // Show selected/focus color in legend
                 pdf.setDrawColor(layoutConfig.communitiesStroke);
                 pdf.setLineWidth(0.2);
                 // pdf.circle(x, y, radius, style) - x,y are the center point
@@ -370,20 +370,26 @@ async function downloadPdf(layoutConfig) {
     pdf.textWithLink("INSERT EMAIL HERE", margin + padding + 15, footerY + padding + footerSpacing * 3, { url: "mailto:tbd@worldbank.org" });
 
 
-    // ADD SCALE BAR
+    // ADD SCALE BAR — positioned in bottom-left of map area (cartographic convention)
     let scaleBarWidthmm = layoutConfig.scaleBarWidth / mmPerPixel; // Convert scale bar width from pixels to mm for PDF
-    let scaleStartX;
     console.log("Scale bar width in mm for PDF:", scaleBarWidthmm);
-    console.log(legendX, pdfWidth, margin);
     const scaleHeight = 3;
-    const rightEdge = pdfWidth - margin * 2;
-    if (scaleBarWidthmm > 50) {
-        scaleStartX = pdfWidth - scaleBarWidthmm - 12;
-    } else {
-        scaleStartX = pdfWidth - scaleBarWidthmm - margin * 5;
-    }
+    const scaleStartX = margin + 2; // flush with map left edge
+    const scaleY = mapY + mapHeight - 8; // near map bottom edge
 
-    const scaleY = footerY + footerSpacing * 2;
+    // Semi-transparent white background — sized to content (last label + unit)
+    pdf.setFont('Open Sans Condensed', 'bold');
+    pdf.setFontSize(8);
+    pdf.setCharSpace(-0.2);
+    const lastLabel = layoutConfig.scaleBarLabels[layoutConfig.scaleBarLabels.length - 1];
+    const lastLabelWidth = pdf.getTextWidth(lastLabel.value.toString()) / 2; // label is centered, so half overhangs right
+    pdf.setCharSpace(0);
+    const unitWidth = pdf.getTextWidth(` ${layoutConfig.scaleBarUnit}`) + 2;
+    const bgRight = scaleBarWidthmm + lastLabelWidth + unitWidth + 2; // total right overhang
+    pdf.setFillColor(255, 255, 255);
+    pdf.setGState(new GState({ opacity: 0.8 }));
+    pdf.rect(scaleStartX - 4, scaleY - 6, bgRight + 4, 12, 'F');
+    pdf.setGState(new GState({ opacity: 1.0 }));
     // Draw scale bar labels
     pdf.setTextColor('#002244');
     pdf.setFont('Open Sans Condensed', 'bold');

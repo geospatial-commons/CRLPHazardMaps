@@ -10,9 +10,9 @@ let provincesLayer, districtsLayer, communityLayer;
 let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
 let communitiesStroke = "#000000";
-let communitiesFill = "#bd1616";
-let selctedCommunityColor = "#FFFF00";
-let districtCapitalColor = "#FFD700";
+let communitiesFill = "#BFBFBF";
+let selctedCommunityColor = "#12436D";
+let districtCapitalColor = "#F7B841";
 let districtCapitalStroke = "#000000";
 let hazardLayer, currentHazardLayer, contourLayer;
 let hazardConfig = {};
@@ -83,7 +83,7 @@ function initMap() {
         });
 
     const scaleBar = L.control.scale({
-        position: 'bottomright',
+        position: 'bottomleft',
         metric: true,
         imperial: false,
         maxWidth: 200
@@ -660,7 +660,7 @@ commSelect.addEventListener('change', function () {
                 // 2. Highlight the matching marker
                 layer.setStyle({
                     radius: 6,
-                    fillColor: 'yellow'
+                    fillColor: selctedCommunityColor
                 });
 
                 // If radius doesn't update via setStyle, use:
@@ -890,7 +890,7 @@ function buildLegend(activeAdminLayers = []) {
             } else if (layerName === 'Communities') {
                 document.querySelector(".legend-color.admin-comm").style.display = 'block';
                 document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
-                document.querySelector(".legend-color.admin-comm").style.backgroundColor = communitiesFill;
+                document.querySelector(".legend-color.admin-comm").style.backgroundColor = selctedCommunityColor;
                 document.querySelector(".legend-label.admin-comm").textContent = 'Settlement';
             }
             else if (layerName === 'District Capitals') {
@@ -970,8 +970,9 @@ function createPdfLayout(download = true) {
 
             mapContainerLayout.innerHTML = '';
             mapContainerLayout.appendChild(mapImg);
+            mapContainerLayout.appendChild(scaleBarLayout);
 
-            scaleBarStops = [0, 12.5, 25, 50, 75, 100];
+            scaleBarStops = [0, 20, 40, 60, 80, 100];
             console.log(scaleBarWidth, scaleBarText);
             scaleBarUnit = scaleBarText.toLowerCase().endsWith('km') ? 'km' : 'm';
             
@@ -1027,6 +1028,7 @@ function createPdfLayout(download = true) {
                 districtsColor: districtsColor,
                 communitiesStroke: communitiesStroke,
                 communitiesFill: communitiesFill,
+                communitiesSelected: selctedCommunityColor,
                 districtCapitalColor: districtCapitalColor,
                 districtCapitalStroke: districtCapitalStroke,
                 hazardDescription: currentHazardDescription,
