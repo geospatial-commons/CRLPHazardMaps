@@ -81,6 +81,14 @@ async function downloadPdf(layoutConfig) {
     }
 
     try {
+        const fontBase64CondensedBold = await fetchFontAsBase64('/assets/fonts/OpenSans_Condensed-Bold.ttf');
+        pdf.addFileToVFS('OpenSans_Condensed-Bold.ttf', fontBase64CondensedBold);
+        pdf.addFont('OpenSans_Condensed-Bold.ttf', 'Open Sans Condensed', 'bold');
+    } catch (err) {
+        console.error("Could not load Open Sans Condensed Bold font", err);
+    }
+
+    try {
         const fontBase64Italic = await fetchFontAsBase64('/assets/fonts/OpenSans-Italic.ttf');
         pdf.addFileToVFS('OpenSans-Italic.ttf', fontBase64Italic);
         pdf.addFont('OpenSans-Italic.ttf', 'Open Sans', 'italic');
@@ -97,13 +105,13 @@ async function downloadPdf(layoutConfig) {
 
     //1. draw logo
     if (logoImg) {
-        pdf.addImage(logoImg, 'PNG', pdfWidth - margin*2-logoSizeMM, margin + margin, logoSizeMM, logoSizeMM);
+        pdf.addImage(logoImg, 'PNG', pdfWidth - margin * 2 - logoSizeMM, margin + margin, logoSizeMM, logoSizeMM);
     }
 
     //2. draw border after logo
     pdf.setDrawColor('#ffffff');
     pdf.setLineWidth(0.3);
-    pdf.line(margin*3 + logoSizeMM, margin+margin, margin*3 + logoSizeMM, logoSizeMM+margin+margin);
+    pdf.line(margin * 3 + logoSizeMM, margin + margin, margin * 3 + logoSizeMM, logoSizeMM + margin + margin);
 
     //3. draw hazard logo; check if image is svg or img
     if (hazardIcon) {
@@ -134,9 +142,9 @@ async function downloadPdf(layoutConfig) {
                 // Fallback just in case fetch fails
                 pdf.addImage(src, 'PNG', xPos, yPos, logoSizeMM, logoSizeMM);
             }
-        } else if(!src.toLowerCase().endsWith('app')) {
-            console.log("src",src);
-            
+        } else if (!src.toLowerCase().endsWith('app')) {
+            console.log("src", src);
+
             // --- RASTER LOGIC (PNG/JPG) ---
             // jsPDF's addImage handles URL strings directly
             try {
@@ -144,7 +152,7 @@ async function downloadPdf(layoutConfig) {
             } catch (error) {
                 console.log(error);
             }
-            
+
         }
     }
 
@@ -161,14 +169,14 @@ async function downloadPdf(layoutConfig) {
     pdf.setTextColor('#ffffff');
     let fontSize = 16
     pdf.setFontSize(fontSize);
-    pdf.text(titleText, margin * 5 + logoSizeMM, margin*2+fontSize/mmPerPixel);
+    pdf.text(titleText, margin * 5 + logoSizeMM, margin * 2 + fontSize / mmPerPixel);
 
     //set secondary title (location)
     pdf.setFont('Open Sans', 'normal');
     let fontSizeLoc = 14
     pdf.setFontSize(fontSizeLoc);
-    pdf.text(locationText, margin * 5 + logoSizeMM, margin*3+fontSize/mmPerPixel + fontSizeLoc/mmPerPixel);
-    
+    pdf.text(locationText, margin * 5 + logoSizeMM, margin * 3 + fontSize / mmPerPixel + fontSizeLoc / mmPerPixel);
+
 
     // --- B. ADD THE MAP IMAGE ---
     const mapY = margin + headerHeight + padding;
@@ -303,7 +311,7 @@ async function downloadPdf(layoutConfig) {
                 pdf.text('District', legendX + 8, legendY + 1);
                 legendY += 7;
             } else if (layerName === 'Communities') {
-                pdf.setFillColor(layoutConfig.communitiesFill); // Make sure this variable is accessible!
+                pdf.setFillColor(layoutConfig.communitiesSelected); // Show selected/focus color in legend
                 pdf.setDrawColor(layoutConfig.communitiesStroke);
                 pdf.setLineWidth(0.2);
                 // pdf.circle(x, y, radius, style) - x,y are the center point
@@ -329,7 +337,7 @@ async function downloadPdf(layoutConfig) {
     // Include hazard description in the PDF (from JS state, not DOM) or from textaarea to implement comments
     let txtareatext = document.getElementById("pdf-hazard-description").value
     console.log(txtareatext);
-    
+
     const rasterInfo = txtareatext || layoutConfig.hazardDescription || '';
     if (rasterInfo) {
         pdf.setFont('Open Sans Condensed', 'normal');
@@ -362,24 +370,64 @@ async function downloadPdf(layoutConfig) {
     pdf.textWithLink("INSERT EMAIL HERE", margin + padding + 15, footerY + padding + footerSpacing * 3, { url: "mailto:tbd@worldbank.org" });
 
 
-    // ADD SCALE BAR
-    let scaleBarWidthmm = scaleLineEl.offsetWidth / mmPerPixel; // Convert scale bar width from pixels to mm for PDF
+    // ADD SCALE BAR — positioned in bottom-left of map area (cartographic convention)
+    let scaleBarWidthmm = layoutConfig.scaleBarWidth / mmPerPixel; // Convert scale bar width from pixels to mm for PDF
     console.log("Scale bar width in mm for PDF:", scaleBarWidthmm);
-    const scaleSegmentWidth = scaleBarWidthmm / 2;
     const scaleHeight = 3;
-    const rightEdge = pdfWidth - margin * 2;
-    const scaleCentreX = (legendX + rightEdge) / 2;
-    const scaleStartX = scaleCentreX - scaleSegmentWidth;
-    // left (filled)
-    pdf.setDrawColor('#002244'); //apply drawcolor to both ticks left and right
-    pdf.setFillColor('#002244');
-    pdf.rect(scaleStartX, footerY + footerSpacing * 2, scaleSegmentWidth, scaleHeight, "F");
-    // right (empty)
-    pdf.rect(scaleCentreX, footerY + footerSpacing * 2, scaleSegmentWidth, scaleHeight);
-    pdf.setTextColor('#002244')
-    pdf.setFont('Open Sans', 'bold');
-    pdf.text(layoutConfig.scaleBarText, scaleCentreX, footerY + 7, { align: 'center' });
+    const scaleStartX = margin + 2; // flush with map left edge
+    const scaleY = mapY + mapHeight - 8; // near map bottom edge
 
+    // Semi-transparent white background — sized to content (last label + unit)
+    pdf.setFont('Open Sans Condensed', 'bold');
+    pdf.setFontSize(8);
+    pdf.setCharSpace(-0.2);
+    const lastLabel = layoutConfig.scaleBarLabels[layoutConfig.scaleBarLabels.length - 1];
+    const lastLabelWidth = pdf.getTextWidth(lastLabel.value.toString()) / 2; // label is centered, so half overhangs right
+    pdf.setCharSpace(0);
+    const unitWidth = pdf.getTextWidth(` ${layoutConfig.scaleBarUnit}`) + 2;
+    const bgRight = scaleBarWidthmm + lastLabelWidth + unitWidth + 2; // total right overhang
+    pdf.setFillColor(255, 255, 255);
+    pdf.setGState(new GState({ opacity: 0.8 }));
+    pdf.rect(scaleStartX - 4, scaleY - 6, bgRight + 4, 12, 'F');
+    pdf.setGState(new GState({ opacity: 1.0 }));
+    // Draw scale bar labels
+    pdf.setTextColor('#002244');
+    pdf.setFont('Open Sans Condensed', 'bold');
+    pdf.setFontSize(8);
+    pdf.setCharSpace(-0.2);
+    layoutConfig.scaleBarLabels.forEach(label => {
+        const labelX = scaleStartX + (label.position / 100) * scaleBarWidthmm;
+        pdf.text(label.value.toString(), labelX, scaleY - 2, { align: 'center' });
+    });
+
+    // Draw scale bar block
+    pdf.setDrawColor('#002244');
+    pdf.setFillColor('#002244');
+   
+    // pdf.rect(scaleStartX, scaleY, scaleBarWidthmm / 2, scaleHeight, 'F'); // left (filled)
+    // pdf.rect(scaleStartX + scaleBarWidthmm / 2, scaleY, scaleBarWidthmm / 2, scaleHeight); // right (empty)
+    // Draw alternating filled/empty blocks for scale bar
+    for (let i = 0; i < layoutConfig.scaleBarLabels.length - 1; i++) {
+        const startPercent = layoutConfig.scaleBarLabels[i].position;
+        const endPercent = layoutConfig.scaleBarLabels[i + 1].position;
+
+        const segX = scaleStartX + (startPercent / 100) * scaleBarWidthmm;
+        const segWidth = ((endPercent - startPercent) / 100) * scaleBarWidthmm;
+
+        // Alternate styles: even index = filled, odd index = stroked only
+        if (i % 2 === 0) {
+            pdf.rect(segX, scaleY, segWidth, scaleHeight, 'FD'); // Fill + Stroke
+        } else {
+            pdf.rect(segX, scaleY, segWidth, scaleHeight, 'S'); // Stroke only
+        }
+    }
+
+
+    // Draw unit indicator
+    pdf.setFont('Open Sans Condensed', 'bold');
+    pdf.setFontSize(8);
+    pdf.setCharSpace(0); // Reset character spacing
+    pdf.text(` ${layoutConfig.scaleBarUnit}`, scaleStartX + scaleBarWidthmm + 2, scaleY - 2);
 
     // --- E. SAVE THE PDF ---
     pdf.save(`${titleText + " - " + locationText}.pdf`);

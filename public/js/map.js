@@ -10,16 +10,15 @@ let provincesLayer, districtsLayer, communityLayer;
 let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
 let communitiesStroke = "#000000";
-let communitiesFill = "#bd1616";
-let selctedCommunityColor = "#FFFF00";
-let districtCapitalColor = "#FFD700";
+let communitiesFill = "#BFBFBF";
+let selctedCommunityColor = "#12436D";
+let districtCapitalColor = "#F7B841";
 let districtCapitalStroke = "#000000";
 let hazardLayer, currentHazardLayer, contourLayer;
 let hazardConfig = {};
 let layoutConfig = {};
 let baseMaps = {};
-let scaleBarText;
-let scaleBarWidth;
+let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit;
 let currentHazardDescription = '';
 
 
@@ -84,7 +83,7 @@ function initMap() {
         });
 
     const scaleBar = L.control.scale({
-        position: 'bottomright',
+        position: 'bottomleft',
         metric: true,
         imperial: false,
         maxWidth: 200
@@ -661,7 +660,7 @@ commSelect.addEventListener('change', function () {
                 // 2. Highlight the matching marker
                 layer.setStyle({
                     radius: 6,
-                    fillColor: 'yellow'
+                    fillColor: selctedCommunityColor
                 });
 
                 // If radius doesn't update via setStyle, use:
@@ -891,7 +890,7 @@ function buildLegend(activeAdminLayers = []) {
             } else if (layerName === 'Communities') {
                 document.querySelector(".legend-color.admin-comm").style.display = 'block';
                 document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
-                document.querySelector(".legend-color.admin-comm").style.backgroundColor = communitiesFill;
+                document.querySelector(".legend-color.admin-comm").style.backgroundColor = selctedCommunityColor;
                 document.querySelector(".legend-label.admin-comm").textContent = 'Settlement';
             }
             else if (layerName === 'District Capitals') {
@@ -971,13 +970,26 @@ function createPdfLayout(download = true) {
 
             mapContainerLayout.innerHTML = '';
             mapContainerLayout.appendChild(mapImg);
+            mapContainerLayout.appendChild(scaleBarLayout);
+
+            scaleBarStops = [0, 20, 40, 60, 80, 100];
+            console.log(scaleBarWidth, scaleBarText);
+            scaleBarUnit = scaleBarText.toLowerCase().endsWith('km') ? 'km' : 'm';
+            
+            scaleBarLabels = scaleBarStops.map(p => {
+                const rawValue = (p / 100) * parseFloat(scaleBarText);
+                const value = scaleBarUnit === 'm' ? Math.round(rawValue) : Math.round(rawValue * 10) / 10;
+                return { position: p, value: value };
+            });
 
             scaleBarLayout.innerHTML = `
-                <div class="custom-scale-text">${scaleBarText}</div>
-                <div class="custom-scale-bar" style="width:${scaleBarWidth}">
-                    <div class="custom-scale-tick left"></div>
-                    <div class="custom-scale-tick right"></div>
-                </div>`;
+                <div class="custom-scale-labels" style="width:${scaleBarWidth}">
+                    ${scaleBarLabels.map(label => `<span style="left:${label.position}%">${label.value}</span>`).join('')}
+                    <span class="unit">&nbsp;${scaleBarUnit}</span>
+                </div>
+                <div class="custom-scale-bar" style="width:${scaleBarWidth}"></div> `
+
+            console.log("Scale bar labels for PDF:", scaleBarLabels);
 
             const titleDiv = document.getElementById('layout-title');
             const provName = provSelect.options[provSelect.selectedIndex].text;
@@ -1006,13 +1018,17 @@ function createPdfLayout(download = true) {
                 hazardConfig: hazardConfig,
                 rasterLabels: rasterLabels,
                 scaleBarWidth: parseFloat(scaleBarWidth),
-                scaleBarText: scaleBarText,
+                scaleBarText: parseFloat(scaleBarText),
+                scaleBarUnit: scaleBarUnit,
+                scaleBarStops: scaleBarStops,
+                scaleBarLabels: scaleBarLabels,
                 overlayLayers: overlayLayers,
                 activeAdminLayers: activeAdminLayers,
                 provincesColor: provincesColor,
                 districtsColor: districtsColor,
                 communitiesStroke: communitiesStroke,
                 communitiesFill: communitiesFill,
+                communitiesSelected: selctedCommunityColor,
                 districtCapitalColor: districtCapitalColor,
                 districtCapitalStroke: districtCapitalStroke,
                 hazardDescription: currentHazardDescription,
