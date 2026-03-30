@@ -50,21 +50,31 @@ window.addEventListener('load', () => {
     const renderSuggestions = (items) => {
         if (items.length === 0) {
             content.innerHTML = '<div class="suggestion-item">No results found</div>';
-            showPanel(items.length + " Results Found");
+            showPanel("0 Results Found");
             return;
         }
 
-        content.innerHTML = items.map(item => `
-                    <div class="suggestion-item" 
-                        data-lat="${item.coord_y}" 
-                        data-lng="${item.coord_x}"
-                        data-name="${item.display_name}"
-                        data-provcode="${item.norm_prov_code}"
-                        data-distcode="${item.norm_dist_code}">
+        content.innerHTML = items.map(item => {
+            // Only show subtitle if secondary_name exists and is different from display_name
+            const hasSubtitle = item.secondary_name &&
+                item.secondary_name.trim() !== "" &&
+                item.secondary_name !== item.display_name;
+
+            return `
+                <div class="suggestion-item" 
+                    data-lat="${item.coord_y}" 
+                    data-lng="${item.coord_x}"
+                    data-name="${item.display_name}"
+                    data-provcode="${item.norm_prov_code}"
+                    data-distcode="${item.norm_dist_code}">
+                    <div class="suggestion-main">
                         <strong>${item.display_name}</strong>
-                        <small>Code: ${item.match_cdc_id || 'N/A'}</small>
+                        ${hasSubtitle ? `<div class="suggestion-subtitle">Other names: ${item.secondary_name}</div>` : ''}
                     </div>
-                `).join('');
+                    <small class="suggestion-code">Code: ${item.match_cdc_id || 'N/A'}</small>
+                </div>
+            `;
+        }).join('');
 
         showPanel(`${items.length} Results Found`);
     };

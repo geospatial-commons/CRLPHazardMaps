@@ -235,21 +235,28 @@ router.get('/api/communities/search/name', validationParam.validateSearchName, (
     try {
         const query = `
             SELECT 
-                point_name AS display_name, 
+                COALESCE(match_cdc_name, point_name) AS display_name, 
+                -- If display_name took cdc_name, secondary shows point_name and vice versa
+                CASE 
+                    WHEN match_cdc_name IS NOT NULL THEN point_name 
+                    ELSE '' 
+                END AS secondary_name,
                 match_cdc_id,
-                norm_dist_code,
                 norm_prov_code,
+                norm_dist_code,
                 coord_x, 
                 coord_y
             FROM settlements
-            WHERE point_name LIKE ?
-            ORDER BY (point_name LIKE ?) DESC -- Prioritizes matches in point_name first
+            WHERE match_cdc_name LIKE ? OR point_name LIKE ?
+            ORDER BY 
+                (match_cdc_name LIKE ?) DESC, -- Exact/Prefix CDC matches first
+                display_name ASC             -- Then alphabetical
             LIMIT 50
         `;
 
         const searchTerm = `%${q}%`;
         // We pass searchTerm three times: for match_cdc_name, point_name, and the ORDER BY
-        const results = db.prepare(query).all(searchTerm, searchTerm);
+        const results = db.prepare(query).all(searchTerm, searchTerm, searchTerm);
         res.json(results);
     } catch (err) {
         console.error(err);
@@ -257,35 +264,41 @@ router.get('/api/communities/search/name', validationParam.validateSearchName, (
     }
 });
 
-//Search By UNOPS Code (Exact match anywhere in the code)
+// Search By UNOPS Code (Matches any part of the code, prioritizes starts-with)
 router.get('/api/communities/search/code', validationParam.validateSearchCode, (req, res) => {
     const { q } = req.query;
 
     try {
         const query = `
             SELECT 
-                point_name AS display_name, 
+                COALESCE(match_cdc_name, point_name) AS display_name, 
+                -- Provides the point_name as secondary info if it's different from display_name
+                CASE 
+                    WHEN match_cdc_name IS NOT NULL THEN point_name 
+                    ELSE '' 
+                END AS secondary_name,
                 match_cdc_id,
                 norm_prov_code,
                 norm_dist_code, 
                 coord_x, 
                 coord_y
             FROM settlements
-            WHERE match_cdc_id LIKE ?             -- 1st parameter: %q%
+            WHERE match_cdc_id LIKE ?             -- 1st parameter: %q% (contains)
             ORDER BY 
                 CASE 
-                    WHEN match_cdc_id LIKE ? THEN 1 -- 2nd parameter: q%
+                    WHEN match_cdc_id LIKE ? THEN 1 -- 2nd parameter: q% (starts-with)
                     ELSE 2 
                 END, 
                 match_cdc_id ASC
             LIMIT 50
         `;
 
-        // Pass them as individual arguments (or use the array spread operator)
+        // We bind the "contains" version to the WHERE and the "starts-with" to the ORDER BY
         const results = db.prepare(query).all(`%${q}%`, `${q}%`);
+
         res.json(results);
     } catch (err) {
-        console.error(err);
+        console.error("Code search error:", err);
         res.status(500).json({ error: "Code search failed" });
     }
 });

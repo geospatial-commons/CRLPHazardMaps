@@ -2,7 +2,7 @@
     position: absolute;
     left: 230px;
     top: 100px;
-    width: 280px;
+    /*width: 280px;*/
     background: white;
     border: 1px solid #ddd;
     box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
@@ -51,4 +51,36 @@
     color: #666;
     display: block;
     margin-top: 4px;
+}
+
+.suggestion-item {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.suggestion-main {
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.suggestion-subtitle {
+    font-size: 0.75em;
+    color: #666;
+    font-style: italic;
+    margin-top: 0px;
+    /*display: none;*/
+}
+
+.suggestion-code {
+    font-size: 0.75em;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.suggestion-item:hover {
+    background-color: #f9f9f9;
 }
