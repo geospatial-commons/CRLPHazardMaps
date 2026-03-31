@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const PORT = process.env.PORT || 3000;
+const IP = process.env.IP || '127.0.0.1';
 
 // Security middleware
 // 1. Helmet: Secure HTTP headers
@@ -43,6 +44,6 @@ const routes = require('./routes/routes');
 // Use routes
 app.use('/', routes);
 
-app.listen(PORT, '127.0.0.1', () => {
+app.listen(PORT, IP, () => {
     console.log(`Server running and accepting outside connections on port ${PORT}`);
 });
