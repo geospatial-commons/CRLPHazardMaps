@@ -1,15 +1,18 @@
+require('dotenv').config({ quiet: true });
 const express = require('express');
 const path = require('path');
 const app = express();
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+
+
 const PORT = process.env.PORT || 3000;
 const IP = process.env.IP || '127.0.0.1';
 
 // Security middleware
 // 1. Helmet: Secure HTTP headers
-//app.use(helmet());
+// app.use(helmet());
 
 // 2. CORS: Only allow your frontend domain to access the APIs
 const corsOptions = {
