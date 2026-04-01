@@ -154,6 +154,31 @@ button { cursor: pointer; }
     margin: 0 0 4px 0;
 }
 
+.section-label[data-collapsible] {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.section-label[data-collapsible]:hover {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.section-label[data-collapsible]::after {
+    content: '▶';
+    font-size: 10px;
+    transition: transform 0.3s ease;
+    display: inline-block;
+    margin-left: 8px;
+}
+
+.sidebar-section[data-expanded] .section-label[data-collapsible]::after {
+    transform: rotate(90deg);
+}
+
 /* ── SIDEBAR FIELDS ── */
 .sidebar-field {
     display: flex;
@@ -245,14 +270,41 @@ button { cursor: pointer; }
     font-weight: 700;
 }
 
-/* ── HAZARD LIST ── */
+/* ── COLLAPSIBLE CONTENT ── */
+.sidebar-field,
+#reset-filters-btn,
+#hazard-list,
+#context-layers {
+    display: none;
+}
+
+.sidebar-section[data-expanded] .sidebar-field {
+    display: flex;
+}
+
+.sidebar-section[data-expanded] #reset-filters-btn {
+    display: block;
+}
+
 #hazard-list {
+    display: none;
+    flex-direction: column;
+    gap: 2px;
     list-style: none;
     padding: 0;
     margin: 0;
+}
+
+.sidebar-section[data-expanded] #hazard-list {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+}
+
+#context-layers {
+    display: none;
+}
+
+.sidebar-section[data-expanded] #context-layers {
+    display: flex;
 }
 
 #hazard-list li {
@@ -340,13 +392,22 @@ button { cursor: pointer; }
     margin: 0;
     font-style: italic;
     min-height: 0;
+    display: none;
+}
+
+.sidebar-section[data-expanded] .hazard-meta {
+    display: block;
 }
 
 /* ── OPACITY SLIDER ── */
 #opacity-slider {
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 6px;
+}
+
+.sidebar-section[data-expanded] #opacity-slider {
+    display: flex;
 }
 
 .opacity-header {
@@ -398,7 +459,6 @@ button { cursor: pointer; }
 
 /* ── CONTEXT LAYERS ── */
 #context-layers {
-    display: flex;
     flex-direction: column;
     gap: 6px;
 }
@@ -461,6 +521,10 @@ button { cursor: pointer; }
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+.sidebar-section[data-expanded] #tint-controls {
+    display: flex;
 }
 
 #tint-buttons {
@@ -987,6 +1051,30 @@ button { cursor: pointer; }
     padding: 2px 24px 0 8px;
 }
 
+#scale-bar-text-element {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--wb-navy);
+    margin-left: 8px;
+}
+
+#scale-bar-text-element p {
+    margin-left: 4px;
+    padding: 0;
+}
+
+/* Hide the Leaflet scale bar text and only show the bar */
+.leaflet-control-scale-line.custom-scale-bar {
+    font-size: 0;
+}
+
+.leaflet-left {
+    display: flex;
+    flex-direction: row;  /* change from column to row */
+    align-items: center;
+}
+
 /* .custom-scale-text {
     font-size: 12px;
     font-weight: 600;
@@ -1016,7 +1104,6 @@ button { cursor: pointer; }
         var(--wb-navy) 100%
     );
 }
-
 
 .custom-scale-labels {
     position: relative;
