@@ -34,6 +34,9 @@ const apiLimiter = rateLimit({
     message: "Too many API requests, please try again later."
 });
 
+// Nginx parameter for reverse proxy
+app.set('trust proxy', 1);
+
 // Apply the limiters to specific route prefixes
 app.use('/tiles', tileLimiter);
 app.use('/api', apiLimiter);
