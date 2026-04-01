@@ -3,9 +3,9 @@ const express = require('express');
 const path = require('path');
 const app = express();
 const helmet = require('helmet');
-const cors = require('cors');
+//const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-//testing webhook
+
 
 const PORT = process.env.PORT || 3000;
 const IP = process.env.IP || '127.0.0.1';
