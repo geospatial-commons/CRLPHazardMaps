@@ -39,7 +39,7 @@
 
                 <!-- 1. LOCATION -->
                 <div class="sidebar-section">
-                    <h2 class="section-label">LOCATION</h2>
+                    <h2 class="section-label" data-collapsible>LOCATION</h2>
                     <div class="sidebar-field">
                         <label class="field-label" for="prov-select">Province</label>
                         <select id="prov-select">
@@ -84,7 +84,7 @@
 
                 <!-- 3. HAZARD LAYER -->
                 <div class="sidebar-section">
-                    <h2 class="section-label">HAZARD LAYER</h2>
+                    <h2 class="section-label" data-collapsible>HAZARD LAYER</h2>
                     <ul role="radiogroup" aria-label="Hazard Layer" id="hazard-list">
                         <li>
                             <img src="/assets/img/Map.svg" alt="" class="hazard-icon" />
@@ -150,7 +150,7 @@
 
                 <!-- 4. CONTEXT LAYERS -->
                 <div class="sidebar-section">
-                    <h2 class="section-label">CONTEXT LAYERS</h2>
+                    <h2 class="section-label" data-collapsible>CONTEXT LAYERS</h2>
                     <div id="context-layers">
                         <p class="loading-note">Loading layers...</p>
                     </div>
@@ -194,7 +194,6 @@
 
                 <!-- Map -->
                 <div id="map" aria-label="Interactive hazard map"></div>
-
             </main>
         </div>
     </div>
@@ -315,6 +314,14 @@
         }
 
         var globalTintClass = '';
+
+        // Collapsible section labels
+        document.querySelectorAll('.section-label[data-collapsible]').forEach(label => {
+            label.addEventListener('click', function() {
+                const section = this.closest('.sidebar-section');
+                section.toggleAttribute('data-expanded');
+            });
+        });
     </script>
 
 

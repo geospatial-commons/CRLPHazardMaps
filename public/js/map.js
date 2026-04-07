@@ -18,8 +18,9 @@ let hazardLayer, currentHazardLayer, contourLayer;
 let hazardConfig = {};
 let layoutConfig = {};
 let baseMaps = {};
-let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit;
+let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit, leafletScaleBarElement, scaleBarTextElement;
 let currentHazardDescription = '';
+let leafletBottomLeft;
 
 
 const provSelect = document.getElementById('prov-select');
@@ -49,6 +50,27 @@ const rasterLabels = {
 const tintBlueBtn = document.getElementById('tint-blue-btn');
 const tintRedBtn = document.getElementById('tint-red-btn');
 const tintResetBtn = document.getElementById('tint-reset-btn');
+
+// ---- SCALE BAR ----
+function setupScaleBarText() {
+    if (!map) return;
+
+    map.on('zoomend', function () {
+        scaleBarText = leafletScaleBarElement.textContent;
+
+        leafletBottomLeft = document.querySelector('.leaflet-bottom.leaflet-left');
+        scaleBarTextElement = document.getElementById('scale-bar-text-element');
+
+        // Only create it if it doesn't already exist
+        if (!scaleBarTextElement) {
+            scaleBarTextElement = document.createElement('div');
+            scaleBarTextElement.id = 'scale-bar-text-element';
+            leafletBottomLeft.appendChild(scaleBarTextElement);
+        }
+
+        scaleBarTextElement.innerHTML = `<p>${scaleBarText}</p>`;
+    });
+}
 
 // ----------------------
 // INITIALIZE MAP
@@ -90,16 +112,19 @@ function initMap() {
     });
     scaleBar.addTo(map);
 
-    // const contourLayer = L.vectorGrid.protobuf('/tiles/contours/{z}/{x}/{y}.pbf', {
-    //     minZoom: 12,
-    //     maxNativeZoom: 15,
-    //     maxZoom: 18,
-    //     vectorTileLayerStyles: {
-    //         contours: { weight: 0.5, color: '#080808' }
-    //     }
-    // }).addTo(map);
+    // Style the Leaflet scale bar with custom segments
+    leafletScaleBarElement = document.querySelector('.leaflet-control-scale-line');
+    leafletScaleBarElement.classList.add('custom-scale-bar');
+    scaleBarText = leafletScaleBarElement.textContent;
+    scaleBarTextElement = document.getElementById('scale-bar-text-element');
+    scaleBarTextElement = document.createElement('div');
+    scaleBarTextElement.id = 'scale-bar-text-element';
+    leafletBottomLeft = document.querySelector('.leaflet-bottom.leaflet-left');
+    leafletBottomLeft.appendChild(scaleBarTextElement);
+    scaleBarTextElement.innerHTML = `<p>${scaleBarText}</p>`;
+    leafletScaleBarElement.textContent = '';
 
-    // overlayLayers['Contours'] = contourLayer;
+    setupScaleBarText();
 
     getProvinces(0, () => {
         overlay.style.display = 'none';
@@ -525,6 +550,7 @@ function enableMapInteraction() {
 // ----------------------
 // EVENT LISTENERS
 // ----------------------
+
 provSelect.addEventListener('change', function () {
     const provId = this.value;
 
@@ -917,7 +943,6 @@ function resetLegend() {
 function createPdfLayout(download = true) {
     const mapElement = document.getElementById('map');
     const zoomControl = document.querySelector(".leaflet-control-zoom");
-    const scaleBar = document.querySelector(".leaflet-control-scale-line");
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
     const today = new Date();
@@ -927,9 +952,9 @@ function createPdfLayout(download = true) {
 
     document.getElementById('footer-date').innerHTML = `<strong>Date Created: </strong> ${formattedDate}`;
 
-    const scaleLineEl = document.querySelector(".leaflet-control-scale-line"); //scalebar element in the leaflet map
-    scaleBarWidth = scaleLineEl.style.width || (scaleLineEl.offsetWidth + 'px');
-    scaleBarText = scaleLineEl.textContent;
+    scaleBarWidth = leafletScaleBarElement.style.width || (leafletScaleBarElement.offsetWidth + 'px');
+    scaleBarText = leafletScaleBarElement.textContent;
+
 
     let activeAdminLayers = Object.entries(overlayLayers)
         .filter(([key, layer]) => map.hasLayer(layer))
@@ -939,7 +964,7 @@ function createPdfLayout(download = true) {
 
     // Hide zoom and scale controls for clean screenshot
     if (zoomControl) zoomControl.style.display = 'none';
-    if (scaleBar) scaleBar.style.display = 'none';
+    if (leafletScaleBarElement) leafletScaleBarElement.style.display = 'none';
 
     // Temporarily resize map to exact PDF dimensions (230mm × 170mm at 96dpi)
     // 1mm = 3.7795px → 230mm = 869px, 170mm = 642px
@@ -962,7 +987,7 @@ function createPdfLayout(download = true) {
             map.invalidateSize({ animate: false });
 
             if (zoomControl) zoomControl.style.display = '';
-            if (scaleBar) scaleBar.style.display = '';
+            if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
 
             const mapImg = new Image();
             mapImg.src = dataUrl;
@@ -975,7 +1000,7 @@ function createPdfLayout(download = true) {
             scaleBarStops = [0, 20, 40, 60, 80, 100];
             console.log(scaleBarWidth, scaleBarText);
             scaleBarUnit = scaleBarText.toLowerCase().endsWith('km') ? 'km' : 'm';
-            
+
             scaleBarLabels = scaleBarStops.map(p => {
                 const rawValue = (p / 100) * parseFloat(scaleBarText);
                 const value = scaleBarUnit === 'm' ? Math.round(rawValue) : Math.round(rawValue * 10) / 10;
@@ -1051,7 +1076,7 @@ function createPdfLayout(download = true) {
             mapElement.style.flex = origFlex;
             map.invalidateSize({ animate: false });
             if (zoomControl) zoomControl.style.display = '';
-            if (scaleBar) scaleBar.style.display = '';
+            if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
             console.error('PDF capture failed:', err);
         });
 
