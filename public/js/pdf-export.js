@@ -316,7 +316,7 @@ async function downloadPdf(layoutConfig) {
                 pdf.setLineWidth(0.2);
                 // pdf.circle(x, y, radius, style) - x,y are the center point
                 pdf.circle(legendX + 2.5, legendY - 0.5, 1, 'FD');
-                pdf.text('Settlement', legendX + 8, legendY + 1);
+                pdf.text('Community', legendX + 8, legendY + 1);
                 legendY += 7;
             } else if (layerName === 'District Capitals') {
                 pdf.setFillColor(layoutConfig.districtCapitalColor); // Make sure this variable is accessible!

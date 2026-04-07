@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const app = express();
 const helmet = require('helmet');
-const cors = require('cors');
+//const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
 
@@ -33,6 +33,9 @@ const apiLimiter = rateLimit({
     max: 200, // Limit each IP to 200 API requests per 5 minutes
     message: "Too many API requests, please try again later."
 });
+
+// Nginx parameter for reverse proxy
+app.set('trust proxy', 1);
 
 // Apply the limiters to specific route prefixes
 app.use('/tiles', tileLimiter);

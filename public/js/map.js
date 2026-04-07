@@ -492,7 +492,7 @@ function renderCommunities(distId) {
                     });
                 },
                 onEachFeature: function (f, l) {
-                    l.bindPopup(`<b>Settlement:</b> ${f.properties.name}`, { className: 'community-popup' });
+                    l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
                     l.on('click', function () {
                         // 1. Reset all markers to the default style first
                         communityLayer.setStyle({
@@ -917,7 +917,7 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.admin-comm").style.display = 'block';
                 document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
                 document.querySelector(".legend-color.admin-comm").style.backgroundColor = selctedCommunityColor;
-                document.querySelector(".legend-label.admin-comm").textContent = 'Settlement';
+                document.querySelector(".legend-label.admin-comm").textContent = 'Community';
             }
             else if (layerName === 'District Capitals') {
                 document.querySelector(".legend-color.dist-capital").style.display = 'block';
