@@ -393,14 +393,11 @@ router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (re
         
         res.setHeader('Content-Type', 'application/x-protobuf');
         res.setHeader('Content-Encoding', 'gzip');
-<<<<<<< HEAD
-=======
         res.setHeader('Cache-Control', 'public, max-age=1209600'); // Cache for 2 weeks
-        
+
         if (!tile) {
             return res.send(EMPTY_TILE_BUFFER).end();
         }
->>>>>>> 3999160 (optimizing vector tile performance)
 
         res.send(tile.tile_data);
         

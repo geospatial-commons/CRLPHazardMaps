@@ -1075,6 +1075,10 @@ button { cursor: pointer; }
     align-items: center;
 }
 
+div.leaflet-top.leaflet-left {
+    flex-direction: column;;
+}
+
 /* .custom-scale-text {
     font-size: 12px;
     font-weight: 600;
