@@ -126,6 +126,46 @@ function initMap() {
 
     setupScaleBarText();
 
+    // feature group to store the draw items
+    var drawItems = new L.FeatureGroup();
+    map.addLayer(drawItems);
+
+    // draw controls
+    var drawControl = new L.Control.Draw({
+        edit: {featureGroup:drawItems},
+        draw: {
+            // polygon: true,
+            polyline: true,
+            // circle: true,
+            // rectangle: true,
+        }
+
+    });
+    map.addControl(drawControl);
+
+    //handle draw events
+
+    map.on('draw:created', function(e) {
+        const layer = e.layer;
+        drawItems.addLayer(layer);
+
+        const geojson = layer.toGeoJSON();
+        let result = "";
+
+        if (geojson.geometry.type === 'LineString') {
+            const length = turf.length(geojson, {units: 'kilometers'});
+            result = `Distance: ${length.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km`;
+        }
+
+        if (geojson.geometry.type === 'Polygon') {
+            const area = turf.area(geojson);
+            const sqkm = area / 1000000;
+            result = `Area: ${sqkm.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km²`;
+        }
+
+        layer.bindPopup(result).openPopup();
+    });
+
     getProvinces(0, () => {
         overlay.style.display = 'none';
         enableMapInteraction();
