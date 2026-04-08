@@ -317,7 +317,7 @@
 
         // Collapsible section labels
         document.querySelectorAll('.section-label[data-collapsible]').forEach(label => {
-            label.addEventListener('click', function() {
+            label.addEventListener('click', function () {
                 const section = this.closest('.sidebar-section');
                 section.toggleAttribute('data-expanded');
             });

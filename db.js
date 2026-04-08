@@ -8,6 +8,13 @@ const db = new Database(path.join(__dirname, 'data/afghanistan_data.gpkg'), {
     fileMustExist: true
 });
 
+// connect to analytics db
+const analyticsDb = new Database(path.join(__dirname, 'data/analytics.db'), {
+    readonly: false,
+    fileMustExist: false
+});
+
+// Helper function to open MBTiles files if they exist, otherwise return null
 function openOptional(filePath, readonly=true) {
     try {
         return new Database(filePath, { readonly: readonly, fileMustExist: true });
@@ -17,6 +24,7 @@ function openOptional(filePath, readonly=true) {
     }
 }
 
+// Open MBTiles files if they exist, otherwise set to null
 const mbtilesDb =
 {
     flood:      openOptional(path.join(__dirname, 'data/flood_rp20.mbtiles')),
@@ -26,4 +34,4 @@ const mbtilesDb =
     contours :  openOptional(path.join(__dirname, 'data/contours_100m.mbtiles'))
 };
 
-module.exports = { db, mbtilesDb }; 
+module.exports = { db, mbtilesDb, analyticsDb }; 

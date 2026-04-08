@@ -14,6 +14,8 @@ const IP = process.env.IP || '127.0.0.1';
 // 1. Helmet: Secure HTTP headers
 // app.use(helmet());
 
+
+
 // 2. CORS: Only allow your frontend domain to access the APIs
 const corsOptions = {
     origin: 'https://your-frontend-domain.com', // Replace with your actual domain
@@ -41,6 +43,9 @@ app.set('trust proxy', 1);
 app.use('/tiles', tileLimiter);
 app.use('/api', apiLimiter);
 
+// Use JSON to parse request bodies
+app.use(express.json());
+
 // Serve static files (CSS, client JS, images, etc.)
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -49,6 +54,8 @@ const routes = require('./routes/routes');
 
 // Use routes
 app.use('/', routes);
+
+
 
 app.listen(PORT, IP, () => {
     console.log(`Server running and accepting outside connections on port ${PORT}`);

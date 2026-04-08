@@ -1,4 +1,4 @@
-const { param, validationResult, query } = require('express-validator');
+const { param, validationResult, query, body } = require('express-validator');
 
 // Reusable middleware to catch validation errors
 const validateRequest = (req, res, next) => {
@@ -65,6 +65,59 @@ const validateSearchCode = [
     validateRequest
 ];
 
+const validateMapCreationAnalytics = [
+    body('hazard')
+        .optional({ nullable: true, checkFalsy: true })
+        .trim()
+        .isLength({ max: 100 })
+        .withMessage('hazard must be at most 100 characters'),
+
+    body('Pcode')
+        .optional({ nullable: true, checkFalsy: true })
+        .trim()
+        .matches(/^[a-zA-Z0-9_-]{1,50}$/)
+        .withMessage('Invalid Pcode format'),
+
+    body('province_code')
+        .optional({ nullable: true, checkFalsy: true })
+        .trim()
+        .matches(/^[a-zA-Z0-9_-]{1,50}$/)
+        .withMessage('Invalid province_code format'),
+
+    body('community_name')
+        .optional({ nullable: true, checkFalsy: true })
+        .trim()
+        .isLength({ max: 200 })
+        .withMessage('community_name must be at most 200 characters'),
+
+    body('arazi_code')
+        .optional({ nullable: true, checkFalsy: true })
+        .isInt({ min: 0 })
+        .withMessage('arazi_code must be a non-negative integer')
+        .toInt(),
+
+    body('UNOPS_Code')
+        .optional({ nullable: true, checkFalsy: true })
+        .trim()
+        .matches(/^\d{2}-\d{4}-R\d{4}$/)
+        .withMessage('UNOPS_Code must follow the format 09-0908-R0001'),
+
+    body('IOM_Code')
+        .optional({ nullable: true, checkFalsy: true })
+        .trim()
+        .matches(/^AF\d{10,}$/)
+        .withMessage('IOM_Code must follow the format AF3405086116'),
+
+    body('request_type')
+        .exists({ checkFalsy: false })
+        .withMessage('request_type is required')
+        .isInt({ min: 0 })
+        .withMessage('request_type must be a non-negative integer')
+        .toInt(),
+
+    validateRequest
+];
+
 // Export them exactly like your example
 module.exports = {
     validateTiles,
@@ -73,5 +126,6 @@ module.exports = {
     validateDistricts,
     validateCommunities,
     validateSearchName,
-    validateSearchCode
+    validateSearchCode,
+    validateMapCreationAnalytics
 };

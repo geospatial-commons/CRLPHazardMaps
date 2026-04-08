@@ -477,6 +477,9 @@ function renderCommunities(distId) {
                 var opt = new Option(name, `${coords[1]},${coords[0]}`);
                 var uniqueIdentifier = `${name}_${coords[1]},${coords[0]}`;
                 opt.dataset.combined = uniqueIdentifier;
+                opt.dataset.UNOPS_Code = f.properties.UNOPS_Code || '';
+                opt.dataset.IOM_Code = f.properties.IOM_Code || '';
+                opt.dataset.arazi_code = f.properties.Arazi_OBJ_ID || '';
                 commSelect.appendChild(opt);
             });
 
@@ -1068,6 +1071,18 @@ function createPdfLayout(download = true) {
                 wrapper.style.zIndex = 1000;
             }
 
+            //save map creation data on server for analytics
+            saveMapCreationAnalytics({
+                hazard: rasterLabels[document.querySelector('input[name="hazard-layer"]:checked').value] || 'none',
+                Pcode: distSelect.value !== 'all' ? "AF" + distSelect.value : null,
+                UNOPS_Code: commSelect.value !== 'all' ? commSelect.options[commSelect.selectedIndex].dataset.UNOPS_Code : null,
+                IOM_Code: commSelect.value !== 'all' ? commSelect.options[commSelect.selectedIndex].dataset.IOM_Code : null,
+                arazi_code: commSelect.value !== 'all' ? commSelect.options[commSelect.selectedIndex].dataset.arazi_code : null,
+                province_code: provSelect.value !== 'all' ? provSelect.value : null,
+                community_name: commSelect.value !== 'all' ? commSelect.options[commSelect.selectedIndex].text : null,
+                request_type: download ? 2 : 1 // 1 for preview, 2 for download
+            })
+
             overlay.style.display = 'none'; // remove overlay once pdf previow is ready
         })
         .catch(err => {
@@ -1100,6 +1115,18 @@ if (previewPdfBtn) {
 if (downloadFromPreviewBtn) {
     downloadFromPreviewBtn.addEventListener('click', function () {
         if (layoutConfig && layoutConfig.hazardConfig) {
+            
+            saveMapCreationAnalytics({
+                hazard: rasterLabels[document.querySelector('input[name="hazard-layer"]:checked').value] || 'none',
+                Pcode: distSelect.value !== 'all' ? "AF" + distSelect.value : null,
+                UNOPS_Code: commSelect.value !== 'all' ? commSelect.options[commSelect.selectedIndex].dataset.UNOPS_Code : null,
+                IOM_Code: commSelect.value !== 'all' ? commSelect.options[commSelect.selectedIndex].dataset.IOM_Code : null,
+                arazi_code: commSelect.value !== 'all' ? commSelect.options[commSelect.selectedIndex].dataset.arazi_code : null,
+                province_code: provSelect.value !== 'all' ? provSelect.value : null,
+                community_name: commSelect.value !== 'all' ? commSelect.options[commSelect.selectedIndex].text : null,
+                request_type: 2 // 1 for preview, 2 for download
+            })
+
             downloadPdf(layoutConfig);
         }
     });
@@ -1119,3 +1146,48 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('resize', () => {
     if (map) map.invalidateSize();
 });
+
+// ----------------------
+// Map creation Analytics
+// ----------------------
+async function saveMapCreationAnalytics({
+    hazard = null,
+    Pcode = null,
+    province_code = null,
+    community_name = null,
+    arazi_code = null,
+    UNOPS_Code = null,
+    IOM_Code = null,
+    request_type
+}) {
+    try {
+        const response = await fetch('/api/analytics/map-creation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                hazard,
+                Pcode,
+                province_code,
+                community_name,
+                arazi_code,
+                UNOPS_Code,
+                IOM_Code,
+                request_type
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.log(data);
+            throw new Error(data.error || 'Failed to save analytics');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error saving analytics:', error);
+        throw error;
+    }
+}

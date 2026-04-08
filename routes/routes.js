@@ -1,8 +1,9 @@
 const express = require('express');
 const path = require('path');
-const { db, mbtilesDb } = require('../db');
+const { db, mbtilesDb, analyticsDb } = require('../db');
 const router = express.Router();
 const wellknown = require('wellknown');
+const { validationResult } = require('express-validator');
 
 // Import your custom validators
 const validationParam = require('./validationParams.js'); // Adjust path as necessary
@@ -166,11 +167,15 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
         // SQL Query: Fetch only communities matching the district ID
         // Note: Replace 'communities_table' with the actual table name in your GPKG
         const query = `
-            SELECT point_name, norm_dist_code,
+            SELECT point_name, 
+                   norm_dist_code,
                    coord_y,
                    coord_x,
                    match_cdc_id,
-                   match_cdc_name
+                   match_cdc_name,
+                   Arazi_OBJ_ID,
+                   UNOPS_Code,
+                   IOM_Code
             FROM settlements
             WHERE norm_dist_code = ? 
             /*and GPS_Verified = true*/
@@ -184,7 +189,15 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
             type: "FeatureCollection",
             features: communities.map(c => ({
                 type: "Feature",
-                properties: { name: c.point_name, norm_dist_code: c.norm_dist_code },
+                properties: {
+                    name: c.point_name,
+                    norm_dist_code: c.norm_dist_code,
+                    match_cdc_id: c.match_cdc_id,
+                    match_cdc_name: c.match_cdc_name,
+                    Arazi_OBJ_ID: c.Arazi_OBJ_ID,
+                    UNOPS_Code: c.UNOPS_Code,
+                    IOM_Code: c.IOM_Code
+                },
                 geometry: {
                     type: "Point",
                     coordinates: [c.coord_x, c.coord_y]
@@ -303,5 +316,54 @@ router.get('/api/communities/search/code', validationParam.validateSearchCode, (
     }
 });
 
+// API route to log map creation analytics
+router.post('/api/analytics/map-creation', (req, res) => {
+
+    try {
+        const {
+            hazard = null,
+            Pcode = null,
+            province_code = null,
+            community_name = null,
+            arazi_code = null,
+            UNOPS_Code = null,
+            IOM_Code = null,
+            request_type
+        } = req.body;
+
+        const stmt = analyticsDb.prepare(`
+            INSERT INTO map_creation_analytics (
+                hazard,
+                Pcode,
+                province_code,
+                community_name,
+                arazi_code,
+                UNOPS_Code,
+                IOM_Code,
+                request_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        const result = stmt.run(
+            hazard,
+            Pcode,
+            province_code,
+            community_name,
+            arazi_code,
+            UNOPS_Code,
+            IOM_Code,
+            request_type
+        );
+        
+        console.log("Analytics logged with ID:", result.lastInsertRowid);
+        res.status(201).json({
+            success: true,
+            id: result.lastInsertRowid
+        });
+    } catch (err) {
+        console.error('Analytics insert error:', err);
+        res.status(500).json({ error: 'Failed to save analytics' });
+    }
+});
 
 module.exports = router;
