@@ -65,6 +65,25 @@ const validateSearchCode = [
     validateRequest
 ];
 
+const validateBBox = [
+    query(['xmin', 'xmax'])
+        .isFloat({ min: 55, max: 80 })
+        .withMessage('xmin and xmax must be within Afghanistan longitude range'),
+    query(['ymin', 'ymax'])
+        .isFloat({ min: 25, max: 42 })
+        .withMessage('ymin and ymax must be within Afghanistan latitude range'),
+    query().custom((_, { req }) => {
+        const { xmin, xmax, ymin, ymax } = req.query;
+        if (parseFloat(xmin) >= parseFloat(xmax)) {
+            throw new Error('xmin must be less than xmax');
+        }
+        if (parseFloat(ymin) >= parseFloat(ymax)) {
+            throw new Error('ymin must be less than ymax');
+        }
+        return true;
+    })
+];
+
 // Export them exactly like your example
 module.exports = {
     validateTiles,
@@ -73,5 +92,6 @@ module.exports = {
     validateDistricts,
     validateCommunities,
     validateSearchName,
-    validateSearchCode
+    validateSearchCode,
+    validateBBox
 };
