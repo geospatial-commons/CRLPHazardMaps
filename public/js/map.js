@@ -270,8 +270,9 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 ymin: sw.lat,
                 ymax: ne.lat
             });
+            // console.log(params);
             const fetchUrl = `${layerConfig.url}?${params}`;
-
+            // console.log('Fetching roads data with URL:', fetchUrl);
             fetch(fetchUrl)
                 .then(res => {
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -288,25 +289,25 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                     data.features.forEach(feature => {
                         const layer = L.geoJSON(feature, {
                             style: getRoadStyle,
-                            onEachFeature: function (feat, l) {
-                                const roadName = feat.properties?.name || '';
-                                if (l.setText) {
-                                    l.setText(roadName, {
-                                        repeat: false,
-                                        center: true,
-                                        orientation: 'auto',
-                                        offset: 0,
-                                        attributes: {
-                                            fill: 'black',
-                                            stroke: 'white',
-                                            'stroke-width': 3,
-                                            'paint-order': 'stroke',
-                                            'font-weight': 'bold',
-                                            'font-size': '12px'
-                                        }
-                                    });
-                                }
-                            }
+                            // onEachFeature: function (feat, l) {
+                            //     const roadName = feat.properties?.name || '';
+                            //     if (l.setText) {
+                            //         l.setText(roadName, {
+                            //             repeat: false,
+                            //             center: true,
+                            //             orientation: 'auto',
+                            //             offset: 0,
+                            //             attributes: {
+                            //                 fill: 'black',
+                            //                 stroke: 'white',
+                            //                 'stroke-width': 3,
+                            //                 'paint-order': 'stroke',
+                            //                 'font-weight': 'bold',
+                            //                 'font-size': '12px'
+                            //             }
+                            //         });
+                            //     }
+                            // }
                         });
                         roadsLayer.addLayer(layer);
                     });
@@ -332,36 +333,32 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 return res.json();
             })
             .then(data => {
-                if (data.features.length > 0) {
-                    console.log('First feature:', data.features[0]);
-                }
                 loadingNote.remove();
                 checkbox.disabled = false;
 
                 const roadsLayer = L.geoJSON(data, {
                     style: getRoadStyle,
-                    onEachFeature: function (feature, layer) {
-                        const roadName = feature.properties?.name || '';
+                    // onEachFeature: function (feature, layer) {
+                    //     const roadName = feature.properties?.name || '';
+                    //     // Apply text along the polyline
+                    //     if (layer.setText) { // Provided by leaflet-textpath
+                    //         layer.setText(roadName, {
+                    //             repeat: false,      // label appears once
+                    //             center: true,       // centered along the line
+                    //             orientation: 'auto', // rotates along the line
+                    //             offset: 0,
+                    //             attributes: {
+                    //                 fill: 'black',          // inner text color
+                    //                 stroke: 'white',        // halo color
+                    //                 'stroke-width': 3,      // halo thickness
+                    //                 'paint-order': 'stroke', // ensures stroke is drawn behind text
+                    //                 'font-weight': 'bold',
+                    //                 'font-size': '12px'
+                    //             }
 
-                        // Apply text along the polyline
-                        if (layer.setText) { // Provided by leaflet-textpath
-                            layer.setText(roadName, {
-                                repeat: false,      // label appears once
-                                center: true,       // centered along the line
-                                orientation: 'auto', // rotates along the line
-                                offset: 0,
-                                attributes: {
-                                    fill: 'black',          // inner text color
-                                    stroke: 'white',        // halo color
-                                    'stroke-width': 3,      // halo thickness
-                                    'paint-order': 'stroke', // ensures stroke is drawn behind text
-                                    'font-weight': 'bold',
-                                    'font-size': '12px'
-                                }
-
-                            });
-                        }
-                    }
+                    //         });
+                    //     }
+                    // }
                 });
                 contextLayerInstances[layerConfig.id] = roadsLayer;
                 if (checkbox.checked) {

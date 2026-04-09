@@ -367,14 +367,13 @@ router.post('/api/analytics/map-creation', (req, res) => {
 });
 
 // API route to fetch roads within a bounding box
-router.get('/api/roads', (req, res) => {
+router.get('/api/roads', validationParam.validateBBox, (req, res) => {
     const { xmin, xmax, ymin, ymax } = req.query;
 
     // Validate parameters
     if (!xmin || !xmax || !ymin || !ymax) {
         return res.status(400).json({ error: "Missing required parameters: xmin, xmax, ymin, ymax" });
     }
-
     try {
         // Convert to numbers
         const bbox = {
