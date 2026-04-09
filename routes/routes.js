@@ -354,7 +354,7 @@ router.post('/api/analytics/map-creation', (req, res) => {
             IOM_Code,
             request_type
         );
-        
+
         console.log("Analytics logged with ID:", result.lastInsertRowid);
         res.status(201).json({
             success: true,
@@ -363,6 +363,61 @@ router.post('/api/analytics/map-creation', (req, res) => {
     } catch (err) {
         console.error('Analytics insert error:', err);
         res.status(500).json({ error: 'Failed to save analytics' });
+    }
+});
+
+// API route to fetch roads within a bounding box
+router.get('/api/roads', (req, res) => {
+    const { xmin, xmax, ymin, ymax } = req.query;
+
+    // Validate parameters
+    if (!xmin || !xmax || !ymin || !ymax) {
+        return res.status(400).json({ error: "Missing required parameters: xmin, xmax, ymin, ymax" });
+    }
+
+    try {
+        // Convert to numbers
+        const bbox = {
+            xmin: parseFloat(xmin),
+            xmax: parseFloat(xmax),
+            ymin: parseFloat(ymin),
+            ymax: parseFloat(ymax)
+        };
+
+        // Validate bbox values
+        if (isNaN(bbox.xmin) || isNaN(bbox.xmax) || isNaN(bbox.ymin) || isNaN(bbox.ymax)) {
+            return res.status(400).json({ error: "Invalid bbox values - must be numeric" });
+        }
+
+        const query = `
+            SELECT name, road_class, road_type, geom_to_wkt, minx, miny, maxx, maxy
+            FROM main_afg_roads
+            WHERE
+                minx <= ? AND
+                maxx >= ? AND
+                miny <= ? AND
+                maxy >= ?
+        `;
+
+        const roads = db.prepare(query).all(bbox.xmax, bbox.xmin, bbox.ymax, bbox.ymin);
+        console.log(`Fetched ${roads.length} roads intersecting bbox (${bbox.xmin}, ${bbox.ymin}, ${bbox.xmax}, ${bbox.ymax})`);
+        const geojson = {
+            type: "FeatureCollection",
+            features: roads.map(r => ({
+                type: "Feature",
+                properties: {
+                    name: r.name,
+                    type: r.road_type,
+                    class: r.road_class
+                },
+                geometry: wellknown.parse(r.geom_to_wkt)
+            }))
+        };
+
+        res.json(geojson);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Database Error");
     }
 });
 
