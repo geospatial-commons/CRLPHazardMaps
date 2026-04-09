@@ -26,5 +26,13 @@
     "minZoom": 12,
     "maxNativeZoom": 15,
     "maxZoom": 18
+  },
+  {
+    "id": "roads",
+    "name": "Roads",
+    "url": "/api/roads",
+    "default": false,
+    "minZoom": 12,
+    "maxZoom": 18
   }
 ]

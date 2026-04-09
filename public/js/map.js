@@ -21,6 +21,7 @@ let baseMaps = {};
 let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit, leafletScaleBarElement, scaleBarTextElement;
 let currentHazardDescription = '';
 let leafletBottomLeft;
+let fetchUrl;
 
 
 const provSelect = document.getElementById('prov-select');
@@ -181,22 +182,33 @@ function buildContextToggle(container, layerConfig) {
     row.appendChild(label);
     container.appendChild(row);
 
-    // If default=true, load immediately
+    // Update zoom note on map zoom
+    map.on('zoomend', () => updateZoomNote(row, layerConfig));
+    updateZoomNote(row, layerConfig);
+
+    // If default=true, load immediately (but only if above minZoom)
     if (layerConfig.default) {
-        fetchAndAddContextLayer(layerConfig, checkbox, row);
+        const currentZoom = map.getZoom();
+        if (!layerConfig.minZoom || currentZoom >= layerConfig.minZoom) {
+            fetchAndAddContextLayer(layerConfig, checkbox, row);
+        } else {
+            checkbox.checked = false;
+        }
     }
 
     checkbox.addEventListener('change', function () {
+        // Check zoom level before allowing layer activation
+        const currentZoom = map.getZoom();
         if (this.checked) {
+            if (layerConfig.minZoom && currentZoom < layerConfig.minZoom) {
+                this.checked = false;
+                return;
+            }
             fetchAndAddContextLayer(layerConfig, checkbox, row);
         } else {
             removeContextLayer(layerConfig.id);
         }
     });
-
-    // Update zoom note on map zoom
-    map.on('zoomend', () => updateZoomNote(row, layerConfig));
-    updateZoomNote(row, layerConfig);
 }
 
 function fetchAndAddContextLayer(layerConfig, checkbox, row) {
@@ -228,6 +240,148 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             }
         }
         updateZoomNote(row, layerConfig);
+        return;
+    }
+
+    if (layerConfig.id === 'roads') {
+        // Function to style roads based on road_class
+        function getRoadStyle(feature) {
+            const roadClass = (feature.properties?.class || '').toLowerCase();
+
+            const styleMap = {
+                'primary': { color: '#FF6B35', weight: 3, opacity: 0.9 },
+                'secondary': { color: '#FFD93D', weight: 2, opacity: 0.85 },
+                'tertiary': { color: '#FFD93D', weight: 2, opacity: 0.85 }
+            };
+
+            const defaultStyle = { color: '#E0E0E0', weight: 1.5, opacity: 0.7 };
+
+            return styleMap[roadClass] || defaultStyle;
+        }
+
+        // Function to fetch and update roads data
+        function updateRoadsData() {
+            const bounds = map.getBounds();
+            const sw = bounds.getSouthWest();
+            const ne = bounds.getNorthEast();
+            const params = new URLSearchParams({
+                xmin: sw.lng,
+                xmax: ne.lng,
+                ymin: sw.lat,
+                ymax: ne.lat
+            });
+            const fetchUrl = `${layerConfig.url}?${params}`;
+
+            fetch(fetchUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    const roadsLayer = contextLayerInstances[layerConfig.id];
+                    if (!roadsLayer || !map.hasLayer(roadsLayer)) return;
+
+                    // Clear existing features
+                    roadsLayer.clearLayers();
+
+                    // Add new features
+                    data.features.forEach(feature => {
+                        const layer = L.geoJSON(feature, {
+                            style: getRoadStyle,
+                            onEachFeature: function (feat, l) {
+                                const roadName = feat.properties?.name || '';
+                                if (l.setText) {
+                                    l.setText(roadName, {
+                                        repeat: false,
+                                        center: true,
+                                        orientation: 'auto',
+                                        offset: 0,
+                                        attributes: {
+                                            fill: 'black',
+                                            stroke: 'white',
+                                            'stroke-width': 3,
+                                            'paint-order': 'stroke',
+                                            'font-weight': 'bold',
+                                            'font-size': '12px'
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                        roadsLayer.addLayer(layer);
+                    });
+                })
+                .catch(err => console.error('Roads update failed:', err));
+        }
+
+        // Initial fetch
+        const bounds = map.getBounds();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        const params = new URLSearchParams({
+            xmin: sw.lng,
+            xmax: ne.lng,
+            ymin: sw.lat,
+            ymax: ne.lat
+        });
+        const fetchUrl = `${layerConfig.url}?${params}`;
+
+        fetch(fetchUrl)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                if (data.features.length > 0) {
+                    console.log('First feature:', data.features[0]);
+                }
+                loadingNote.remove();
+                checkbox.disabled = false;
+
+                const roadsLayer = L.geoJSON(data, {
+                    style: getRoadStyle,
+                    onEachFeature: function (feature, layer) {
+                        const roadName = feature.properties?.name || '';
+
+                        // Apply text along the polyline
+                        if (layer.setText) { // Provided by leaflet-textpath
+                            layer.setText(roadName, {
+                                repeat: false,      // label appears once
+                                center: true,       // centered along the line
+                                orientation: 'auto', // rotates along the line
+                                offset: 0,
+                                attributes: {
+                                    fill: 'black',          // inner text color
+                                    stroke: 'white',        // halo color
+                                    'stroke-width': 3,      // halo thickness
+                                    'paint-order': 'stroke', // ensures stroke is drawn behind text
+                                    'font-weight': 'bold',
+                                    'font-size': '12px'
+                                }
+
+                            });
+                        }
+                    }
+                });
+                contextLayerInstances[layerConfig.id] = roadsLayer;
+                if (checkbox.checked) {
+                    roadsLayer.addTo(map);
+                    // Attach moveend listener when layer is added
+                    roadsLayer._moveendHandler = updateRoadsData;
+                    map.on('moveend', updateRoadsData);
+                }
+                overlayLayers[layerConfig.name] = roadsLayer;
+                updateZoomNote(row, layerConfig);
+            })
+            .catch(() => {
+                loadingNote.remove();
+                checkbox.disabled = false;
+                checkbox.checked = false;
+                const errNote = document.createElement('p');
+                errNote.className = 'context-unavailable';
+                errNote.textContent = `${layerConfig.name} unavailable`;
+                row.appendChild(errNote);
+            });
         return;
     }
 
@@ -321,6 +475,10 @@ function removeContextLayer(id) {
     const layer = contextLayerInstances[id];
     if (layer && map.hasLayer(layer)) {
         map.removeLayer(layer);
+        // Clean up moveend listener for roads layer
+        if (id === 'roads' && layer._moveendHandler) {
+            map.off('moveend', layer._moveendHandler);
+        }
     }
 }
 
@@ -328,7 +486,18 @@ function updateZoomNote(row, layerConfig) {
     if (!map) return;
     const existingNote = row.querySelector('.context-zoom-note:not(.context-loading)');
     const currentZoom = map.getZoom();
+    const checkbox = row.querySelector('input[type="checkbox"]');
+
     if (layerConfig.minZoom && currentZoom < layerConfig.minZoom) {
+        // Below minZoom: disable checkbox, show note
+        if (checkbox) {
+            checkbox.disabled = true;
+            // If layer is checked and we've zoomed below minZoom, remove it
+            if (checkbox.checked) {
+                checkbox.checked = false;
+                removeContextLayer(layerConfig.id);
+            }
+        }
         if (!existingNote) {
             const note = document.createElement('p');
             note.className = 'context-zoom-note';
@@ -336,6 +505,10 @@ function updateZoomNote(row, layerConfig) {
             row.appendChild(note);
         }
     } else {
+        // At or above minZoom: enable checkbox, remove note
+        if (checkbox) {
+            checkbox.disabled = false;
+        }
         if (existingNote) existingNote.remove();
     }
 }
