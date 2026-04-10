@@ -30,9 +30,10 @@
   {
     "id": "roads",
     "name": "Roads",
-    "url": "/api/roads",
+    "url": "/tiles/roads/{z}/{x}/{y}.pbf",
     "default": false,
-    "minZoom": 12,
+    "minZoom": 10,
+    "maxNativeZoom":16,
     "maxZoom": 18
   }
 ]

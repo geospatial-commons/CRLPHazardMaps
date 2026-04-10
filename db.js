@@ -23,7 +23,8 @@ const mbtilesDb =
     landslide:  openOptional(path.join(__dirname, 'data/landslide_rp20.mbtiles')),
     avalanche:  openOptional(path.join(__dirname, 'data/avalanche_rp100.mbtiles')),
     earthquake: openOptional(path.join(__dirname, 'data/earthquake_rp475.mbtiles')),
-    contours :  openOptional(path.join(__dirname, 'data/contours_100m.mbtiles'))
+    contours :  openOptional(path.join(__dirname, 'data/contours_100m.mbtiles')),
+    roads:      openOptional(path.join(__dirname, 'data/main_afg_roads.mbtiles')) // open roads with write access for caching
 };
 
 module.exports = { db, mbtilesDb }; 

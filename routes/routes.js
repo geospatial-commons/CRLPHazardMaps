@@ -52,7 +52,7 @@ router.get('/tiles/:layer/:z/:x/:y.png', validationParam.validateTiles, (req, re
     }
 });
 
-router.get('/tiles/contours/:z/:x/:y.pbf', validationParam.validateContours, (req, res) => {
+router.get('/tiles/contours/:z/:x/:y.pbf', validationParam.validateVectorTiles, (req, res) => {
     if (!Object.hasOwn(mbtilesDb, 'contours') || !mbtilesDb['contours']) {
         return res.status(404).end();
     }
@@ -303,58 +303,92 @@ router.get('/api/communities/search/code', validationParam.validateSearchCode, (
     }
 });
 
-// API route to fetch roads within a bounding box
-router.get('/api/roads', validationParam.validateBBox, (req, res) => {
-    const { xmin, xmax, ymin, ymax } = req.query;
+// // API route to fetch roads within a bounding box
+// router.get('/api/roads', validationParam.validateBBox, (req, res) => {
+//     const { xmin, xmax, ymin, ymax, exclude } = req.query;
 
-    // Validate parameters
-    if (!xmin || !xmax || !ymin || !ymax) {
-        return res.status(400).json({ error: "Missing required parameters: xmin, xmax, ymin, ymax" });
-    }
+//     const excludeIds = exclude ? exclude.split(',').map(Number) : [];
+
+//     try {
+//         // Convert to numbers
+//         const bbox = {
+//             xmin: parseFloat(xmin),
+//             xmax: parseFloat(xmax),
+//             ymin: parseFloat(ymin),
+//             ymax: parseFloat(ymax)
+//         };
+
+//         let query = `
+//             SELECT fid, name, road_class, road_type, geom_to_wkt, minx, miny, maxx, maxy
+//             FROM main_afg_roads
+//             WHERE 
+//                 minx <= ? AND
+//                 maxx >= ? AND 
+//                 miny <= ? AND
+//                 maxy >= ?  
+//         `;
+
+//         if (excludeIds.length > 0) {
+//             query += ` AND fid NOT IN (${excludeIds.map(() => '?').join(',')})`;
+//         }
+
+//         const params = [xmax, xmin, ymax, ymin, ...excludeIds];
+
+//         const roads = db.prepare(query).all(...params);
+
+//         console.log(`Fetched ${roads.length} roads within bbox, excluding ${excludeIds.length} roads`);
+
+//         const geojson = {
+//             type: "FeatureCollection",
+//             features: roads.map(r => ({
+//                 type: "Feature",
+//                 properties: {
+//                     fid: r.fid,
+//                     name: r.name,
+//                     type: r.road_type,
+//                     class: r.road_class
+//                 },
+//                 geometry: wellknown.parse(r.geom_to_wkt)
+//             }))
+//         };
+
+//         res.json(geojson);
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).send("Database Error");
+//     }
+// });
+router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (req, res) => {
+
+    const z = Number(req.params.z);
+    const x = Number(req.params.x);
+    const y = Number(req.params.y);
+    const flippedY = (1 << z) - 1 - y;
+
     try {
-        // Convert to numbers
-        const bbox = {
-            xmin: parseFloat(xmin),
-            xmax: parseFloat(xmax),
-            ymin: parseFloat(ymin),
-            ymax: parseFloat(ymax)
-        };
+        const stmt = mbtilesDb['roads'].prepare(`
+            SELECT tile_data FROM tiles
+            WHERE zoom_level = ?
+            AND tile_column = ?
+            AND tile_row = ?
+        `);
 
-        // Validate bbox values
-        if (isNaN(bbox.xmin) || isNaN(bbox.xmax) || isNaN(bbox.ymin) || isNaN(bbox.ymax)) {
-            return res.status(400).json({ error: "Invalid bbox values - must be numeric" });
+        const tile = stmt.get(z, x, flippedY);
+        if (!tile) {
+            return res.status(204).end();
         }
 
-        const query = `
-            SELECT name, road_class, road_type, geom_to_wkt, minx, miny, maxx, maxy
-            FROM main_afg_roads
-            WHERE 
-                minx <= ? AND
-                maxx >= ? AND 
-                miny <= ? AND
-                maxy >= ?  
-        `;
-        
-        const roads = db.prepare(query).all(bbox.xmax, bbox.xmin, bbox.ymax, bbox.ymin);
-        console.log(`Fetched ${roads.length} roads intersecting bbox (${bbox.xmin}, ${bbox.ymin}, ${bbox.xmax}, ${bbox.ymax})`);
-        const geojson = {
-            type: "FeatureCollection",
-            features: roads.map(r => ({
-                type: "Feature",
-                properties: {
-                    name: r.name,
-                    type: r.road_type,
-                    class: r.road_class
-                },
-                geometry: wellknown.parse(r.geom_to_wkt)
-            }))
-        };
+        res.setHeader('Content-Type', 'application/x-protobuf');
+        res.setHeader('Content-Encoding', 'gzip');
 
-        res.json(geojson);
+
+        res.send(tile.tile_data);
+
     } catch (err) {
         console.error(err);
-        res.status(500).send("Database Error");
+        res.status(500).send("Tile error");
     }
 });
+
 
 module.exports = router;
