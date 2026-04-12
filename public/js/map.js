@@ -126,42 +126,85 @@ function initMap() {
 
     setupScaleBarText();
 
+    let drawToggleContainer = L.DomUtil.create('div', 'leaflet-bar');
+    drawToggleContainer.style.border = 'none';
+    let drawToggleBtn = L.DomUtil.create('a', 'draw-toggle', drawToggleContainer);
+    drawToggleBtn.innerHTML = '✏️';
+
+    drawToggleBtn.href = '#';
+    drawToggleBtn.type = 'button';
+    drawToggleBtn.title = 'Draw Tools';
+
+    document.querySelector('.leaflet-top.leaflet-left').appendChild(drawToggleContainer);
+
+
     // feature group to store the draw items
     var drawItems = new L.FeatureGroup();
     map.addLayer(drawItems);
 
     // draw controls
     var drawControl = new L.Control.Draw({
-        edit: {featureGroup:drawItems},
+        edit: { featureGroup: drawItems },
         draw: {
             // polygon: true,
-            polyline: true,
+            // polyline: true,
             // circle: true,
             // rectangle: true,
+            circlemarker: false
         }
 
     });
     map.addControl(drawControl);
 
+    setTimeout(() => {
+        const el = document.querySelector('.leaflet-draw.leaflet-control');
+        if (el) el.style.display = 'none';
+    }, 0);
+
+    let visible = false;
+    drawToggleBtn.onclick = function (e) {
+        e.preventDefault();
+        const drawControl = document.querySelector('.leaflet-draw.leaflet-control');
+        if (!drawControl) return;
+        visible = !visible;
+        drawControl.style.display = visible ? 'block' : 'none';
+    };
+
     //handle draw events
 
-    map.on('draw:created', function(e) {
+    map.on('draw:created', function (e) {
         const layer = e.layer;
         drawItems.addLayer(layer);
 
         const geojson = layer.toGeoJSON();
+        console.log(geojson);
         let result = "";
 
         if (geojson.geometry.type === 'LineString') {
-            const length = turf.length(geojson, {units: 'kilometers'});
+            const length = turf.length(geojson, { units: 'kilometers' });
             result = `Distance: ${length.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km`;
         }
 
-        if (geojson.geometry.type === 'Polygon') {
+        else if (geojson.geometry.type === 'Polygon') {
             const area = turf.area(geojson);
             const sqkm = area / 1000000;
             result = `Area: ${sqkm.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km²`;
         }
+
+        else if (layer instanceof L.Circle) {
+            const center = layer.getLatLng();
+            const radiusMeters = layer.getRadius();
+            const radiusKm = radiusMeters / 1000;
+
+            result = `Center: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}<br>
+                  Radius: ${radiusKm.toFixed(2)} km`;
+        }
+
+        else if (geojson.geometry.type === 'Point') {
+            const [lng, lat] = geojson.geometry.coordinates;
+            result = `Lat: ${lat.toFixed(6)}, <br> Lon: ${lng.toFixed(6)}`;
+        }
+
 
         layer.bindPopup(result).openPopup();
     });
@@ -982,7 +1025,7 @@ function resetLegend() {
 // ----------------------
 function createPdfLayout(download = true) {
     const mapElement = document.getElementById('map');
-    const zoomControl = document.querySelector(".leaflet-control-zoom");
+    const topLeftControl = document.querySelector("div.leaflet-top.leaflet-left");
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
     const today = new Date();
@@ -1003,7 +1046,7 @@ function createPdfLayout(download = true) {
     buildLegend(activeAdminLayers);
 
     // Hide zoom and scale controls for clean screenshot
-    if (zoomControl) zoomControl.style.display = 'none';
+    if (topLeftControl) topLeftControl.style.display = 'none';
     if (leafletScaleBarElement) leafletScaleBarElement.style.display = 'none';
 
     // Temporarily resize map to exact PDF dimensions (230mm × 170mm at 96dpi)
@@ -1026,7 +1069,7 @@ function createPdfLayout(download = true) {
             mapElement.style.flex = origFlex;
             map.invalidateSize({ animate: false });
 
-            if (zoomControl) zoomControl.style.display = '';
+            if (topLeftControl) topLeftControl.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
 
             const mapImg = new Image();
@@ -1115,7 +1158,7 @@ function createPdfLayout(download = true) {
             mapElement.style.height = origHeight;
             mapElement.style.flex = origFlex;
             map.invalidateSize({ animate: false });
-            if (zoomControl) zoomControl.style.display = '';
+            if (topLeftControl) topLeftControl.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
             console.error('PDF capture failed:', err);
         });
