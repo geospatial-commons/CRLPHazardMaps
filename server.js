@@ -24,7 +24,7 @@ const corsOptions = {
 // 3. Rate Limiting: Prevent scraping and DoS attacks
 const tileLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute window
-    max: 600, // Limit each IP to 600 tile requests per minute
+    max: 6000, // Limit each IP to 600 tile requests per minute
     message: "Too many tiles requested, please try again later."
 });
 
@@ -33,6 +33,7 @@ const apiLimiter = rateLimit({
     max: 200, // Limit each IP to 200 API requests per 5 minutes
     message: "Too many API requests, please try again later."
 });
+
 
 // Nginx parameter for reverse proxy
 app.set('trust proxy', 1);
