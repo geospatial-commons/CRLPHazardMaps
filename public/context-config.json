@@ -18,22 +18,21 @@
     "maxZoom": 14
   },
   {
-    "id": "contours",
-    "name": "Contours - 100m",
-    "type": "tiles",
-    "url": "/tiles/contours/{z}/{x}/{y}.pbf",
-    "default": false,
-    "minZoom": 12,
-    "maxNativeZoom": 15,
-    "maxZoom": 18
-  },
-  {
     "id": "roads",
     "name": "Roads",
     "url": "/tiles/roads/{z}/{x}/{y}.pbf",
     "default": false,
-    "minZoom": 10,
+    "minZoom": 6,
     "maxNativeZoom":16,
+    "maxZoom": 18
+  },
+  {
+    "id": "contours",
+    "name": "Contours - 100m",
+    "url": "/tiles/contours/{z}/{x}/{y}.pbf",
+    "default": false,
+    "minZoom": 12,
+    "maxNativeZoom": 15,
     "maxZoom": 18
   }
 ]

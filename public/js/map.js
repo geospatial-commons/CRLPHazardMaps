@@ -21,8 +21,6 @@ let baseMaps = {};
 let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit, leafletScaleBarElement, scaleBarTextElement;
 let currentHazardDescription = '';
 let leafletBottomLeft;
-let fetchUrl;
-
 
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
@@ -87,14 +85,18 @@ function initMap() {
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
         crossOrigin: true,
-        zIndex: 1
+        zIndex: 1,
+        updateWhenIdle: true,
+        keepBuffer: 5
     });
 
     baseMaps['OpenStreetMap'] = L.tileLayer(
         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         crossOrigin: true,
-        zIndex: 1
+        zIndex: 1,
+        updateWhenIdle: true,
+        keepBuffer: 5
     });
 
     baseMaps['Esri Satellite'].addTo(map);
@@ -245,32 +247,37 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
 
     if (layerConfig.id === 'roads') {
         function getRoadStyle(properties) {
-            // console.log('getRoadStyle called with:', properties);
             // Handle both feature objects and property objects
             const props = properties.properties || properties;
-            
-            const roadClass = (props.road_class || props.class || props.type || props.highway || '').toLowerCase();
 
-            if (roadClass.includes('primary')) {
+            const roadClass = (props.road_class || '').toLowerCase();
+            // console.log(roadClass, typeof(roadClass));
+
+            if (roadClass === 'primary') {
                 return { color: '#FF6B35', weight: 3, opacity: 0.9 };
-            } else if (roadClass.includes('secondary') || roadClass.includes('tertiary')) {
+            } else if (roadClass === 'secondary' || roadClass === 'tertiary') {
                 return { color: '#FFD93D', weight: 2, opacity: 0.85 };
             } else {
                 return { color: '#E0E0E0', weight: 1.5, opacity: 0.7 };
             }
         }
 
+        let zoom = map.getZoom();
+        console.log("Zoom", zoom);
+
         const roadsLayer = L.vectorGrid.protobuf(layerConfig.url,
             {
                 minZoom: layerConfig.minZoom,
                 maxNativeZoom: layerConfig.maxNativeZoom,
                 maxZoom: layerConfig.maxZoom,
+                updateWhenIdle: true,
                 vectorTileLayerStyles: {
-                    main_afg_roads_4326: getRoadStyle
+                    main_afg_roads: getRoadStyle
                 },
                 interactive: true,
             }
         );
+
         contextLayerInstances[layerConfig.id] = roadsLayer;
         overlayLayers[layerConfig.name] = roadsLayer;
 
@@ -292,7 +299,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         });
 
         updateZoomNote(row, layerConfig);
-        return;
+        // return;
     }
 
 
@@ -347,7 +354,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 row.appendChild(errNote);
             });
     }
-    else if (layerConfig.type === 'tiles') {
+    else if (layerConfig.id === 'contours') {
         loadingNote.remove();
         checkbox.disabled = false;
         contourLayer = L.vectorGrid.protobuf(layerConfig.url, {
@@ -358,29 +365,31 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 contours: { weight: 0.5, color: '#080808' }
             }
         });
+
+
         contextLayerInstances[layerConfig.id] = contourLayer;
-        if (checkbox.checked) {
-            contourLayer.addTo(map);
-        }
         overlayLayers[layerConfig.name] = contourLayer;
+
+        // Remove loading note and enable checkbox
+        loadingNote.remove();
+        checkbox.disabled = false;
+
+        
+        if (checkbox.checked) {
+            contourLayer.addTo(map
+
+            );
+        }
+
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                contourLayer.addTo(map);
+            } else {
+                map.removeLayer(contourLayer);
+            }
+        });
         updateZoomNote(row, layerConfig);
     }
-    // else if (layerConfig.type === 'raster') {
-    //     loadingNote.remove();
-    //     checkbox.disabled = false;
-    //     const rasterLayer = L.tileLayer(layerConfig.url, {
-    //         minZoom: layerConfig.minZoom || 1,
-    //         maxZoom: layerConfig.maxZoom || 18,
-    //         opacity: 0.7,
-    //         zIndex: 150
-    //     });
-    //     contextLayerInstances[layerConfig.id] = rasterLayer;
-    //     if (checkbox.checked) {
-    //         rasterLayer.addTo(map);
-    //     }
-    //     overlayLayers[layerConfig.name] = rasterLayer;
-    //     updateZoomNote(row, layerConfig);
-    // }
 }
 
 function removeContextLayer(id) {

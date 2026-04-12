@@ -5,6 +5,12 @@ const router = express.Router();
 const wellknown = require('wellknown');
 const { validationResult } = require('express-validator');
 
+const EMPTY_TILE_BUFFER = Buffer.from([
+  0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00
+]);
+
 // Import your custom validators
 const validationParam = require('./validationParams.js'); // Adjust path as necessary
 
@@ -76,6 +82,7 @@ router.get('/tiles/contours/:z/:x/:y.pbf', validationParam.validateVectorTiles, 
 
         res.setHeader('Content-Type', 'application/x-protobuf');
         res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Cache-Control', 'public, max-age=1209600'); // Cache for 2 weeks
 
 
         res.send(tile.tile_data);
@@ -382,15 +389,21 @@ router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (re
         `);
 
         const tile = stmt.get(z, x, flippedY);
-        if (!tile) {
-            return res.status(204).end();
-        }
 
+        
         res.setHeader('Content-Type', 'application/x-protobuf');
         res.setHeader('Content-Encoding', 'gzip');
+<<<<<<< HEAD
+=======
+        res.setHeader('Cache-Control', 'public, max-age=1209600'); // Cache for 2 weeks
+        
+        if (!tile) {
+            return res.send(EMPTY_TILE_BUFFER).end();
+        }
+>>>>>>> 3999160 (optimizing vector tile performance)
 
         res.send(tile.tile_data);
-
+        
     } catch (err) {
         console.error(err);
         res.status(500).send("Tile error");
