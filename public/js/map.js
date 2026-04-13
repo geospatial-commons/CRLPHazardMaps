@@ -22,7 +22,6 @@ let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit, le
 let currentHazardDescription = '';
 let leafletBottomLeft;
 
-
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
 const commSelect = document.getElementById('comm-select');
@@ -86,14 +85,18 @@ function initMap() {
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
         crossOrigin: true,
-        zIndex: 1
+        zIndex: 1,
+        updateWhenIdle: true,
+        keepBuffer: 5
     });
 
     baseMaps['OpenStreetMap'] = L.tileLayer(
         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         crossOrigin: true,
-        zIndex: 1
+        zIndex: 1,
+        updateWhenIdle: true,
+        keepBuffer: 5
     });
 
     baseMaps['Esri Satellite'].addTo(map);
@@ -125,6 +128,89 @@ function initMap() {
     leafletScaleBarElement.textContent = '';
 
     setupScaleBarText();
+
+    let drawToggleContainer = L.DomUtil.create('div', 'leaflet-bar');
+    drawToggleContainer.style.border = 'none';
+    let drawToggleBtn = L.DomUtil.create('a', 'draw-toggle', drawToggleContainer);
+    drawToggleBtn.innerHTML = '✏️';
+
+    drawToggleBtn.href = '#';
+    drawToggleBtn.type = 'button';
+    drawToggleBtn.title = 'Draw Tools';
+
+    document.querySelector('.leaflet-top.leaflet-left').appendChild(drawToggleContainer);
+
+
+    // feature group to store the draw items
+    var drawItems = new L.FeatureGroup();
+    map.addLayer(drawItems);
+
+    // draw controls
+    var drawControl = new L.Control.Draw({
+        edit: { featureGroup: drawItems },
+        draw: {
+            // polygon: true,
+            // polyline: true,
+            // circle: true,
+            // rectangle: true,
+            circlemarker: false
+        }
+
+    });
+    map.addControl(drawControl);
+
+    setTimeout(() => {
+        const el = document.querySelector('.leaflet-draw.leaflet-control');
+        if (el) el.style.display = 'none';
+    }, 0);
+
+    let visible = false;
+    drawToggleBtn.onclick = function (e) {
+        e.preventDefault();
+        const drawControl = document.querySelector('.leaflet-draw.leaflet-control');
+        if (!drawControl) return;
+        visible = !visible;
+        drawControl.style.display = visible ? 'block' : 'none';
+    };
+
+    //handle draw events
+
+    map.on('draw:created', function (e) {
+        const layer = e.layer;
+        drawItems.addLayer(layer);
+
+        const geojson = layer.toGeoJSON();
+        console.log(geojson);
+        let result = "";
+
+        if (geojson.geometry.type === 'LineString') {
+            const length = turf.length(geojson, { units: 'kilometers' });
+            result = `Distance: ${length.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km`;
+        }
+
+        else if (geojson.geometry.type === 'Polygon') {
+            const area = turf.area(geojson);
+            const sqkm = area / 1000000;
+            result = `Area: ${sqkm.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km²`;
+        }
+
+        else if (layer instanceof L.Circle) {
+            const center = layer.getLatLng();
+            const radiusMeters = layer.getRadius();
+            const radiusKm = radiusMeters / 1000;
+
+            result = `Center: ${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}<br>
+                  Radius: ${radiusKm.toFixed(2)} km`;
+        }
+
+        else if (geojson.geometry.type === 'Point') {
+            const [lng, lat] = geojson.geometry.coordinates;
+            result = `Lat: ${lat.toFixed(6)}, <br> Lon: ${lng.toFixed(6)}`;
+        }
+
+
+        layer.bindPopup(result).openPopup();
+    });
 
     getProvinces(0, () => {
         overlay.style.display = 'none';
@@ -181,22 +267,33 @@ function buildContextToggle(container, layerConfig) {
     row.appendChild(label);
     container.appendChild(row);
 
-    // If default=true, load immediately
+    // Update zoom note on map zoom
+    map.on('zoomend', () => updateZoomNote(row, layerConfig));
+    updateZoomNote(row, layerConfig);
+
+    // If default=true, load immediately (but only if above minZoom)
     if (layerConfig.default) {
-        fetchAndAddContextLayer(layerConfig, checkbox, row);
+        const currentZoom = map.getZoom();
+        if (!layerConfig.minZoom || currentZoom >= layerConfig.minZoom) {
+            fetchAndAddContextLayer(layerConfig, checkbox, row);
+        } else {
+            checkbox.checked = false;
+        }
     }
 
     checkbox.addEventListener('change', function () {
+        // Check zoom level before allowing layer activation
+        const currentZoom = map.getZoom();
         if (this.checked) {
+            if (layerConfig.minZoom && currentZoom < layerConfig.minZoom) {
+                this.checked = false;
+                return;
+            }
             fetchAndAddContextLayer(layerConfig, checkbox, row);
         } else {
             removeContextLayer(layerConfig.id);
         }
     });
-
-    // Update zoom note on map zoom
-    map.on('zoomend', () => updateZoomNote(row, layerConfig));
-    updateZoomNote(row, layerConfig);
 }
 
 function fetchAndAddContextLayer(layerConfig, checkbox, row) {
@@ -230,6 +327,65 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         updateZoomNote(row, layerConfig);
         return;
     }
+
+    if (layerConfig.id === 'roads') {
+        function getRoadStyle(properties) {
+            // Handle both feature objects and property objects
+            const props = properties.properties || properties;
+
+            const roadClass = (props.road_class || '').toLowerCase();
+            // console.log(roadClass, typeof(roadClass));
+
+            if (roadClass === 'primary') {
+                return { color: '#FF6B35', weight: 3, opacity: 0.9 };
+            } else if (roadClass === 'secondary' || roadClass === 'tertiary') {
+                return { color: '#FFD93D', weight: 2, opacity: 0.85 };
+            } else {
+                return { color: '#E0E0E0', weight: 1.5, opacity: 0.7 };
+            }
+        }
+
+        let zoom = map.getZoom();
+        console.log("Zoom", zoom);
+
+        const roadsLayer = L.vectorGrid.protobuf(layerConfig.url,
+            {
+                minZoom: layerConfig.minZoom,
+                maxNativeZoom: layerConfig.maxNativeZoom,
+                maxZoom: layerConfig.maxZoom,
+                updateWhenIdle: true,
+                vectorTileLayerStyles: {
+                    main_afg_roads: getRoadStyle
+                },
+                interactive: true,
+            }
+        );
+
+        contextLayerInstances[layerConfig.id] = roadsLayer;
+        overlayLayers[layerConfig.name] = roadsLayer;
+
+        // Remove loading note and enable checkbox
+        loadingNote.remove();
+        checkbox.disabled = false;
+
+        // Add layer to map if checkbox is already checked
+        if (checkbox.checked) {
+            roadsLayer.addTo(map);
+        }
+
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                roadsLayer.addTo(map);
+            } else {
+                map.removeLayer(roadsLayer);
+            }
+        });
+
+        updateZoomNote(row, layerConfig);
+        // return;
+    }
+
+
 
     if (layerConfig.type === 'geojson') {
         fetch(layerConfig.url)
@@ -281,7 +437,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 row.appendChild(errNote);
             });
     }
-    else if (layerConfig.type === 'tiles') {
+    else if (layerConfig.id === 'contours') {
         loadingNote.remove();
         checkbox.disabled = false;
         contourLayer = L.vectorGrid.protobuf(layerConfig.url, {
@@ -292,35 +448,41 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 contours: { weight: 0.5, color: '#080808' }
             }
         });
+
+
         contextLayerInstances[layerConfig.id] = contourLayer;
-        if (checkbox.checked) {
-            contourLayer.addTo(map);
-        }
         overlayLayers[layerConfig.name] = contourLayer;
+
+        // Remove loading note and enable checkbox
+        loadingNote.remove();
+        checkbox.disabled = false;
+
+        
+        if (checkbox.checked) {
+            contourLayer.addTo(map
+
+            );
+        }
+
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                contourLayer.addTo(map);
+            } else {
+                map.removeLayer(contourLayer);
+            }
+        });
         updateZoomNote(row, layerConfig);
     }
-    // else if (layerConfig.type === 'raster') {
-    //     loadingNote.remove();
-    //     checkbox.disabled = false;
-    //     const rasterLayer = L.tileLayer(layerConfig.url, {
-    //         minZoom: layerConfig.minZoom || 1,
-    //         maxZoom: layerConfig.maxZoom || 18,
-    //         opacity: 0.7,
-    //         zIndex: 150
-    //     });
-    //     contextLayerInstances[layerConfig.id] = rasterLayer;
-    //     if (checkbox.checked) {
-    //         rasterLayer.addTo(map);
-    //     }
-    //     overlayLayers[layerConfig.name] = rasterLayer;
-    //     updateZoomNote(row, layerConfig);
-    // }
 }
 
 function removeContextLayer(id) {
     const layer = contextLayerInstances[id];
     if (layer && map.hasLayer(layer)) {
         map.removeLayer(layer);
+        // Clean up moveend listener for roads layer
+        if (id === 'roads' && layer._moveendHandler) {
+            map.off('moveend', layer._moveendHandler);
+        }
     }
 }
 
@@ -328,7 +490,18 @@ function updateZoomNote(row, layerConfig) {
     if (!map) return;
     const existingNote = row.querySelector('.context-zoom-note:not(.context-loading)');
     const currentZoom = map.getZoom();
+    const checkbox = row.querySelector('input[type="checkbox"]');
+
     if (layerConfig.minZoom && currentZoom < layerConfig.minZoom) {
+        // Below minZoom: disable checkbox, show note
+        if (checkbox) {
+            checkbox.disabled = true;
+            // If layer is checked and we've zoomed below minZoom, remove it
+            if (checkbox.checked) {
+                checkbox.checked = false;
+                removeContextLayer(layerConfig.id);
+            }
+        }
         if (!existingNote) {
             const note = document.createElement('p');
             note.className = 'context-zoom-note';
@@ -336,6 +509,10 @@ function updateZoomNote(row, layerConfig) {
             row.appendChild(note);
         }
     } else {
+        // At or above minZoom: enable checkbox, remove note
+        if (checkbox) {
+            checkbox.disabled = false;
+        }
         if (existingNote) existingNote.remove();
     }
 }
@@ -724,7 +901,7 @@ document.querySelectorAll('input[name="hazard-layer"]')
                 /*if (pdfHazardTitle) {
                     pdfHazardTitle.textContent = '';
                     pdfHazardIcon.style.display = "none";
-
+ 
                 }*/
                 //if (pdfHazardIcon) pdfHazardIcon.src = '';
                 pdfHazardIcon.style.display = "inline-block";
@@ -945,7 +1122,7 @@ function resetLegend() {
 // ----------------------
 function createPdfLayout(download = true) {
     const mapElement = document.getElementById('map');
-    const zoomControl = document.querySelector(".leaflet-control-zoom");
+    const topLeftControl = document.querySelector("div.leaflet-top.leaflet-left");
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
     const today = new Date();
@@ -966,7 +1143,7 @@ function createPdfLayout(download = true) {
     buildLegend(activeAdminLayers);
 
     // Hide zoom and scale controls for clean screenshot
-    if (zoomControl) zoomControl.style.display = 'none';
+    if (topLeftControl) topLeftControl.style.display = 'none';
     if (leafletScaleBarElement) leafletScaleBarElement.style.display = 'none';
 
     // Temporarily resize map to exact PDF dimensions (230mm × 170mm at 96dpi)
@@ -989,7 +1166,7 @@ function createPdfLayout(download = true) {
             mapElement.style.flex = origFlex;
             map.invalidateSize({ animate: false });
 
-            if (zoomControl) zoomControl.style.display = '';
+            if (topLeftControl) topLeftControl.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
 
             const mapImg = new Image();
@@ -1090,7 +1267,7 @@ function createPdfLayout(download = true) {
             mapElement.style.height = origHeight;
             mapElement.style.flex = origFlex;
             map.invalidateSize({ animate: false });
-            if (zoomControl) zoomControl.style.display = '';
+            if (topLeftControl) topLeftControl.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
             console.error('PDF capture failed:', err);
         });

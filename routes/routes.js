@@ -5,6 +5,12 @@ const router = express.Router();
 const wellknown = require('wellknown');
 const { validationResult } = require('express-validator');
 
+const EMPTY_TILE_BUFFER = Buffer.from([
+  0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00
+]);
+
 // Import your custom validators
 const validationParam = require('./validationParams.js'); // Adjust path as necessary
 
@@ -53,7 +59,7 @@ router.get('/tiles/:layer/:z/:x/:y.png', validationParam.validateTiles, (req, re
     }
 });
 
-router.get('/tiles/contours/:z/:x/:y.pbf', validationParam.validateContours, (req, res) => {
+router.get('/tiles/contours/:z/:x/:y.pbf', validationParam.validateVectorTiles, (req, res) => {
     if (!Object.hasOwn(mbtilesDb, 'contours') || !mbtilesDb['contours']) {
         return res.status(404).end();
     }
@@ -76,6 +82,7 @@ router.get('/tiles/contours/:z/:x/:y.pbf', validationParam.validateContours, (re
 
         res.setHeader('Content-Type', 'application/x-protobuf');
         res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Cache-Control', 'public, max-age=1209600'); // Cache for 2 weeks
 
 
         res.send(tile.tile_data);
@@ -354,7 +361,7 @@ router.post('/api/analytics/map-creation', (req, res) => {
             IOM_Code,
             request_type
         );
-        
+
         console.log("Analytics logged with ID:", result.lastInsertRowid);
         res.status(201).json({
             success: true,
@@ -365,5 +372,40 @@ router.post('/api/analytics/map-creation', (req, res) => {
         res.status(500).json({ error: 'Failed to save analytics' });
     }
 });
+
+router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (req, res) => {
+
+    const z = Number(req.params.z);
+    const x = Number(req.params.x);
+    const y = Number(req.params.y);
+    const flippedY = (1 << z) - 1 - y;
+
+    try {
+        const stmt = mbtilesDb['roads'].prepare(`
+            SELECT tile_data FROM tiles
+            WHERE zoom_level = ?
+            AND tile_column = ?
+            AND tile_row = ?
+        `);
+
+        const tile = stmt.get(z, x, flippedY);
+
+        
+        res.setHeader('Content-Type', 'application/x-protobuf');
+        res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Cache-Control', 'public, max-age=1209600'); // Cache for 2 weeks
+
+        if (!tile) {
+            return res.send(EMPTY_TILE_BUFFER).end();
+        }
+
+        res.send(tile.tile_data);
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Tile error");
+    }
+});
+
 
 module.exports = router;

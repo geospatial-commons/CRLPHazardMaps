@@ -16,7 +16,7 @@ const validateTiles = [
     validateRequest
 ];
 
-const validateContours = [
+const validateVectorTiles = [
     param(['z', 'x', 'y']).isInt({ min: 0 }).toInt().withMessage('Coordinate must be a non-negative integer'),
     validateRequest
 ];
@@ -121,7 +121,7 @@ const validateMapCreationAnalytics = [
 // Export them exactly like your example
 module.exports = {
     validateTiles,
-    validateContours,
+    validateVectorTiles,
     validateProvinces,
     validateDistricts,
     validateCommunities,
