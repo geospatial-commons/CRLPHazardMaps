@@ -374,6 +374,9 @@ router.post('/api/analytics/map-creation', (req, res) => {
 });
 
 router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (req, res) => {
+    if (!Object.hasOwn(mbtilesDb, 'roads') || !mbtilesDb['roads']) {
+        return res.status(404).end();
+    }
 
     const z = Number(req.params.z);
     const x = Number(req.params.x);
