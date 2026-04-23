@@ -457,7 +457,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         loadingNote.remove();
         checkbox.disabled = false;
 
-        
+
         if (checkbox.checked) {
             contourLayer.addTo(map
 
@@ -1290,9 +1290,10 @@ if (previewPdfBtn) {
 }
 
 if (downloadFromPreviewBtn) {
-    downloadFromPreviewBtn.addEventListener('click', function () {
+    downloadFromPreviewBtn.addEventListener('click', async function () {
+        overlay.style.display = 'flex'; // add overlay to prevent interactions during PDF generation
         if (layoutConfig && layoutConfig.hazardConfig) {
-            
+
             saveMapCreationAnalytics({
                 hazard: rasterLabels[document.querySelector('input[name="hazard-layer"]:checked').value] || 'none',
                 Pcode: distSelect.value !== 'all' ? "AF" + distSelect.value : null,
@@ -1304,8 +1305,10 @@ if (downloadFromPreviewBtn) {
                 request_type: 2 // 1 for preview, 2 for download
             })
 
-            downloadPdf(layoutConfig);
+            await downloadPdf(layoutConfig);
         }
+        overlay.style.display = 'none'; // remove overlay once download starts
+
     });
 }
 
