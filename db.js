@@ -8,6 +8,11 @@ const db = new Database(path.join(__dirname, 'data/afghanistan_data.gpkg'), {
     fileMustExist: true
 });
 
+const customSettlementsDb = new Database(path.join(__dirname, 'data/custom_settlements.db'), {
+    readonly: false,
+    fileMustExist: false
+});
+
 // connect to analytics db
 const analyticsDb = new Database(path.join(__dirname, 'data/analytics.db'), {
     readonly: false,
@@ -35,4 +40,4 @@ const mbtilesDb =
     roads:      openOptional(path.join(__dirname, 'data/main_afg_roads.mbtiles')) // open roads with write access for caching
 };
 
-module.exports = { db, mbtilesDb, analyticsDb }; 
+module.exports = { db, mbtilesDb, analyticsDb, customSettlementsDb }; 

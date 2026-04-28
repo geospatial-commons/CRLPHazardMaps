@@ -686,6 +686,22 @@ button {
     z-index: 5;
 }
 
+#editBtn {
+    margin-left: auto;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--wb-gray-900);
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+#editBtn:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
 #legend-content {
     display: flex;
     align-items: center;

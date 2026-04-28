@@ -5,6 +5,7 @@ const app = express();
 const helmet = require('helmet');
 //const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const settlementRouter = require('./routes/custom-settlements');
 
 
 const PORT = process.env.PORT || 3000;
@@ -56,6 +57,8 @@ const routes = require('./routes/routes');
 // Use routes
 app.use('/', routes);
 
+// Use routes for custom settlements
+app.use('/', settlementRouter);
 
 
 app.listen(PORT, IP, () => {

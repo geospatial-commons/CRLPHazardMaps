@@ -1,4 +1,5 @@
 import { downloadPdf } from './pdf-export.js';
+import { setupEditMode } from './editMode.js';
 
 // ----------------------
 // GLOBAL VARIABLES
@@ -36,6 +37,7 @@ const pdfDescription = document.getElementById('pdf-hazard-description');
 const legendContent = document.getElementById('legend-content');
 const pdfHazardTitle = document.getElementById('pdf-map-title');
 const pdfHazardIcon = document.getElementById('pdf-hazard-icon');
+const editBtn = document.getElementById('editBtn');
 
 const rasterLabels = {
     'none': 'None',
@@ -220,6 +222,8 @@ function initMap() {
         // Load context layers after map is ready
         loadContextLayers();
     });
+
+    setupEditMode(map, 'editBtn');
 }
 
 // ----------------------
