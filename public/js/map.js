@@ -253,7 +253,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             const roadClass = (props.road_class || '').toLowerCase();
             // console.log(roadClass, typeof(roadClass));
 
-            if (roadClass === 'primary') {
+            if (roadClass === 'primary' || roadClass === 'trunk') {
                 return { color: '#FF6B35', weight: 3, opacity: 0.9 };
             } else if (roadClass === 'secondary' || roadClass === 'tertiary') {
                 return { color: '#FFD93D', weight: 2, opacity: 0.85 };
