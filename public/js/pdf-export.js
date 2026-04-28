@@ -290,9 +290,10 @@ async function downloadPdf(layoutConfig) {
     if (layoutConfig.activeAdminLayers.length > 0) {
         legendY += 5; // Add spacing before admin section
 
+        const legendTitle = layoutConfig.activeAdminLayers.includes('Roads') ? 'Context Layers' : 'Administrative Data';
         pdf.setFont("Open Sans", "bold");
         pdf.setFontSize(11);
-        pdf.text('Administrative Data', legendX, legendY);
+        pdf.text(legendTitle, legendX, legendY);
         legendY += 8;
         pdf.setFont("Open Sans", "normal");
         pdf.setFontSize(10);
@@ -324,6 +325,12 @@ async function downloadPdf(layoutConfig) {
                 pdf.setLineWidth(0.2);
                 pdf.circle(legendX + 2.5, legendY - 0.5, 1, 'FD');
                 pdf.text('District Capital', legendX + 8, legendY + 1);
+                legendY += 7;
+            } else if (layerName === 'Roads') {
+                pdf.setDrawColor('#FF6B35');
+                pdf.setLineWidth(0.8);
+                pdf.line(legendX, legendY - 0.5, legendX + 5, legendY - 0.5);
+                pdf.text('Roads', legendX + 8, legendY + 1);
                 legendY += 7;
             }
 

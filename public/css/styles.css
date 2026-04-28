@@ -834,6 +834,7 @@ button {
     top: 15px;
     right: 20px;
     display: flex;
+    align-items: center;
     gap: 10px;
     z-index: 1000;
 }
@@ -852,6 +853,27 @@ button {
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     transition: background 0.15s ease;
+}
+
+.action-btn:disabled {
+    opacity: 0.65;
+    cursor: default;
+    box-shadow: none;
+}
+
+#pdf-status-message {
+    margin: 0;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: rgba(30, 30, 30, 0.85);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+#pdf-wrapper[data-busy="true"] {
+    cursor: progress;
 }
 
 .close-btn {
@@ -1027,6 +1049,15 @@ button {
     height: 6px;
     margin: 6px;
     border-radius: 50%;
+    display: none;
+}
+
+.legend-color.roads {
+    width: 18px;
+    height: 0;
+    margin-right: 8px;
+    border: none;
+    border-top: 3px solid #FF6B35;
     display: none;
 }
 

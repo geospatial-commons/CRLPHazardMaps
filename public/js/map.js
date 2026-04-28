@@ -30,12 +30,16 @@ const opacityValue = document.getElementById('opacity-value');
 const downloadPdfBtn = document.getElementById('download-pdf-btn');
 const previewPdfBtn = document.getElementById('preview-pdf-btn');
 const downloadFromPreviewBtn = document.getElementById('download-from-preview-btn');
+const closePreviewBtn = document.getElementById('close-btn');
 const resetFiltersBtn = document.getElementById('reset-filters-btn');
 const overlay = document.getElementById('loadingOverlay');
 const pdfDescription = document.getElementById('pdf-hazard-description');
 const legendContent = document.getElementById('legend-content');
 const pdfHazardTitle = document.getElementById('pdf-map-title');
 const pdfHazardIcon = document.getElementById('pdf-hazard-icon');
+const pdfWrapper = document.getElementById('pdf-wrapper');
+const pdfStatusMessage = document.getElementById('pdf-status-message');
+const defaultPreviewDownloadLabel = '↓ Download PDF';
 
 const rasterLabels = {
     'none': 'None',
@@ -49,6 +53,40 @@ const rasterLabels = {
 const tintBlueBtn = document.getElementById('tint-blue-btn');
 const tintRedBtn = document.getElementById('tint-red-btn');
 const tintResetBtn = document.getElementById('tint-reset-btn');
+
+function setPdfUiState(mode, status = '') {
+    const isOpen = mode !== 'hidden';
+    const isBusy = mode === 'busy';
+
+    if (pdfWrapper) {
+        pdfWrapper.style.zIndex = isOpen ? 1000 : -1;
+        pdfWrapper.dataset.busy = isBusy ? 'true' : 'false';
+    }
+
+    if (pdfStatusMessage) {
+        pdfStatusMessage.textContent = status;
+        pdfStatusMessage.hidden = !status;
+    }
+
+    if (downloadFromPreviewBtn) {
+        downloadFromPreviewBtn.textContent = isBusy ? 'Preparing PDF...' : defaultPreviewDownloadLabel;
+        downloadFromPreviewBtn.disabled = isBusy;
+    }
+
+    if (closePreviewBtn) {
+        closePreviewBtn.disabled = isBusy;
+    }
+}
+
+function startPdfFlow(download) {
+    setPdfUiState('busy', download ? 'Generating PDF...' : 'Generating preview...');
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            createPdfLayout(download);
+        });
+    });
+}
 
 // ---- SCALE BAR ----
 function setupScaleBarText() {
@@ -1083,7 +1121,8 @@ function buildLegend(activeAdminLayers = []) {
     }
 
     if (activeAdminLayers.length > 0) {
-        document.getElementById('admin-legend-title').textContent = 'Administrative Data';
+        const legendTitle = activeAdminLayers.includes('Roads') ? 'Context Layers' : 'Administrative Data';
+        document.getElementById('admin-legend-title').textContent = legendTitle;
         activeAdminLayers.forEach(layerName => {
             if (layerName === 'Provinces') {
                 document.querySelector(".legend-color.admin-prov").style.display = 'block';
@@ -1104,6 +1143,9 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.dist-capital").style.border = `1px solid ${districtCapitalStroke}`;
                 document.querySelector(".legend-color.dist-capital").style.backgroundColor = districtCapitalColor;
                 document.querySelector(".legend-label.dist-capital").textContent = 'District Capital';
+            } else if (layerName === 'Roads') {
+                document.querySelector(".legend-color.roads").style.display = 'block';
+                document.querySelector(".legend-label.roads").textContent = 'Roads';
             }
 
         });
@@ -1159,7 +1201,7 @@ function createPdfLayout(download = true) {
     map.invalidateSize({ animate: false });
 
     htmlToImage.toPng(mapElement, { width: PDF_MAP_W, height: PDF_MAP_H, pixelRatio: 2 })
-        .then(function (dataUrl) {
+        .then(async function (dataUrl) {
             // Restore map dimensions
             mapElement.style.width = origWidth;
             mapElement.style.height = origHeight;
@@ -1241,11 +1283,12 @@ function createPdfLayout(download = true) {
             };
 
             if (download) {
-                downloadPdf(layoutConfig);
+                setPdfUiState('busy', 'Starting PDF download...');
+
+                await downloadPdf(layoutConfig);
+                setPdfUiState('hidden');
             } else {
-                // Show preview modal
-                const wrapper = document.getElementById('pdf-wrapper');
-                wrapper.style.zIndex = 1000;
+                setPdfUiState('ready');
             }
 
             //save map creation data on server for analytics
@@ -1260,7 +1303,6 @@ function createPdfLayout(download = true) {
                 request_type: download ? 2 : 1 // 1 for preview, 2 for download
             })
 
-            overlay.style.display = 'none'; // remove overlay once pdf previow is ready
         })
         .catch(err => {
             mapElement.style.width = origWidth;
@@ -1269,6 +1311,7 @@ function createPdfLayout(download = true) {
             map.invalidateSize({ animate: false });
             if (topLeftControl) topLeftControl.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
+            setPdfUiState('hidden');
             console.error('PDF capture failed:', err);
         });
 
@@ -1276,23 +1319,20 @@ function createPdfLayout(download = true) {
 }
 
 downloadPdfBtn.addEventListener('click', function () {
-    overlay.style.display = 'flex'; // add overlay to prevent interactions during PDF generation
-    createPdfLayout(true);
+    startPdfFlow(true);
 });
 
 if (previewPdfBtn) {
 
     previewPdfBtn.addEventListener('click', function () {
-
-        overlay.style.display = 'flex'; // add overlay to prevent interactions during PDF generation
-        createPdfLayout(false);
+        startPdfFlow(false);
     });
 }
 
 if (downloadFromPreviewBtn) {
     downloadFromPreviewBtn.addEventListener('click', async function () {
-        overlay.style.display = 'flex'; // add overlay to prevent interactions during PDF generation
         if (layoutConfig && layoutConfig.hazardConfig) {
+            setPdfUiState('busy', 'Starting PDF download...');
 
             saveMapCreationAnalytics({
                 hazard: rasterLabels[document.querySelector('input[name="hazard-layer"]:checked').value] || 'none',
@@ -1306,9 +1346,8 @@ if (downloadFromPreviewBtn) {
             })
 
             await downloadPdf(layoutConfig);
+            setPdfUiState('ready');
         }
-        overlay.style.display = 'none'; // remove overlay once download starts
-
     });
 }
 

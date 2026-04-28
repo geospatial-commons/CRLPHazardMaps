@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/mbtiles-filters.css" />
     <link rel="stylesheet" href="/css/suggestions.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link rel="stylesheet" href="/vendor/leaflet-draw/leaflet.draw.css" />
 
     <link rel="icon" href="/assets/img/globe-icon.png" type="image/png">
 </head>
@@ -203,7 +203,7 @@
     </div>
 
     <!-- PDF preview/export layout (hidden, captured by html-to-image) -->
-    <div id="pdf-wrapper">
+    <div id="pdf-wrapper" data-busy="false">
         <div class="preview-action-buttons">
             <button class="action-btn download-from-preview-btn" id="download-from-preview-btn">
                 ↓ Download PDF
@@ -211,6 +211,7 @@
             <button class="action-btn close-btn" id="close-btn" onclick="hidePreview()">
                 ✖ Close
             </button>
+            <p id="pdf-status-message" aria-live="polite" hidden></p>
         </div>
         <div id="pdf-content">
             <!-- Header -->
@@ -262,6 +263,10 @@
                                     <span class="legend-color dist-capital"></span>
                                     <span class="legend-label dist-capital"></span>
                                 </div>
+                                <div class="legend-item">
+                                    <span class="legend-color roads"></span>
+                                    <span class="legend-label roads"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -295,7 +300,7 @@
     <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
     <script src="https://unpkg.com/leaflet.vectorgrid/dist/Leaflet.VectorGrid.bundled.js"></script>
     <script src="https://unpkg.com/leaflet-textpath"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="/vendor/leaflet-draw/leaflet.draw.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 
     <!-- Vendored export libraries (local — offline-safe) -->
@@ -311,7 +316,28 @@
     <script>
         // PDF preview helpers (global scope — called from pdf-wrapper buttons)
         function hidePreview() {
-            document.getElementById('pdf-wrapper').style.zIndex = -1;
+            const wrapper = document.getElementById('pdf-wrapper');
+            const status = document.getElementById('pdf-status-message');
+            const downloadBtn = document.getElementById('download-from-preview-btn');
+            const closeBtn = document.getElementById('close-btn');
+
+            wrapper.style.zIndex = -1;
+            wrapper.dataset.busy = 'false';
+
+            if (status) {
+                status.hidden = true;
+                status.textContent = '';
+            }
+
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = '↓ Download PDF';
+            }
+
+            if (closeBtn) {
+                closeBtn.disabled = false;
+            }
+
             // Restore Leaflet controls that were hidden during map capture
             const scaleLine = document.querySelector('.leaflet-control-scale-line');
             const zoomCtrl = document.querySelector('.leaflet-control-zoom');
