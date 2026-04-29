@@ -298,6 +298,23 @@ async function downloadPdf(layoutConfig) {
         pdf.setFont("Open Sans", "normal");
         pdf.setFontSize(10);
 
+        console.log("Active admin layers for legend:", layoutConfig.activeAdminLayers);
+
+        const layerOrder = {
+            "Provinces": 0,
+            "Districts": 1,
+            "Communities": 2,
+            "District Capitals": 3,
+            "Roads": 4,
+            "Contours - 100m": 5
+        };
+
+        layoutConfig.activeAdminLayers.sort((a, b) => {
+            return layerOrder[a] - layerOrder[b];
+        });
+        
+        console.log("Sorted active admin layers for legend:", layoutConfig.activeAdminLayers);
+
         layoutConfig.activeAdminLayers.forEach(layerName => {
             if (layerName === 'Provinces') {
                 pdf.setDrawColor(layoutConfig.provincesColor); // Make sure this variable is accessible!
@@ -327,10 +344,22 @@ async function downloadPdf(layoutConfig) {
                 pdf.text('District Capital', legendX + 8, legendY + 1);
                 legendY += 7;
             } else if (layerName === 'Roads') {
-                pdf.setDrawColor('#FF6B35');
+                pdf.setDrawColor(layoutConfig.primaryRoadColor);
                 pdf.setLineWidth(0.8);
                 pdf.line(legendX, legendY - 0.5, legendX + 5, legendY - 0.5);
-                pdf.text('Roads', legendX + 8, legendY + 1);
+                pdf.text('Primary Roads', legendX + 8, legendY + 1);
+                legendY += 7;
+
+                pdf.setDrawColor(layoutConfig.secondaryRoadColor);
+                pdf.setLineWidth(0.6);
+                pdf.line(legendX, legendY - 0.5, legendX + 5, legendY - 0.5);
+                pdf.text('Secondary Roads', legendX + 8, legendY + 1);
+                legendY += 7;
+
+                pdf.setDrawColor(layoutConfig.tertiaryRoadColor);
+                pdf.setLineWidth(0.4);
+                pdf.line(legendX, legendY - 0.5, legendX + 5, legendY - 0.5);
+                pdf.text('Tertiary Roads', legendX + 8, legendY + 1);
                 legendY += 7;
             }
 
@@ -410,7 +439,7 @@ async function downloadPdf(layoutConfig) {
     // Draw scale bar block
     pdf.setDrawColor('#002244');
     pdf.setFillColor('#002244');
-   
+
     // pdf.rect(scaleStartX, scaleY, scaleBarWidthmm / 2, scaleHeight, 'F'); // left (filled)
     // pdf.rect(scaleStartX + scaleBarWidthmm / 2, scaleY, scaleBarWidthmm / 2, scaleHeight); // right (empty)
     // Draw alternating filled/empty blocks for scale bar

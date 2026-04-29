@@ -14,6 +14,9 @@ let communitiesFill = "#BFBFBF";
 let selctedCommunityColor = "#12436D";
 let districtCapitalColor = "#F7B841";
 let districtCapitalStroke = "#000000";
+let primaryRoadColor = "#FF6B35";
+let secondaryRoadColor = "#FFD93D";
+let tertiaryRoadColor = "#E0E0E0";
 let hazardLayer, currentHazardLayer, contourLayer;
 let hazardConfig = {};
 let layoutConfig = {};
@@ -375,11 +378,11 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             // console.log(roadClass, typeof(roadClass));
 
             if (roadClass === 'primary' || roadClass === 'trunk') {
-                return { color: '#FF6B35', weight: 3, opacity: 0.9 };
+                return { color: primaryRoadColor, weight: 3, opacity: 0.9 };
             } else if (roadClass === 'secondary' || roadClass === 'tertiary') {
-                return { color: '#FFD93D', weight: 2, opacity: 0.85 };
+                return { color: secondaryRoadColor, weight: 2, opacity: 0.85 };
             } else {
-                return { color: '#E0E0E0', weight: 1.5, opacity: 0.7 };
+                return { color: tertiaryRoadColor, weight: 1.5, opacity: 0.7 };
             }
         }
 
@@ -1144,8 +1147,12 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.dist-capital").style.backgroundColor = districtCapitalColor;
                 document.querySelector(".legend-label.dist-capital").textContent = 'District Capital';
             } else if (layerName === 'Roads') {
-                document.querySelector(".legend-color.roads").style.display = 'block';
-                document.querySelector(".legend-label.roads").textContent = 'Roads';
+                document.querySelector(".legend-color.primary-roads").style.display = 'block';
+                document.querySelector(".legend-label.primary-roads").textContent = 'Primary Roads';
+                document.querySelector(".legend-color.secondary-roads").style.display = 'block';
+                document.querySelector(".legend-label.secondary-roads").textContent = 'Secondary Roads';
+                document.querySelector(".legend-color.tertiary-roads").style.display = 'block';
+                document.querySelector(".legend-label.tertiary-roads").textContent = 'Tertiary Roads';
             }
 
         });
@@ -1278,6 +1285,9 @@ function createPdfLayout(download = true) {
                 communitiesSelected: selctedCommunityColor,
                 districtCapitalColor: districtCapitalColor,
                 districtCapitalStroke: districtCapitalStroke,
+                primaryRoadColor: primaryRoadColor,
+                secondaryRoadColor: secondaryRoadColor,
+                tertiaryRoadColor: tertiaryRoadColor,
                 hazardDescription: currentHazardDescription,
                 mapTitle: [hazardTitle, mapTitle],
             };

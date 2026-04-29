@@ -10,6 +10,9 @@
     --wb-gray-100: #EEF0F3;
     --wb-gray-500: #6B7280;
     --wb-gray-900: #111827;
+    --primary-road-color: #FF6B35;
+    --secondary-road-color: #FFD93D;
+    --tertiary-road-color: #E0E0E0;
     --sidebar-width: 224px;
     --header-height: 56px;
     --legend-bar-height: 36px;
@@ -1052,12 +1055,30 @@ button {
     display: none;
 }
 
-.legend-color.roads {
+.legend-color.primary-roads {
     width: 18px;
     height: 0;
     margin-right: 8px;
     border: none;
-    border-top: 3px solid #FF6B35;
+    border-top: 3px solid var(--primary-road-color);
+    display: none;
+}
+
+.legend-color.secondary-roads {
+    width: 18px;
+    height: 0;
+    margin-right: 8px;
+    border: none;
+    border-top: 2px solid var(--secondary-road-color);
+    display: none;
+}
+
+.legend-color.tertiary-roads {
+    width: 18px;
+    height: 0;
+    margin-right: 8px;
+    border: none;
+    border-top: 1.5px solid var(--tertiary-road-color);
     display: none;
 }
 
