@@ -14,6 +14,9 @@ let communitiesFill = "#BFBFBF";
 let selctedCommunityColor = "#12436D";
 let districtCapitalColor = "#F7B841";
 let districtCapitalStroke = "#000000";
+let primaryRoadColor = "#FF6B35";
+let secondaryRoadColor = "#FFD93D";
+let tertiaryRoadColor = "#E0E0E0";
 let hazardLayer, currentHazardLayer, contourLayer;
 let hazardConfig = {};
 let layoutConfig = {};
@@ -30,12 +33,16 @@ const opacityValue = document.getElementById('opacity-value');
 const downloadPdfBtn = document.getElementById('download-pdf-btn');
 const previewPdfBtn = document.getElementById('preview-pdf-btn');
 const downloadFromPreviewBtn = document.getElementById('download-from-preview-btn');
+const closePreviewBtn = document.getElementById('close-btn');
 const resetFiltersBtn = document.getElementById('reset-filters-btn');
 const overlay = document.getElementById('loadingOverlay');
 const pdfDescription = document.getElementById('pdf-hazard-description');
 const legendContent = document.getElementById('legend-content');
 const pdfHazardTitle = document.getElementById('pdf-map-title');
 const pdfHazardIcon = document.getElementById('pdf-hazard-icon');
+const pdfWrapper = document.getElementById('pdf-wrapper');
+const pdfStatusMessage = document.getElementById('pdf-status-message');
+const defaultPreviewDownloadLabel = '↓ Download PDF';
 
 const rasterLabels = {
     'none': 'None',
@@ -49,6 +56,40 @@ const rasterLabels = {
 const tintBlueBtn = document.getElementById('tint-blue-btn');
 const tintRedBtn = document.getElementById('tint-red-btn');
 const tintResetBtn = document.getElementById('tint-reset-btn');
+
+function setPdfUiState(mode, status = '') {
+    const isOpen = mode !== 'hidden';
+    const isBusy = mode === 'busy';
+
+    if (pdfWrapper) {
+        pdfWrapper.style.zIndex = isOpen ? 1000 : -1;
+        pdfWrapper.dataset.busy = isBusy ? 'true' : 'false';
+    }
+
+    if (pdfStatusMessage) {
+        pdfStatusMessage.textContent = status;
+        pdfStatusMessage.hidden = !status;
+    }
+
+    if (downloadFromPreviewBtn) {
+        downloadFromPreviewBtn.textContent = isBusy ? 'Preparing PDF...' : defaultPreviewDownloadLabel;
+        downloadFromPreviewBtn.disabled = isBusy;
+    }
+
+    if (closePreviewBtn) {
+        closePreviewBtn.disabled = isBusy;
+    }
+}
+
+function startPdfFlow(download) {
+    setPdfUiState('busy', download ? 'Generating PDF...' : 'Generating preview...');
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            createPdfLayout(download);
+        });
+    });
+}
 
 // ---- SCALE BAR ----
 function setupScaleBarText() {
@@ -336,12 +377,12 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             const roadClass = (props.road_class || '').toLowerCase();
             // console.log(roadClass, typeof(roadClass));
 
-            if (roadClass === 'primary') {
-                return { color: '#FF6B35', weight: 3, opacity: 0.9 };
+            if (roadClass === 'primary' || roadClass === 'trunk') {
+                return { color: primaryRoadColor, weight: 3, opacity: 0.9 };
             } else if (roadClass === 'secondary' || roadClass === 'tertiary') {
-                return { color: '#FFD93D', weight: 2, opacity: 0.85 };
+                return { color: secondaryRoadColor, weight: 2, opacity: 0.85 };
             } else {
-                return { color: '#E0E0E0', weight: 1.5, opacity: 0.7 };
+                return { color: tertiaryRoadColor, weight: 1.5, opacity: 0.7 };
             }
         }
 
@@ -457,7 +498,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         loadingNote.remove();
         checkbox.disabled = false;
 
-        
+
         if (checkbox.checked) {
             contourLayer.addTo(map
 
@@ -1083,7 +1124,8 @@ function buildLegend(activeAdminLayers = []) {
     }
 
     if (activeAdminLayers.length > 0) {
-        document.getElementById('admin-legend-title').textContent = 'Administrative Data';
+        const legendTitle = activeAdminLayers.includes('Roads') ? 'Context Layers' : 'Administrative Data';
+        document.getElementById('admin-legend-title').textContent = legendTitle;
         activeAdminLayers.forEach(layerName => {
             if (layerName === 'Provinces') {
                 document.querySelector(".legend-color.admin-prov").style.display = 'block';
@@ -1104,6 +1146,13 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.dist-capital").style.border = `1px solid ${districtCapitalStroke}`;
                 document.querySelector(".legend-color.dist-capital").style.backgroundColor = districtCapitalColor;
                 document.querySelector(".legend-label.dist-capital").textContent = 'District Capital';
+            } else if (layerName === 'Roads') {
+                document.querySelector(".legend-color.primary-roads").style.display = 'block';
+                document.querySelector(".legend-label.primary-roads").textContent = 'Primary Roads';
+                document.querySelector(".legend-color.secondary-roads").style.display = 'block';
+                document.querySelector(".legend-label.secondary-roads").textContent = 'Secondary Roads';
+                document.querySelector(".legend-color.tertiary-roads").style.display = 'block';
+                document.querySelector(".legend-label.tertiary-roads").textContent = 'Tertiary Roads';
             }
 
         });
@@ -1159,7 +1208,7 @@ function createPdfLayout(download = true) {
     map.invalidateSize({ animate: false });
 
     htmlToImage.toPng(mapElement, { width: PDF_MAP_W, height: PDF_MAP_H, pixelRatio: 2 })
-        .then(function (dataUrl) {
+        .then(async function (dataUrl) {
             // Restore map dimensions
             mapElement.style.width = origWidth;
             mapElement.style.height = origHeight;
@@ -1236,16 +1285,20 @@ function createPdfLayout(download = true) {
                 communitiesSelected: selctedCommunityColor,
                 districtCapitalColor: districtCapitalColor,
                 districtCapitalStroke: districtCapitalStroke,
+                primaryRoadColor: primaryRoadColor,
+                secondaryRoadColor: secondaryRoadColor,
+                tertiaryRoadColor: tertiaryRoadColor,
                 hazardDescription: currentHazardDescription,
                 mapTitle: [hazardTitle, mapTitle],
             };
 
             if (download) {
-                downloadPdf(layoutConfig);
+                setPdfUiState('busy', 'Starting PDF download...');
+
+                await downloadPdf(layoutConfig);
+                setPdfUiState('hidden');
             } else {
-                // Show preview modal
-                const wrapper = document.getElementById('pdf-wrapper');
-                wrapper.style.zIndex = 1000;
+                setPdfUiState('ready');
             }
 
             //save map creation data on server for analytics
@@ -1260,7 +1313,6 @@ function createPdfLayout(download = true) {
                 request_type: download ? 2 : 1 // 1 for preview, 2 for download
             })
 
-            overlay.style.display = 'none'; // remove overlay once pdf previow is ready
         })
         .catch(err => {
             mapElement.style.width = origWidth;
@@ -1269,6 +1321,7 @@ function createPdfLayout(download = true) {
             map.invalidateSize({ animate: false });
             if (topLeftControl) topLeftControl.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
+            setPdfUiState('hidden');
             console.error('PDF capture failed:', err);
         });
 
@@ -1276,23 +1329,21 @@ function createPdfLayout(download = true) {
 }
 
 downloadPdfBtn.addEventListener('click', function () {
-    overlay.style.display = 'flex'; // add overlay to prevent interactions during PDF generation
-    createPdfLayout(true);
+    startPdfFlow(true);
 });
 
 if (previewPdfBtn) {
 
     previewPdfBtn.addEventListener('click', function () {
-
-        overlay.style.display = 'flex'; // add overlay to prevent interactions during PDF generation
-        createPdfLayout(false);
+        startPdfFlow(false);
     });
 }
 
 if (downloadFromPreviewBtn) {
-    downloadFromPreviewBtn.addEventListener('click', function () {
+    downloadFromPreviewBtn.addEventListener('click', async function () {
         if (layoutConfig && layoutConfig.hazardConfig) {
-            
+            setPdfUiState('busy', 'Starting PDF download...');
+
             saveMapCreationAnalytics({
                 hazard: rasterLabels[document.querySelector('input[name="hazard-layer"]:checked').value] || 'none',
                 Pcode: distSelect.value !== 'all' ? "AF" + distSelect.value : null,
@@ -1304,7 +1355,8 @@ if (downloadFromPreviewBtn) {
                 request_type: 2 // 1 for preview, 2 for download
             })
 
-            downloadPdf(layoutConfig);
+            await downloadPdf(layoutConfig);
+            setPdfUiState('ready');
         }
     });
 }

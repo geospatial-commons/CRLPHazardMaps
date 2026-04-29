@@ -290,12 +290,30 @@ async function downloadPdf(layoutConfig) {
     if (layoutConfig.activeAdminLayers.length > 0) {
         legendY += 5; // Add spacing before admin section
 
+        const legendTitle = layoutConfig.activeAdminLayers.includes('Roads') ? 'Context Layers' : 'Administrative Data';
         pdf.setFont("Open Sans", "bold");
         pdf.setFontSize(11);
-        pdf.text('Administrative Data', legendX, legendY);
+        pdf.text(legendTitle, legendX, legendY);
         legendY += 8;
         pdf.setFont("Open Sans", "normal");
         pdf.setFontSize(10);
+
+        console.log("Active admin layers for legend:", layoutConfig.activeAdminLayers);
+
+        const layerOrder = {
+            "Provinces": 0,
+            "Districts": 1,
+            "Communities": 2,
+            "District Capitals": 3,
+            "Roads": 4,
+            "Contours - 100m": 5
+        };
+
+        layoutConfig.activeAdminLayers.sort((a, b) => {
+            return layerOrder[a] - layerOrder[b];
+        });
+        
+        console.log("Sorted active admin layers for legend:", layoutConfig.activeAdminLayers);
 
         layoutConfig.activeAdminLayers.forEach(layerName => {
             if (layerName === 'Provinces') {
@@ -324,6 +342,24 @@ async function downloadPdf(layoutConfig) {
                 pdf.setLineWidth(0.2);
                 pdf.circle(legendX + 2.5, legendY - 0.5, 1, 'FD');
                 pdf.text('District Capital', legendX + 8, legendY + 1);
+                legendY += 7;
+            } else if (layerName === 'Roads') {
+                pdf.setDrawColor(layoutConfig.primaryRoadColor);
+                pdf.setLineWidth(0.8);
+                pdf.line(legendX, legendY - 0.5, legendX + 5, legendY - 0.5);
+                pdf.text('Primary Roads', legendX + 8, legendY + 1);
+                legendY += 7;
+
+                pdf.setDrawColor(layoutConfig.secondaryRoadColor);
+                pdf.setLineWidth(0.6);
+                pdf.line(legendX, legendY - 0.5, legendX + 5, legendY - 0.5);
+                pdf.text('Secondary Roads', legendX + 8, legendY + 1);
+                legendY += 7;
+
+                pdf.setDrawColor(layoutConfig.tertiaryRoadColor);
+                pdf.setLineWidth(0.4);
+                pdf.line(legendX, legendY - 0.5, legendX + 5, legendY - 0.5);
+                pdf.text('Tertiary Roads', legendX + 8, legendY + 1);
                 legendY += 7;
             }
 
@@ -403,7 +439,7 @@ async function downloadPdf(layoutConfig) {
     // Draw scale bar block
     pdf.setDrawColor('#002244');
     pdf.setFillColor('#002244');
-   
+
     // pdf.rect(scaleStartX, scaleY, scaleBarWidthmm / 2, scaleHeight, 'F'); // left (filled)
     // pdf.rect(scaleStartX + scaleBarWidthmm / 2, scaleY, scaleBarWidthmm / 2, scaleHeight); // right (empty)
     // Draw alternating filled/empty blocks for scale bar
