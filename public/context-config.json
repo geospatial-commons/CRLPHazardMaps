@@ -22,7 +22,7 @@
     "name": "Roads",
     "url": "/tiles/roads/{z}/{x}/{y}.pbf",
     "default": false,
-    "minZoom": 6,
+    "minZoom": 8,
     "maxNativeZoom":16,
     "maxZoom": 18
   },

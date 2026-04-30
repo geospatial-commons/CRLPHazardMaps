@@ -10,6 +10,9 @@
     --wb-gray-100: #EEF0F3;
     --wb-gray-500: #6B7280;
     --wb-gray-900: #111827;
+    --primary-road-color: #FF6B35;
+    --secondary-road-color: #FFD93D;
+    --tertiary-road-color: #E0E0E0;
     --sidebar-width: 224px;
     --header-height: 56px;
     --legend-bar-height: 36px;
@@ -160,7 +163,11 @@ button {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    /* gap: 8px; */
+}
+
+.sidebar-section > h2 {
+    margin: 4px 0px 10px 0px;
 }
 
 .section-label {
@@ -292,7 +299,8 @@ button {
 .sidebar-field,
 #reset-filters-btn,
 #hazard-list,
-#context-layers {
+#context-layers,
+#basemap-switcher {
     display: none;
 }
 
@@ -302,6 +310,10 @@ button {
 
 .sidebar-section[data-expanded] #reset-filters-btn {
     display: block;
+}
+
+.sidebar-section[data-expanded] #basemap-switcher {
+    display: flex;
 }
 
 #hazard-list {
@@ -446,7 +458,7 @@ button {
     width: 100%;
     height: 4px;
     border-radius: 2px;
-    background: linear-gradient(to right, var(--wb-blue), rgba(255, 255, 255, 0.2));
+    background: linear-gradient(to left, var(--wb-blue), rgba(255, 255, 255, 0.2));
     outline: none;
     cursor: pointer;
 }
@@ -841,6 +853,7 @@ button {
     top: 15px;
     right: 20px;
     display: flex;
+    align-items: center;
     gap: 10px;
     z-index: 1000;
 }
@@ -859,6 +872,27 @@ button {
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     transition: background 0.15s ease;
+}
+
+.action-btn:disabled {
+    opacity: 0.65;
+    cursor: default;
+    box-shadow: none;
+}
+
+#pdf-status-message {
+    margin: 0;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: rgba(30, 30, 30, 0.85);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+#pdf-wrapper[data-busy="true"] {
+    cursor: progress;
 }
 
 .close-btn {
@@ -1034,6 +1068,33 @@ button {
     height: 6px;
     margin: 6px;
     border-radius: 50%;
+    display: none;
+}
+
+.legend-color.primary-roads {
+    width: 18px;
+    height: 0;
+    margin-right: 8px;
+    border: none;
+    border-top: 3px solid var(--primary-road-color);
+    display: none;
+}
+
+.legend-color.secondary-roads {
+    width: 18px;
+    height: 0;
+    margin-right: 8px;
+    border: none;
+    border-top: 2px solid var(--secondary-road-color);
+    display: none;
+}
+
+.legend-color.tertiary-roads {
+    width: 18px;
+    height: 0;
+    margin-right: 8px;
+    border: none;
+    border-top: 1.5px solid var(--tertiary-road-color);
     display: none;
 }
 
