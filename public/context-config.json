@@ -34,5 +34,15 @@
     "minZoom": 12,
     "maxNativeZoom": 15,
     "maxZoom": 18
+  },
+
+  {
+    "id": "custom-settlements",
+    "name": "Custom Settlements",
+    "type": "geojson",
+    "url": "/api/custom-settlements",
+    "default": false,
+    "minZoom": 4,
+    "maxZoom": 18
   }
 ]

@@ -10,8 +10,8 @@ let provincesData, districtsData;
 let provincesLayer, districtsLayer, communityLayer;
 let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
-let communitiesStroke = "#000000";
-let communitiesFill = "#BFBFBF";
+export let communitiesStroke = "#000000";
+export let communitiesFill = "#BFBFBF";
 let selctedCommunityColor = "#12436D";
 let districtCapitalColor = "#F7B841";
 let districtCapitalStroke = "#000000";
@@ -264,6 +264,9 @@ function initMap() {
         loadContextLayers();
     });
 
+    // Attach overlayLayers to map object for access in other modules
+    map.overlayLayers = overlayLayers;
+
     setupEditMode(map, 'editBtn');
 }
 
@@ -367,6 +370,10 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             overlayLayers[layerConfig.name] = provincesLayer;
             if (checkbox.checked && !map.hasLayer(provincesLayer)) {
                 provincesLayer.addTo(map);
+                // Disable popups if in edit mode
+                if (map.isEditModeActive) {
+                    disablePopupsOnLayer(provincesLayer);
+                }
             }
         }
         updateZoomNote(row, layerConfig);
@@ -416,6 +423,10 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         // Add layer to map if checkbox is already checked
         if (checkbox.checked) {
             roadsLayer.addTo(map);
+            // Disable popups if in edit mode
+            if (map.isEditModeActive) {
+                disablePopupsOnLayer(roadsLayer);
+            }
         }
 
         checkbox.addEventListener('change', () => {
@@ -430,9 +441,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         // return;
     }
 
-
-
-    if (layerConfig.type === 'geojson') {
+    if (layerConfig.id === 'prov-boundaries') {
         fetch(layerConfig.url)
             .then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -442,13 +451,39 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 loadingNote.remove();
                 checkbox.disabled = false;
 
-                const leafletLayer = L.geoJSON(data, {
-                    style: layerConfig.id === 'prov-boundaries' ? {
+                const provLayer = L.geoJSON(data, {
+                    style: {
                         color: provincesColor,
                         weight: 2,
                         fillOpacity: 0
-                    } : undefined,
-                    pointToLayer: layerConfig.id === 'district-capitals' ? function (feature, latlng) {
+                    }
+                });
+
+                contextLayerInstances[layerConfig.id] = provLayer;
+                overlayLayers[layerConfig.name] = provLayer;
+            })
+            .catch(() => {
+                loadingNote.remove();
+                checkbox.disabled = false;
+                checkbox.checked = false;
+                const errNote = document.createElement('p');
+                errNote.className = 'context-unavailable';
+                errNote.textContent = `${layerConfig.name} unavailable`;
+                row.appendChild(errNote);
+            });
+    }
+
+    if (layerConfig.id === 'district-capitals') {
+        fetch(layerConfig.url)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                loadingNote.remove();
+                checkbox.disabled = false;
+                const districtLayer = L.geoJSON(data, {
+                    pointToLayer: function (feature, latlng) {
                         return L.circleMarker(latlng, {
                             radius: 4,
                             fillColor: districtCapitalColor,
@@ -457,7 +492,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                             fillOpacity: 0.9,
                             zIndex: 150
                         });
-                    } : undefined,
+                    },
                     onEachFeature: function (f, l) {
                         if (f.properties && f.properties.name) {
                             l.bindPopup(`<b>District Capital: </b>${f.properties.name}`);
@@ -465,11 +500,15 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                     }
                 });
 
-                contextLayerInstances[layerConfig.id] = leafletLayer;
+                contextLayerInstances[layerConfig.id] = districtLayer;
                 if (checkbox.checked) {
-                    leafletLayer.addTo(map);
+                    districtLayer.addTo(map);
+                    // Disable popups if in edit mode
+                    if (map.isEditModeActive) {
+                        disablePopupsOnLayer(districtLayer);
+                    }
                 }
-                overlayLayers[layerConfig.name] = leafletLayer;
+                overlayLayers[layerConfig.name] = districtLayer;
                 updateZoomNote(row, layerConfig);
             })
             .catch(() => {
@@ -482,6 +521,53 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 row.appendChild(errNote);
             });
     }
+
+    if (layerConfig.id === 'custom-settlements') {
+        fetch(layerConfig.url)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                console.log(data);
+                loadingNote.remove();
+                checkbox.disabled = false;
+                const customSettlementLayer = L.geoJSON(data, {
+                    pointToLayer: function (feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: 5,
+                            fillColor: communitiesFill,
+                            color: communitiesStroke,
+                            weight: 1,
+                            fillOpacity: 0.9,
+                            zIndex: 100
+                        });
+                    },
+                    onEachFeature: function (f, l) {
+                        if (f.properties && f.properties.name) {
+                            l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
+                        }
+                    }
+                });
+
+                contextLayerInstances[layerConfig.id] = customSettlementLayer;
+                if (checkbox.checked) {
+                    customSettlementLayer.addTo(map);
+                }
+                overlayLayers[layerConfig.name] = customSettlementLayer;
+                updateZoomNote(row, layerConfig);
+            })
+            .catch(() => {
+                loadingNote.remove();
+                checkbox.disabled = false;
+                checkbox.checked = false;
+                const errNote = document.createElement('p');
+                errNote.className = 'context-unavailable';
+                errNote.textContent = `${layerConfig.name} unavailable`;
+                row.appendChild(errNote);
+            });
+    }
+
     else if (layerConfig.id === 'contours') {
         loadingNote.remove();
         checkbox.disabled = false;
@@ -502,11 +588,12 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         loadingNote.remove();
         checkbox.disabled = false;
 
-
         if (checkbox.checked) {
-            contourLayer.addTo(map
-
-            );
+            contourLayer.addTo(map);
+            // Disable popups if in edit mode
+            if (map.isEditModeActive) {
+                disablePopupsOnLayer(contourLayer);
+            }
         }
 
         checkbox.addEventListener('change', () => {
@@ -561,6 +648,65 @@ function updateZoomNote(row, layerConfig) {
         if (existingNote) existingNote.remove();
     }
 }
+
+// ----------------------
+// POPUP MANAGEMENT
+// ----------------------
+async function disablePopupsOnActiveLayers() {
+    Object.values(overlayLayers).forEach(layer => {
+        if (map.hasLayer(layer)) {
+            // Store original popup state
+            if (!layer._popupDisabledByEditMode) {
+                layer._popupDisabledByEditMode = true;
+                layer._originalPopupState = [];
+
+                layer.eachLayer(sublayer => {
+                    if (sublayer.getPopup && sublayer.getPopup()) {
+                        layer._originalPopupState.push({
+                            sublayer: sublayer,
+                            popup: sublayer.getPopup()
+                        });
+                        sublayer.unbindPopup();
+                    }
+                });
+            }
+        }
+    });
+}
+
+function restorePopupsOnActiveLayers() {
+    Object.values(overlayLayers).forEach(layer => {
+        if (layer._popupDisabledByEditMode && layer._originalPopupState) {
+            layer._originalPopupState.forEach(({ sublayer, popup }) => {
+                sublayer.bindPopup(popup);
+            });
+            layer._popupDisabledByEditMode = false;
+            layer._originalPopupState = [];
+        }
+    });
+}
+
+function disablePopupsOnLayer(layer) {
+    if (!layer) return;
+
+    // Store original popup state
+    if (!layer._popupDisabledByEditMode) {
+        layer._popupDisabledByEditMode = true;
+        layer._originalPopupState = [];
+
+        layer.eachLayer(sublayer => {
+            if (sublayer.getPopup && sublayer.getPopup()) {
+                layer._originalPopupState.push({
+                    sublayer: sublayer,
+                    popup: sublayer.getPopup()
+                });
+                sublayer.unbindPopup();
+            }
+        });
+    }
+}
+
+export { disablePopupsOnActiveLayers, restorePopupsOnActiveLayers, disablePopupsOnLayer };
 
 // ----------------------
 // BASEMAP SWITCHER
@@ -667,6 +813,10 @@ function renderDistricts(data, selectedDistId) {
         }
     }).addTo(map);
 
+    if (map.isEditModeActive) {
+        disablePopupsOnLayer(districtsLayer);
+    }
+
     overlayLayers['Districts'] = districtsLayer;
 
     if (districtsLayer.getLayers().length > 0) {
@@ -749,7 +899,58 @@ function renderCommunities(distId) {
             overlayLayers['Communities'] = communityLayer;
             commSelect.disabled = false;
         });
+
+    // Initialize data entry form
+    setupDataEntryForm();
 }
+
+// ----------------------
+// DATA ENTRY FORM
+// ----------------------
+let formActive = false;
+function setupDataEntryForm() {
+    const dataEntryForm = document.getElementById('data-entry-form');
+    const closeFormBtn = dataEntryForm.querySelector('.btn-close');
+
+    return new Promise((resolve, reject) => {
+        // if (formActive) return Promise.reject('Form already active');
+        if (formActive) return;
+        formActive = true;
+        // Close button
+        const handleClose = () => {
+            dataEntryForm.classList.add('hidden');
+            cleanup();
+            reject('Form closed');
+        };
+
+        // Submit handler
+        const handleSubmit = (e) => {
+            e.preventDefault();
+
+            const formData = {
+                point_name: document.getElementById('point_name').value,
+            };
+
+            console.log('Form submitted:', formData);
+
+            dataEntryForm.classList.add('hidden');
+            cleanup();
+            resolve(formData);
+        };
+
+        function cleanup() {
+            console.log('Cleaning up form event listeners');
+            formActive = false;
+            closeFormBtn.removeEventListener('click', handleClose);
+            dataEntryForm.removeEventListener('submit', handleSubmit);
+        }
+
+        closeFormBtn.addEventListener('click', handleClose);
+        dataEntryForm.addEventListener('submit', handleSubmit);
+    });
+}
+
+export { setupDataEntryForm };
 
 // ----------------------
 // MAP INTERACTION

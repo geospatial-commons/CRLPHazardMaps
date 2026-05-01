@@ -1291,6 +1291,163 @@ button {
 }
 
 /* ================================================================
+   DATA ENTRY FORM STYLES
+   ================================================================ */
+
+/* Hidden state */
+.data-entry-form.hidden {
+    display: none;
+}
+
+/* Positioned in bottom right corner of map */
+.data-entry-form {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 320px;
+    max-height: 80vh;
+    background: white;
+    border: 2px solid var(--wb-navy);
+    border-radius: 6px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.data-entry-form fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.data-entry-form legend {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--wb-navy);
+    margin: 0 0 8px 0;
+    padding: 0;
+    width: 100%;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--wb-gray-900);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.form-group input {
+    padding: 8px 10px;
+    border: 1px solid var(--wb-gray-100);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    background: white;
+    color: var(--wb-gray-900);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus {
+    border-color: var(--wb-blue);
+    box-shadow: 0 0 0 3px rgba(0, 159, 218, 0.1);
+}
+
+.form-group input::placeholder {
+    color: var(--wb-gray-500);
+}
+
+/* Form actions */
+.form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--wb-gray-100);
+    padding-top: 12px;
+}
+
+.btn-submit,
+.btn-reset,
+.btn-close {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-submit {
+    background: var(--wb-blue);
+    color: white;
+}
+
+.btn-submit:hover {
+    background: #0087c6;
+}
+
+.btn-submit:active {
+    background: #006a9e;
+}
+
+.btn-reset {
+    background: var(--wb-gray-100);
+    color: var(--wb-gray-900);
+}
+
+.btn-reset:hover {
+    background: var(--wb-gray-50);
+}
+
+.btn-reset:active {
+    background: #e0e6ed;
+}
+
+.btn-close {
+    flex: 0;
+    width: 32px;
+    padding: 8px;
+    background: var(--wb-gray-100);
+    color: var(--wb-gray-900);
+    font-size: 14px;
+}
+
+.btn-close:hover {
+    background: var(--wb-gray-50);
+}
+
+/* Scrollbar for form */
+.data-entry-form::-webkit-scrollbar {
+    width: 6px;
+}
+
+.data-entry-form::-webkit-scrollbar-track {
+    background: var(--wb-gray-100);
+    border-radius: 3px;
+}
+
+.data-entry-form::-webkit-scrollbar-thumb {
+    background: var(--wb-gray-500);
+    border-radius: 3px;
+}
+
+.data-entry-form::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* ================================================================
    PRINT CSS
    ================================================================ */
 @media print {
@@ -1298,7 +1455,8 @@ button {
     #sidebar,
     #app-header,
     #pdf-wrapper,
-    #loadingOverlay {
+    #loadingOverlay,
+    .data-entry-form {
         display: none !important;
     }
 
@@ -1320,4 +1478,14 @@ button {
         width: 100% !important;
         height: calc(100vh - var(--legend-bar-height)) !important;
     }
+}
+
+
+/* ================================================================
+    EDIT MODE STYLES
+   ================================================================ */
+   /* Edit mode cursor styling */
+#map.edit-mode-active,
+#map.edit-mode-active * {
+    cursor: crosshair !important;
 }
