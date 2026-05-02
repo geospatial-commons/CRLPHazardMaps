@@ -900,8 +900,8 @@ function renderCommunities(distId) {
             commSelect.disabled = false;
         });
 
-    // Initialize data entry form
-    setupDataEntryForm();
+    // // Initialize data entry form
+    // setupDataEntryForm();
 }
 
 // ----------------------
@@ -913,8 +913,11 @@ function setupDataEntryForm() {
     const closeFormBtn = dataEntryForm.querySelector('.btn-close');
 
     return new Promise((resolve, reject) => {
-        // if (formActive) return Promise.reject('Form already active');
-        if (formActive) return;
+        if (formActive) {
+            reject('Form already active');
+            return;
+        }
+
         formActive = true;
         // Close button
         const handleClose = () => {

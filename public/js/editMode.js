@@ -23,66 +23,15 @@ function setupEditMode(map, buttonId) {
             const mapContainer = map.getContainer();
             mapContainer.classList.add('edit-mode-active');
             mapContainer.style.cursor = 'crosshair';
-            // setupDataEntryForm();
             disablePopupsOnActiveLayers();
 
-            activeFormPromise = setupDataEntryForm();
-
-            activeFormPromise.then(async (formData) => {
-                if (!pendingLatLng) return; // No pending lat/lng, likely form was submitted without clicking on map first
-
-                const { lat, lng } = pendingLatLng;
-
-                try {
-                    // 3. send to backend
-                    const postRes = await fetch('/api/custom-settlements', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            lat: lat,
-                            lon: lng,
-                            name: formData.point_name
-                        })
-                    });
-
-                    const data = await postRes.json();
-
-                    if (!postRes.ok) {
-                        throw new Error(data.error || 'Failed to save');
-                    }
-
-                    await fetch('/api/custom-settlements'); // Refresh settlements layer to include new settlement
-
-                    if (circle) map.removeLayer(circle);
-
-                    const customSettlementCheckbox = document.querySelector('input[data-id="custom-settlements"]');
-                    customSettlementCheckbox.click(); // uncheck to remove old layer
-                    customSettlementCheckbox.click(); // re-check to add updated layer with new settlement
-
-                    console.log('Saved to GeoPackage:', data);
-                } catch (err) {
-                    console.error(err);
-                    if (circle) map.removeLayer(circle);
-                    alert("Failed to save location");
-                };
-
-                pendingLatLng = null
-                activeFormPromise = null
-            }).catch(() => {
-                if (circle) map.removeLayer(circle);
-                pendingLatLng = null
-                activeFormPromise = null
-            });
-
             createClickHandler = (e) => {
+
+                if (activeFormPromise) return; // Prevent creating multiple pending settlements if user clicks multiple times before submitting form
                 const { lat, lng } = e.latlng
                 pendingLatLng = { lat, lng };
 
-                if (circle) {
-                    map.removeLayer(circle);
-                }
+                if (circle) map.removeLayer(circle);
 
                 // change marker to circle with red border and transparent fill to indicate it's being created
                 circle = L.circleMarker([lat, lng], {
@@ -98,8 +47,60 @@ function setupEditMode(map, buttonId) {
                 const formEl = document.getElementById('data-entry-form');
                 formEl.reset(); // clear previous values
                 formEl.classList.remove('hidden');
+
+                activeFormPromise = setupDataEntryForm();
+
+                activeFormPromise.then(async (formData) => {
+                    if (!pendingLatLng) return; // No pending lat/lng, likely form was submitted without clicking on map first
+
+                    const { lat, lng } = pendingLatLng;
+
+                    try {
+                        // send to backend
+                        const postRes = await fetch('/api/custom-settlements', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                lat: lat,
+                                lon: lng,
+                                name: formData.point_name
+                            })
+                        });
+
+                        const data = await postRes.json();
+
+                        if (!postRes.ok) {
+                            throw new Error(data.error || 'Failed to save');
+                        }
+
+                        await fetch('/api/custom-settlements'); // Refresh settlements layer to include new settlement
+
+                        if (circle) map.removeLayer(circle);
+
+                        const customSettlementCheckbox = document.querySelector('input[data-id="custom-settlements"]');
+                        customSettlementCheckbox.click(); // uncheck to remove old layer
+                        customSettlementCheckbox.click(); // re-check to add updated layer with new settlement
+
+                        console.log('Saved to GeoPackage:', data);
+                    } catch (err) {
+                        console.error(err);
+                        if (circle) map.removeLayer(circle);
+                        alert("Failed to save location");
+                    };
+
+                    pendingLatLng = null
+                    activeFormPromise = null
+                }).catch(err => {
+                    console.error('Error handling form submission:', err);
+                    if (circle) map.removeLayer(circle);
+                    pendingLatLng = null
+                    activeFormPromise = null
+                });
             };
             map.on('click', createClickHandler);
+
         } else { // exiting edit mode
             editBtn.textContent = "Enable Edit Mode";
 

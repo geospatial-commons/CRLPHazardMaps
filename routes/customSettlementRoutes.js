@@ -70,4 +70,20 @@ router.get('/api/custom-settlements', (req, res) => {
     }
 });
 
+router.delete('/api/custom-settlements', (req, res) => {
+    const id = req.body.id;
+
+    try {
+        customSettlementsDb.prepare(`
+            UPDATE crlp_custom_settlements
+            SET status = 'Deleted'
+            WHERE id = ?
+        `).run(id);
+        res.json({ message: 'Settlement deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting settlement:', err);
+        res.status(500).json({ error: 'Failed to delete settlement' });
+    }
+});
+
 module.exports = router;
