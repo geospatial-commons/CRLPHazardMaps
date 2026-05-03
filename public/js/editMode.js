@@ -1,126 +1,206 @@
-import { disablePopupsOnActiveLayers, restorePopupsOnActiveLayers, disablePopupsOnLayer, setupDataEntryForm } from './map.js';
-import { communitiesFill, communitiesStroke } from './map.js';
 
-let circle; // Declare circle variable in outer scope to access in click handler and for cleanup
+import {
+    map,
+    disablePopupsOnActiveLayers,
+    restorePopupsOnActiveLayers,
+} from './map.js';
 
-function setupEditMode(map, buttonId) {
-    let editMode = false;
+// import {
+//     communitiesFill,
+//     communitiesStroke
+// } from './map.js';
+
+let pendingCommunity;
+let activeCreateFormPromise = false;
+
+const createBtn = document.getElementById('createBtn');
+const updateBtn = document.getElementById('updateBtn');
+const dataEntryForm = document.getElementById('data-entry-form');
+
+function removePendingCommunity() {
+    if (pendingCommunity) {
+        map.removeLayer(pendingCommunity);
+        pendingCommunity = null;
+    }
+}
+
+// ----------------------
+// DATA ENTRY FORM
+// ----------------------
+function setupDataEntryForm() {
+    
+    const closeFormBtn = dataEntryForm.querySelector('.btn-close');
+
+    return new Promise((resolve, reject) => {
+        if (activeCreateFormPromise) {
+            reject(new Error('Form already active'));
+            return;
+        }
+
+        activeCreateFormPromise = true;
+
+        const handleClose = () => {
+            dataEntryForm.classList.add('hidden');
+            cleanup();
+            resolve(null);
+        };
+
+        const handleSubmit = (e) => {
+            e.preventDefault();
+
+            const formData = {
+                point_name: document.getElementById('point_name').value,
+            };
+
+            console.log('Form submitted:', formData);
+
+            dataEntryForm.classList.add('hidden');
+            cleanup();
+            resolve(formData);
+        };
+
+        function cleanup() {
+            activeCreateFormPromise = false;
+            closeFormBtn.removeEventListener('click', handleClose);
+            dataEntryForm.removeEventListener('submit', handleSubmit);
+            removePendingCommunity();
+        }
+
+        closeFormBtn.addEventListener('click', handleClose);
+        dataEntryForm.addEventListener('submit', handleSubmit);
+    });
+}
+
+
+// ----------------------
+// CREATE MODE
+// ----------------------
+function setupCreateMode(map) {
+    let createMode = false;
     let createClickHandler = null;
-    let pendingLatLng = null; // Store lat/lng of pending settlement creation for use in form submission
-    let activeFormPromise = null; // Track active form promise to prevent multiple forms from being opened simultaneously
+    let pendingLatLng = null;
+    let activeCreateFormPromise = null;
 
-    const editBtn = document.getElementById(buttonId);
+    createBtn.addEventListener('click', () => {
+        createMode = !createMode;
+        map.isCreateModeActive = createMode;
 
-    editBtn.addEventListener('click', () => {
-        activeFormPromise = null; // Reset active form promise on each click to allow new form to be created if previous one was left open
-        editMode = !editMode;
-        // Store edit mode state on map object for access by layer addition logic
-        map.isEditModeActive = editMode;
-
-        if (editMode) {
-            editBtn.textContent = "Disable Edit Mode";
+        if (createMode) {
+            createBtn.textContent = "Disable Create Mode";
+            updateBtn.disabled = true;
 
             const mapContainer = map.getContainer();
             mapContainer.classList.add('edit-mode-active');
             mapContainer.style.cursor = 'crosshair';
+
             disablePopupsOnActiveLayers();
 
-            createClickHandler = (e) => {
+            createClickHandler = async (e) => {
+                if (activeCreateFormPromise) {
+                    console.log('Form already active, ignoring click');
+                    return;
+                }
 
-                if (activeFormPromise) return; // Prevent creating multiple pending settlements if user clicks multiple times before submitting form
-                const { lat, lng } = e.latlng
+                const { lat, lng } = e.latlng;
                 pendingLatLng = { lat, lng };
 
-                if (circle) map.removeLayer(circle);
+                removePendingCommunity();
 
-                // change marker to circle with red border and transparent fill to indicate it's being created
-                circle = L.circleMarker([lat, lng], {
+                pendingCommunity = L.circleMarker([lat, lng], {
                     radius: 4,
                     color: '#00ffff',
                     fillColor: '#00FFFF',
-                    fillOpacity: 100,
+                    fillOpacity: 1,
                 }).addTo(map);
 
-                // center map on new marker
                 map.setView([lat, lng], map.getZoom());
 
-                const formEl = document.getElementById('data-entry-form');
-                formEl.reset(); // clear previous values
-                formEl.classList.remove('hidden');
+                dataEntryForm.reset();
+                dataEntryForm.classList.remove('hidden');
+                
+                activeCreateFormPromise = setupDataEntryForm();
+                console.log('Created form promise:', activeCreateFormPromise);
+                // disable createBtn until form is resolved to prevent multiple clicks
+                createBtn.disabled = true;
+                updateBtn.disabled = true;
 
-                activeFormPromise = setupDataEntryForm();
+                try {
+                    console.log('Waiting for form submission...');
+                    const formData = await activeCreateFormPromise;
 
-                activeFormPromise.then(async (formData) => {
-                    if (!pendingLatLng) return; // No pending lat/lng, likely form was submitted without clicking on map first
+                    // user cancelled
+                    if (!formData || !pendingLatLng) return;
 
                     const { lat, lng } = pendingLatLng;
 
-                    try {
-                        // send to backend
-                        const postRes = await fetch('/api/custom-settlements', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                lat: lat,
-                                lon: lng,
-                                name: formData.point_name
-                            })
-                        });
+                    const postRes = await fetch('/api/custom-communities', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            lat,
+                            lon: lng,
+                            name: formData.point_name
+                        })
+                    });
 
-                        const data = await postRes.json();
+                    const data = await postRes.json();
 
-                        if (!postRes.ok) {
-                            throw new Error(data.error || 'Failed to save');
-                        }
+                    if (!postRes.ok) {
+                        throw new Error(data.error || 'Failed to save');
+                    }
 
-                        await fetch('/api/custom-settlements'); // Refresh settlements layer to include new settlement
+                    await fetch('/api/custom-communities');
 
-                        if (circle) map.removeLayer(circle);
+                    removePendingCommunity();
 
-                        const customSettlementCheckbox = document.querySelector('input[data-id="custom-settlements"]');
-                        customSettlementCheckbox.click(); // uncheck to remove old layer
-                        customSettlementCheckbox.click(); // re-check to add updated layer with new settlement
+                    const checkbox = document.querySelector('input[data-id="custom-communities"]');
+                    checkbox.click();
+                    checkbox.click();
 
-                        console.log('Saved to GeoPackage:', data);
-                    } catch (err) {
-                        console.error(err);
-                        if (circle) map.removeLayer(circle);
-                        alert("Failed to save location");
-                    };
+                    console.log('Saved to GeoPackage:', data);
 
-                    pendingLatLng = null
-                    activeFormPromise = null
-                }).catch(err => {
-                    console.error('Error handling form submission:', err);
-                    if (circle) map.removeLayer(circle);
-                    pendingLatLng = null
-                    activeFormPromise = null
-                });
+                } catch (err) {
+                    console.error('Error:', err);
+                    removePendingCommunity();
+                } finally {
+                    pendingLatLng = null;
+                    activeCreateFormPromise = null;
+                    createBtn.disabled = false;
+                }
             };
+
             map.on('click', createClickHandler);
 
-        } else { // exiting edit mode
-            editBtn.textContent = "Enable Edit Mode";
+        } else {
+            // EXIT Create MODE
+            createBtn.textContent = "Create Community";
 
             map.off('click', createClickHandler);
             createClickHandler = null;
+
             const mapContainer = map.getContainer();
             mapContainer.classList.remove('edit-mode-active');
             mapContainer.style.cursor = '';
 
-            // Restore popups on all active layers when exiting edit mode
             restorePopupsOnActiveLayers();
 
-            if (circle) map.removeLayer(circle);
-            circle = null
+            if (pendingCommunity) map.removeLayer(pendingCommunity);
+            pendingCommunity = null;
 
-            pendingLatLng = null
-            activeFormPromise = null
+            pendingLatLng = null;
+            activeCreateFormPromise = null;
+
+            //close form if open
+            dataEntryForm.reset();
+            dataEntryForm.classList.add('hidden');
+            updateBtn.disabled = false;
         }
-
     });
 }
 
-export { setupEditMode, disablePopupsOnLayer };
+export {
+    setupCreateMode,
+    setupDataEntryForm
+};

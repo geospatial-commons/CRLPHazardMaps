@@ -701,6 +701,11 @@ button {
 #editBtn {
     margin-left: auto;
     padding: 6px 12px;
+}
+
+#createBtn,
+#updateBtn {
+    padding: 6px 12px;
     font-size: 11px;
     font-weight: 500;
     color: var(--wb-gray-900);
@@ -709,9 +714,19 @@ button {
     border-radius: 4px;
 }
 
-#editBtn:hover {
+#createBtn:hover,
+#updateBtn:hover {
     background-color: rgba(0, 0, 0, 0.04);
     border-color: rgba(0, 0, 0, 0.2);
+}
+
+#createBtn:disabled,
+#updateBtn:disabled {
+    background-color: #ccc;
+    color: #888;
+    border: 1px solid #999;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 #legend-content {

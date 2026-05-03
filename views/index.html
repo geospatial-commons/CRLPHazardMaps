@@ -194,17 +194,20 @@
                 <!-- Legend bar: fixed 36px, above map -->
                 <div id="legend-bar" aria-label="Map legend">
                     <span id="legend-content"><em>Select a hazard layer to view the legend</em></span>
-                    <button id="editBtn">Enable Edit Mode</button>
+                    <div id="editBtn">
+                        <button id="createBtn">Create Community</button>
+                        <button id="updateBtn">Update Community</button>
+                    </div>
                 </div>
 
                 <!-- Map -->
                 <div id="map" aria-label="Interactive hazard map"></div>
 
                 <!-- Hidden data form: positioned in bottom right corner -->
-                <form id="data-entry-form" class="data-entry-form hidden" aria-label="Create settlement form">
+                <form id="data-entry-form" class="data-entry-form hidden" aria-label="Create community form">
                     <fieldset>
-                        <legend>Create Settlement</legend>
-                        
+                        <legend>Create Community</legend>
+
                         <!-- <div class="form-group">
                             <label for="community_id">Community ID</label>
                             <input type="text" id="community_id" name="community_id" />
@@ -224,7 +227,7 @@
                             <label for="coord_x">Coord X</label>
                             <input type="number" id="coord_x" name="coord_x" step="any" />
                         </div> -->
-<!-- 
+                        <!-- 
                         <div class="form-group">
                             <label for="pcode">PCode</label>
                             <input type="text" id="pcode" name="pcode" />

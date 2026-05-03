@@ -37,10 +37,10 @@
   },
 
   {
-    "id": "custom-settlements",
-    "name": "Custom Settlements",
+    "id": "custom-communities",
+    "name": "Custom Communities",
     "type": "geojson",
-    "url": "/api/custom-settlements",
+    "url": "/api/custom-communities",
     "default": false,
     "minZoom": 4,
     "maxZoom": 18

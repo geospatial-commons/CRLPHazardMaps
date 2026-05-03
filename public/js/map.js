@@ -1,10 +1,10 @@
 import { downloadPdf } from './pdf-export.js';
-import { setupEditMode } from './editMode.js';
+import { setupCreateMode } from './editMode.js';
 
 // ----------------------
 // GLOBAL VARIABLES
 // ----------------------
-let map;
+export let map;
 let overlayLayers = {};
 let provincesData, districtsData;
 let provincesLayer, districtsLayer, communityLayer;
@@ -41,7 +41,7 @@ const pdfDescription = document.getElementById('pdf-hazard-description');
 const legendContent = document.getElementById('legend-content');
 const pdfHazardTitle = document.getElementById('pdf-map-title');
 const pdfHazardIcon = document.getElementById('pdf-hazard-icon');
-const editBtn = document.getElementById('editBtn');
+const createBtn = document.getElementById('createBtn');
 const pdfWrapper = document.getElementById('pdf-wrapper');
 const pdfStatusMessage = document.getElementById('pdf-status-message');
 const defaultPreviewDownloadLabel = '↓ Download PDF';
@@ -267,7 +267,7 @@ function initMap() {
     // Attach overlayLayers to map object for access in other modules
     map.overlayLayers = overlayLayers;
 
-    setupEditMode(map, 'editBtn');
+    setupCreateMode(map);
 }
 
 // ----------------------
@@ -522,7 +522,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             });
     }
 
-    if (layerConfig.id === 'custom-settlements') {
+    if (layerConfig.id === 'custom-communities') {
         fetch(layerConfig.url)
             .then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -532,7 +532,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 console.log(data);
                 loadingNote.remove();
                 checkbox.disabled = false;
-                const customSettlementLayer = L.geoJSON(data, {
+                const customCommunityLayer = L.geoJSON(data, {
                     pointToLayer: function (feature, latlng) {
                         return L.circleMarker(latlng, {
                             radius: 5,
@@ -550,11 +550,11 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                     }
                 });
 
-                contextLayerInstances[layerConfig.id] = customSettlementLayer;
+                contextLayerInstances[layerConfig.id] = customCommunityLayer;
                 if (checkbox.checked) {
-                    customSettlementLayer.addTo(map);
+                    customCommunityLayer.addTo(map);
                 }
-                overlayLayers[layerConfig.name] = customSettlementLayer;
+                overlayLayers[layerConfig.name] = customCommunityLayer;
                 updateZoomNote(row, layerConfig);
             })
             .catch(() => {
@@ -900,60 +900,7 @@ function renderCommunities(distId) {
             commSelect.disabled = false;
         });
 
-    // // Initialize data entry form
-    // setupDataEntryForm();
 }
-
-// ----------------------
-// DATA ENTRY FORM
-// ----------------------
-let formActive = false;
-function setupDataEntryForm() {
-    const dataEntryForm = document.getElementById('data-entry-form');
-    const closeFormBtn = dataEntryForm.querySelector('.btn-close');
-
-    return new Promise((resolve, reject) => {
-        if (formActive) {
-            reject('Form already active');
-            return;
-        }
-
-        formActive = true;
-        // Close button
-        const handleClose = () => {
-            dataEntryForm.classList.add('hidden');
-            cleanup();
-            reject('Form closed');
-        };
-
-        // Submit handler
-        const handleSubmit = (e) => {
-            e.preventDefault();
-
-            const formData = {
-                point_name: document.getElementById('point_name').value,
-            };
-
-            console.log('Form submitted:', formData);
-
-            dataEntryForm.classList.add('hidden');
-            cleanup();
-            resolve(formData);
-        };
-
-        function cleanup() {
-            console.log('Cleaning up form event listeners');
-            formActive = false;
-            closeFormBtn.removeEventListener('click', handleClose);
-            dataEntryForm.removeEventListener('submit', handleSubmit);
-        }
-
-        closeFormBtn.addEventListener('click', handleClose);
-        dataEntryForm.addEventListener('submit', handleSubmit);
-    });
-}
-
-export { setupDataEntryForm };
 
 // ----------------------
 // MAP INTERACTION
