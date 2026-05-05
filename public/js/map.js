@@ -1,17 +1,20 @@
 import { downloadPdf } from './pdf-export.js';
-import { setupCreateMode } from './editMode.js';
+import { setupCreateMode, setupUpdateMode } from './editMode.js';
 
 // ----------------------
 // GLOBAL VARIABLES
 // ----------------------
 export let map;
-let overlayLayers = {};
+export let overlayLayers = {};
+
+export let customCommunityLayer; // Declare customCommunityLayer in the outer scope to be accessible in editMode.js
+
 let provincesData, districtsData;
 let provincesLayer, districtsLayer, communityLayer;
 let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
-export let communitiesStroke = "#000000";
-export let communitiesFill = "#BFBFBF";
+let communitiesStroke = "#000000";
+let communitiesFill = "#BFBFBF";
 let selctedCommunityColor = "#12436D";
 let districtCapitalColor = "#F7B841";
 let districtCapitalStroke = "#000000";
@@ -267,7 +270,8 @@ function initMap() {
     // Attach overlayLayers to map object for access in other modules
     map.overlayLayers = overlayLayers;
 
-    setupCreateMode(map);
+    setupCreateMode();
+    setupUpdateMode();
 }
 
 // ----------------------
@@ -529,10 +533,11 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 return res.json();
             })
             .then(data => {
+
                 console.log(data);
                 loadingNote.remove();
                 checkbox.disabled = false;
-                const customCommunityLayer = L.geoJSON(data, {
+                customCommunityLayer = L.geoJSON(data, {
                     pointToLayer: function (feature, latlng) {
                         return L.circleMarker(latlng, {
                             radius: 5,
