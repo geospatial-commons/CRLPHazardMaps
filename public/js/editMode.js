@@ -13,6 +13,9 @@ const createBtn = document.getElementById('btn-create');
 const updateBtn = document.getElementById('btn-update');
 const dataEntryForm = document.getElementById('data-entry-form');
 const closeFormBtn = dataEntryForm.querySelector('.btn-close');
+const deleteBtn = dataEntryForm.querySelector('.btn-delete');
+var createMode = false;
+var updateMode = false;
 
 function removePendingCommunity() {
     if (pendingCommunity) {
@@ -21,65 +24,125 @@ function removePendingCommunity() {
     }
 }
 
+
+
 // ----------------------
 // DATA ENTRY FORM
 // ----------------------
-function setupDataEntryForm(mode = 'create', featureContext = null) {
+//function setupDataEntryForm(mode = 'create', featureContext = null) {
 
-    return new Promise((resolve) => {
 
-        const handleClose = () => {
-            dataEntryForm.classList.add('hidden');
-            cleanup();
-            resolve(null);
-        };
+async function handleSubmitForm(e) {
+    e.preventDefault();
+    let url = '/api/custom-communities';
 
-        const handleSubmit = (e) => {
-            e.preventDefault();
-            const formData = {
-                point_name: document.getElementById('point_name').value,
-            };
+    // let's undertand the mode and context before submitting
+    if (createMode) {
+        console.log('Submitting form in CREATE mode');
+    } else if (updateMode) {
+        console.log('Submitting form in UPDATE mode');
+        url += '/update';
+    }
 
-            dataEntryForm.classList.add('hidden');
-            cleanup();
-            resolve(formData);
-        };
+    // Disable button to prevent double-submissions
+    createBtn.disabled = true;
 
-        const handleDelete = () => {
-            dataEntryForm.classList.add('hidden');
-            cleanup();
-            resolve({ action: 'delete' });
+    try {
+        console.log('Processing form submission...');
+
+        // 1. Extract data
+        const rawData = new FormData(e.target);
+        const formData = Object.fromEntries(rawData.entries());
+        console.log(formData);
+        
+        // 2. Await the Fetch call
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lat: Number(formData.coord_y),
+                lon: Number(formData.coord_x),
+                name: formData.point_name,
+                community_id: document.getElementById('community_id').value || null
+            })
+        });
+
+        // 3. Parse the response body
+        const data = await res.json();
+
+        // 4. Check for server-side errors
+        if (!res.ok) {
+            throw new Error(data.error || 'Failed to save');
         }
 
-        function cleanup() {
-            // activeCreateFormPromise = false;
-            closeFormBtn.removeEventListener('click', handleClose);
-            dataEntryForm.removeEventListener('submit', handleSubmit);
-            const deleteBtn = document.getElementById('.btn-delete');
-            if (deleteBtn) deleteBtn.removeEventListener('click', handleDelete);
-            removePendingCommunity();
+        // --- SUCCESS LOGIC STARTS HERE ---
+        console.log('Saved successfully:', data);
+
+        removePendingCommunity();
+
+        // Refresh the layer by toggling the checkbox
+        const customCommunityCheckbox = document.querySelector('input[data-id="custom-communities"]');
+        if (customCommunityCheckbox) {
+            customCommunityCheckbox.click(); // Turn off/on to refresh
+            customCommunityCheckbox.click();
         }
 
-        closeFormBtn.addEventListener('click', handleClose);
-        dataEntryForm.addEventListener('submit', handleSubmit);
+        // Hide form and cleanup
+        dataEntryForm.classList.add('hidden');
+        cleanup();
 
-        const deleteBtn = dataEntryForm.querySelector('.btn-delete');
-        if (deleteBtn) {
-            deleteBtn.style.display = mode === 'update' ? 'block' : 'none';
-            deleteBtn.addEventListener('click', handleDelete);
-        }
-    });
+    } catch (err) {
+        // --- ERROR LOGIC STARTS HERE ---
+        console.error('Error:', err);
+        alert('Failed to save: ' + err.message);
+
+        // Decide if you want to remove the pending community on failure
+        // removePendingCommunity(); 
+    } finally {
+        // Re-enable button regardless of success or failure
+        createBtn.disabled = false;
+    }
 }
+
+const handleCloseForm = (mode) => {
+    dataEntryForm.classList.add('hidden');
+
+    if (mode === 'create') {
+        createBtn.disabled = false;
+    } else if (mode === 'update') {
+        updateBtn.disabled = false;
+    }
+    cleanup();
+};
+
+const handleDelete = () => {
+    dataEntryForm.classList.add('hidden');
+    cleanup();
+}
+
+function cleanup() {
+    // activeCreateFormPromise = false;
+    const deleteBtn = document.getElementById('.btn-delete');
+    if (deleteBtn) deleteBtn.removeEventListener('click', handleDelete);
+    removePendingCommunity();
+}
+
+closeFormBtn.addEventListener('click', () => handleCloseForm(createMode ? 'create' : 'update'));
+dataEntryForm.addEventListener('submit', handleSubmitForm);
 
 
 // ----------------------
 // CREATE MODE
 // ----------------------
 function setupCreateMode() {
-    let createMode = false;
+
     let createClickHandler = null;
     let pendingLatLng = null;
     let activeCreateFormPromise = null;
+
+
 
     createBtn.addEventListener('click', () => {
         createMode = !createMode;
@@ -96,13 +159,8 @@ function setupCreateMode() {
             disablePopupsOnActiveLayers();
 
             createClickHandler = async (e) => {
-                if (activeCreateFormPromise) {
-                    console.log('Form already active, ignoring click');
-                    return;
-                }
 
                 const { lat, lng } = e.latlng;
-                pendingLatLng = { lat, lng };
 
                 removePendingCommunity();
 
@@ -115,60 +173,16 @@ function setupCreateMode() {
 
                 map.setView([lat, lng], map.getZoom());
 
-                dataEntryForm.reset();
                 dataEntryForm.classList.remove('hidden');
 
-                activeCreateFormPromise = setupDataEntryForm();
+                document.getElementById('coord_y').value = lat;
+                document.getElementById('coord_x').value = lng;
+
                 console.log('Created form promise:', activeCreateFormPromise);
                 // disable createBtn until form is resolved to prevent multiple clicks
                 createBtn.disabled = true;
                 updateBtn.disabled = true;
 
-                try {
-                    console.log('Waiting for form submission...');
-                    const formData = await activeCreateFormPromise;
-
-                    // user cancelled
-                    if (!formData || !pendingLatLng) return;
-
-                    const { lat, lng } = pendingLatLng;
-
-                    const postRes = await fetch('/api/custom-communities', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            lat,
-                            lon: lng,
-                            name: formData.point_name
-                        })
-                    });
-
-                    const data = await postRes.json();
-
-                    if (!postRes.ok) {
-                        throw new Error(data.error || 'Failed to save');
-                    }
-
-                    await fetch('/api/custom-communities');
-
-                    removePendingCommunity();
-
-                    const customCommunityCheckbox = document.querySelector('input[data-id="custom-communities"]');
-                    customCommunityCheckbox.click();
-                    customCommunityCheckbox.click();
-
-                    console.log('Saved to GeoPackage:', data);
-
-                } catch (err) {
-                    console.error('Error:', err);
-                    removePendingCommunity();
-                } finally {
-                    pendingLatLng = null;
-                    activeCreateFormPromise = null;
-                    createBtn.disabled = false;
-                }
             };
 
             map.on('click', createClickHandler);
@@ -189,7 +203,7 @@ function setupCreateMode() {
             if (pendingCommunity) map.removeLayer(pendingCommunity);
             pendingCommunity = null;
 
-            pendingLatLng = null;
+            //pendingLatLng = null;
             activeCreateFormPromise = null;
 
             //close form if open
@@ -201,9 +215,9 @@ function setupCreateMode() {
 }
 
 function setupUpdateMode() {
-    let updateMode = false;
+    
     let updateClickHandler = null;
-    let pendingLatLng = null;
+    //let pendingLatLng = null;
     let activeUpdateFormPromise = null;
 
     updateBtn.addEventListener('click', () => {
@@ -235,7 +249,8 @@ function setupUpdateMode() {
                 customCommunityCheckbox.click();
             }
             customCommunityCheckbox.disabled = true;
-
+            
+            // creating a new layer here instead of using the existing customCommunityLayer to avoid conflicts with popups and editing
             fetch('/api/custom-communities')
                 .then(res => {
                     console.log('Fetch custom communities response:', res);
@@ -271,11 +286,15 @@ function setupUpdateMode() {
 
                                 console.log('Feature context from drag:', fContext);
 
-                                activeUpdateFormPromise = setupDataEntryForm('update', fContext);
+                                //activeUpdateFormPromise = setupDataEntryForm('update', fContext);
                                 console.log('Created update form promise:', activeUpdateFormPromise);
                                 // disable createBtn until form is resolved to prevent multiple clicks
-                                createBtn.disabled = true;
-                                updateBtn.disabled = true;
+                                //createBtn.disabled = true;
+                                //updateBtn.disabled = true;
+
+                                //update the form coordinates with the new marker position
+                                dataEntryForm.querySelector('#coord_y').value = newLatLng.lat;
+                                dataEntryForm.querySelector('#coord_x').value = newLatLng.lng;
 
                                 document.getElementById('community-id-group').style.display = 'block';
                                 document.getElementById('community_id').value = fContext.community_id;
