@@ -217,15 +217,20 @@
                             <label for="point_name">Point Name</label>
                             <input type="text" id="point_name" name="point_name" />
                         </div>
-
-                        <div class="form-group">
-                            <label for="coord_y">Coord Y</label>
-                            <input type="number" id="coord_y" name="coord_y" step="any" />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="coord_x">Coord X</label>
-                            <input type="number" id="coord_x" name="coord_x" step="any" />
+                        <div class="coords-and-button">
+                            <div class="coords-inputs">
+                                <div class="form-group">
+                                    <label for="coord_y">Coord Y</label>
+                                    <input type="number" id="coord_y" name="coord_y" step="any" />
+                                </div>                        
+                                <div class="form-group">
+                                    <label for="coord_x">Coord X</label>
+                                    <input type="number" id="coord_x" name="coord_x" step="any" />
+                                </div>
+                            </div>
+                            <div class="set-coords">
+                                <button type="button" id="set-coords-btn">Move to</button>
+                            </div>
                         </div>
                         <!-- 
                         <div class="form-group">

@@ -50,10 +50,16 @@ router.get('/api/custom-communities', (req, res) => {
     try {
         const communities = customCommunitiesDb.prepare(`
         SELECT community_id, point_name, coord_y AS lat, coord_x AS lon
-        FROM crlp_custom_communities
-        WHERE status <> 'Deleted' 
-            and editor = ''
+        FROM crlp_custom_communities t1
+        WHERE status <> 'Deleted'
+            and t1.modified_dt = (
+                SELECT MAX(modified_dt)
+                FROM crlp_custom_communities t2
+                WHERE t2.community_id = t1.community_id
+            )
     `).all();
+
+    console.log('Fetched communities:', communities);
 
         const geojson = {
             type: "FeatureCollection",
@@ -100,14 +106,7 @@ router.post('/api/custom-communities/update', (req, res) => {
     const now = new Date().toISOString();
 
     try {
-        // 1. Mark old versions as deleted
-        customCommunitiesDb.prepare(`
-            UPDATE crlp_custom_communities
-            SET status = 'Deleted'
-            WHERE community_id = ?
-        `).run(community_id);
 
-        // 2. Insert new version
         customCommunitiesDb.prepare(`
             INSERT INTO crlp_custom_communities (
                 community_id,
@@ -119,15 +118,7 @@ router.post('/api/custom-communities/update', (req, res) => {
                 data_source
             )
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            community_id,
-            name,
-            lat,
-            lon,
-            now,
-            'Modified',
-            'CRLP App'
-        );
+        `).run(community_id, name, lat, lon, now, 'Modified', 'CRLP App');
 
         res.json({ message: 'Updated via versioning' });
 
