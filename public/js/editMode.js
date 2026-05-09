@@ -236,22 +236,48 @@ const handleCloseForm = (mode) => {
     }
 };
 
-const handleDelete = () => {
-    console.log('Processing form submission...');
-    const rawData = new FormData(e.target);
+const handleDelete = async (e) => {
+    e.preventDefault()
+    console.log('Deleting community...');
+    const rawData = new FormData(dataEntryForm);
     const formData = Object.fromEntries(rawData.entries());
     console.log(formData);
+    const community_id = document.getElementById('community_id').value
+    console.log(community_id);
+
+    const lat = Number(formData.coord_y)
+    const lon = Number(formData.coord_x)
+    // 2. Await the Fetch call
+    const res = await fetch('/api/custom-communities', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            lat: lat,
+            lon: lon,
+            name: formData.point_name,
+            community_id: community_id
+        })
+    });
+
+    // 3. Parse the response body
+    const data = await res.json();
+
+    loadCustomCommunitiesLayer();
+
     dataEntryForm.classList.add('hidden');
+    updateBtn.disabled = false;
     cleanup();
 }
 
 function cleanup() {
-    // if (deleteBtn) deleteBtn.removeEventListener('click', handleDelete);
     removePendingCommunity();
 }
 
 closeFormBtn.addEventListener('click', () => handleCloseForm(createMode ? 'create' : 'update'));
 dataEntryForm.addEventListener('submit', handleSubmitForm);
+deleteBtn.addEventListener('click', handleDelete);
 dataEntryForm.addEventListener('reset', () => {
     setTimeout(() => {
         validateCoords();
@@ -290,6 +316,7 @@ function setupCreateMode() {
             disablePopupsOnActiveLayers();
             createBtn.textContent = "Disable Create Mode";
             updateBtn.disabled = true;
+            document.getElementById('community-id-group').style.display = 'none';
 
             // cursorTooltip.setContent('Click on any community')
             // cursorTooltip.addTo(map);
@@ -311,6 +338,7 @@ function setupCreateMode() {
                 }).addTo(map);
 
                 map.setView([lat, lng], map.getZoom());
+                dataEntryForm.reset();
                 dataEntryForm.classList.remove('hidden');
                 coord_y.value = lat;
                 coord_x.value = lng;

@@ -81,14 +81,22 @@ router.get('/api/custom-communities', (req, res) => {
 });
 
 router.delete('/api/custom-communities', (req, res) => {
-    const id = req.body.id;
+    const { community_id, lat, lon, name } = req.body;
 
+    const now = new Date().toISOString();
     try {
         customCommunitiesDb.prepare(`
-            UPDATE crlp_custom_communities
-            SET status = 'Deleted'
-            WHERE id = ?
-        `).run(id);
+            INSERT INTO crlp_custom_communities (
+                community_id,
+                point_name,
+                coord_y,
+                coord_x,
+                modified_dt,
+                status,
+                data_source
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(community_id, name, lat, lon, now, 'Deleted', 'CRLP App');
         res.json({ message: 'Community deleted successfully' });
     } catch (err) {
         console.error('Error deleting community:', err);
