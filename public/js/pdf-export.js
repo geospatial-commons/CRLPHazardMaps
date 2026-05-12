@@ -364,10 +364,6 @@ async function downloadPdf(layoutConfig) {
     pdf.text(dateText, margin + padding + 20, footerY + padding + footerSpacing * 2);
     pdf.setFont("Open Sans", "bold");
     pdf.text('Date Created: ', margin + padding, footerY + padding + footerSpacing * 2);
-    pdf.text('Feedback: ', margin + padding, footerY + padding + footerSpacing * 3)
-    pdf.setTextColor('#0000ff');
-    pdf.setFont("Open Sans", "italic");
-    pdf.textWithLink("INSERT EMAIL HERE", margin + padding + 15, footerY + padding + footerSpacing * 3, { url: "mailto:tbd@worldbank.org" });
 
 
     // ADD SCALE BAR — positioned in bottom-left of map area (cartographic convention)
