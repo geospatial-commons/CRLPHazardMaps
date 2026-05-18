@@ -3,8 +3,29 @@ const router = express.Router();
 const wellknown = require('wellknown');
 const { customCommunitiesDb } = require('../db');
 
+const turf = require('@turf/turf')
+const provinces = require('../data/provinces.json')
+const districts = require('../data/districts.json')
+
+
 router.post('/api/custom-communities', (req, res) => {
     let { lat, lon, name } = req.body;
+    let admin1_pcode = '';
+    
+    const point = turf.point([lon, lat]);
+
+    for (const feature of provinces.features) {
+        if (turf.booleanPointInPolygon(point, feature)) {
+            admin1_pcode = feature.properties.Prov_name;
+        }
+    }
+
+    for (const feature of districts.features) {
+        if (turf.booleanPointInPolygon(point, feature)) {
+            admin2_pcode = feature.properties.Dist_name;
+        }
+    }
+
 
     if (
         typeof lat !== 'number' ||
@@ -24,6 +45,7 @@ router.post('/api/custom-communities', (req, res) => {
     const result = customCommunitiesDb.prepare(`
         INSERT INTO crlp_custom_communities (
             community_id,
+            existing_community_id,
             point_name,
             coord_y,
             coord_x,
@@ -34,8 +56,8 @@ router.post('/api/custom-communities', (req, res) => {
             modified_dt,
             status,
             data_source)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, name, lat, lon, '', '', '', '', now, 'New', 'CRLP App');
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, '', name, lat, lon, '', admin1_pcode, admin2_pcode, '', now, 'New', 'CRLP App');
 
     res.status(201).json({
         id,
@@ -69,6 +91,7 @@ router.get('/api/custom-communities', (req, res) => {
                     community_id: c.community_id,
                     existing_community_id: c.existing_community_id,
                     name: c.point_name
+
                 }
             }))
         };
@@ -97,7 +120,7 @@ router.delete('/api/custom-communities', (req, res) => {
                 data_source
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(community_id, existing_community_id,  name, lat, lon, now, 'Deleted', 'CRLP App');
+        `).run(community_id, existing_community_id, name, lat, lon, now, 'Deleted', 'CRLP App');
         res.json({ message: 'Community deleted successfully' });
     } catch (err) {
         console.error('Error deleting community:', err);
@@ -116,13 +139,23 @@ router.post('/api/custom-communities/update', (req, res) => {
         community_id = crypto.randomUUID();
     }
 
-    console.log('community_id:', community_id);
-    console.log('existing_community_id:', existing_community_id);
+    const point = turf.point([lon, lat]);
+
+    for (const feature of provinces.features) {
+        if (turf.booleanPointInPolygon(point, feature)) {
+            admin1_pcode = feature.properties.Prov_name;
+        }
+    }
+
+    for (const feature of districts.features) {
+        if (turf.booleanPointInPolygon(point, feature)) {
+            admin2_pcode = feature.properties.Dist_name;
+        }
+    }
 
     const now = new Date().toISOString();
 
     try {
-
         customCommunitiesDb.prepare(`
             INSERT INTO crlp_custom_communities (
                 community_id,
@@ -130,12 +163,15 @@ router.post('/api/custom-communities/update', (req, res) => {
                 point_name,
                 coord_y,
                 coord_x,
+                pcode,
+                admin1_pcode,
+                admin2_pcode,
+                editor,
                 modified_dt,
                 status,
-                data_source
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(community_id, existing_community_id, name, lat, lon, now, 'Modified', 'CRLP App');
+                data_source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(community_id, existing_community_id, name, lat, lon, '', admin1_pcode, admin2_pcode, '', now, 'Modified', 'CRLP App');
 
         res.json({ message: 'Updated via versioning' });
 

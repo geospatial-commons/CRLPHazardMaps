@@ -1,4 +1,3 @@
-
 import {
     map,
     communityLayer,
@@ -9,16 +8,19 @@ import {
     communitiesFill
 } from './map.js';
 
+const communityIdGroup = document.getElementById('community-id-group');
+const communityIdInput = document.getElementById('community_id');
+const pointNameInput = document.getElementById('point_name');
+
 let createClickHandler = null;
 let pendingCommunity;
 let existing_community_id = null;
-let updateCustomCommunities = null;
+let customCommunityEditLayer = null;
 let activeMarker = null;
 let validCoords = null;
 let coord_x = document.getElementById('coord_x');
 let coord_y = document.getElementById('coord_y');
 let template;
-let activeMarkerOriginalLatLng = null;
 let hasDragged = false;
 
 const AFGHANISTAN_BOUNDS = {
@@ -41,13 +43,6 @@ const selectedIcon = L.divIcon({
     iconSize: [10, 10],
     iconAnchor: [5, 5]
 });
-
-// const cursorTooltip = L.tooltip({
-//     permanent: true,
-//     direction: 'top',
-//     offset: [0, -10],
-//     className: 'cursor-tooltip'
-// })
 
 const createBtn = document.getElementById('btn-create');
 const updateBtn = document.getElementById('btn-update');
@@ -84,7 +79,6 @@ function refreshCustomCommunities() {
     }
 }
 
-
 function validateCoords() {
 
     const existingMessage = coordsContainer.querySelector('.coord-error-message');
@@ -97,7 +91,6 @@ function validateCoords() {
 
     // Skip validation if fields are empty
     if (coord_y.value === '' || coord_x.value === '') {
-        console.log('empty coords')
         coord_x.classList.remove('coord-input-error');
         coord_y.classList.remove('coord-input-error');
         return true;
@@ -141,8 +134,6 @@ coord_y.addEventListener('blur', validateCoords);
 // ----------------------
 // DATA ENTRY FORM
 // ----------------------
-//function setupDataEntryForm(mode = 'create', featureContext = null) {
-
 
 async function handleSubmitForm(e) {
     e.preventDefault();
@@ -158,14 +149,13 @@ async function handleSubmitForm(e) {
         console.log('Submitting form in UPDATE mode');
         url += '/update';
 
-        const id = document.getElementById('community_id').value;
+        const id = communityIdInput.value;
 
         if (!template) {
             community_id = id
         } else {
             existing_community_id = id
         }
-
     }
 
     try {
@@ -174,13 +164,11 @@ async function handleSubmitForm(e) {
         // 1. Extract data
         const rawData = new FormData(e.target);
         const formData = Object.fromEntries(rawData.entries());
-        console.log(formData);
         const lat = Number(formData.coord_y)
         const lon = Number(formData.coord_x)
 
         validCoords = validateCoords();
         if (!validCoords) {
-            console.log('invalid coords')
             return
         };
 
@@ -256,9 +244,9 @@ const handleDelete = async (e) => {
     console.log('Deleting community...');
     const rawData = new FormData(dataEntryForm);
     const formData = Object.fromEntries(rawData.entries());
-    console.log(formData);
-    const community_id = document.getElementById('community_id').value
-    console.log(community_id);
+    // console.log(formData);
+    const community_id = communityIdInput.value
+    // console.log(community_id);
 
     const lat = Number(formData.coord_y)
     const lon = Number(formData.coord_x)
@@ -332,8 +320,6 @@ setCoordsBtn.addEventListener('click', () => {
 // ----------------------
 function setupCreateMode() {
 
-    let createClickHandler = null;
-
     createBtn.addEventListener('click', () => {
         createMode = !createMode;
         map.isEditModeActive = createMode;
@@ -342,15 +328,8 @@ function setupCreateMode() {
             disablePopupsOnActiveLayers();
             createBtn.textContent = "Disable Create Mode";
             updateBtn.disabled = true;
-            document.getElementById('community-id-group').style.display = 'none';
+            communityIdGroup.style.display = 'none';
             deleteBtn.style.display = 'none';
-
-            // cursorTooltip.setContent('Click on any community')
-            // cursorTooltip.addTo(map);
-
-            // map.on('mousemove', function (e) {
-            //     cursorTooltip.setLatLng(e.latlng);
-            // });
 
             const mapContainer = map.getContainer();
             mapContainer.classList.add('edit-mode-active');
@@ -383,7 +362,6 @@ function setupCreateMode() {
 
             // map.removeLayer(cursorTooltip); 
 
-
             map.off('click', createClickHandler);
             createClickHandler = null;
 
@@ -414,7 +392,6 @@ function setupUpdateMode() {
         const customCommunityCheckbox = document.querySelector('input[data-id="custom-communities"]');
         updateMode = !updateMode;
         map.isEditModeActive = updateMode;
-        console.log("map.isEditModeActive: ", updateMode);
 
         if (updateMode) {
             updateBtn.textContent = "Disable Update Mode";
@@ -427,7 +404,6 @@ function setupUpdateMode() {
             mapContainer.classList.add('edit-mode-active');
             mapContainer.style.cursor = 'crosshair';
 
-
             communityClickHandler = function (e) {
                 resetCommunityLayerStyle();
                 deleteBtn.style.display = 'none';
@@ -438,7 +414,6 @@ function setupUpdateMode() {
                 }
 
                 const layer = e.layer;
-                console.log(layer.feature.properties);
                 const existingFeatureProps = layer.feature.properties;
                 const { lat, lng } = e.latlng;
                 removePendingCommunity();
@@ -463,24 +438,24 @@ function setupUpdateMode() {
 
                 dataEntryForm.reset();
                 dataEntryForm.classList.remove('hidden');
-                document.getElementById('community-id-group').style.display = 'block';
+                communityIdGroup.style.display = 'block';
 
                 dataEntryForm.querySelector('#coord_y').value = existingFeatureProps.coord_y;
                 dataEntryForm.querySelector('#coord_x').value = existingFeatureProps.coord_x;
 
                 validateCoords()
 
-                document.getElementById('community_id').value = existingFeatureProps.fid;
-                document.getElementById('point_name').value = existingFeatureProps.name;
+                communityIdInput.value = existingFeatureProps.fid;
+                pointNameInput.value = existingFeatureProps.name;
 
                 template = true;
             };
 
-            communityLayer.on('click', communityClickHandler)
-
+            if (communityLayer) {
+                communityLayer.on('click', communityClickHandler)
+            }
 
             disablePopupsOnActiveLayers();
-
 
             if (customCommunityCheckbox.checked === true) {
                 customCommunityCheckbox.click();
@@ -496,13 +471,15 @@ function setupUpdateMode() {
             mapContainer.classList.remove('edit-mode-active');
             mapContainer.style.cursor = '';
 
-            communityLayer.off('click', communityClickHandler)
+            if (communityLayer) {
+                communityLayer.off('click', communityClickHandler)
+            }
 
             customCommunityCheckbox.disabled = false;
             restorePopupsOnActiveLayers();
-            if (updateCustomCommunities) {
-                map.removeLayer(updateCustomCommunities);
-                updateCustomCommunities = null;
+            if (customCommunityEditLayer) {
+                map.removeLayer(customCommunityEditLayer);
+                customCommunityEditLayer = null;
             }
         }
 
@@ -511,19 +488,18 @@ function setupUpdateMode() {
 
 function loadCustomCommunitiesLayer() {
 
-    if (updateCustomCommunities) {
-        map.removeLayer(updateCustomCommunities);
-        updateCustomCommunities = null;
+    if (customCommunityEditLayer) {
+        map.removeLayer(customCommunityEditLayer);
+        customCommunityEditLayer = null;
     }
 
     fetch('/api/custom-communities')
         .then(res => {
-            console.log('Fetch custom communities response:', res);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             return res.json();
         })
         .then(async data => {
-            updateCustomCommunities = L.geoJSON(data, {
+            customCommunityEditLayer = L.geoJSON(data, {
                 pointToLayer: function (feature, latlng) {
                     return L.marker(latlng, {
                         draggable: true,
@@ -538,16 +514,11 @@ function loadCustomCommunitiesLayer() {
                     existing_community_id = f.properties.existing_community_id
 
                     l.on('dragstart', function () {
-
                         if (activeMarker && activeMarker !== l) {
                             activeMarker.setLatLng(activeMarker.originalLatLng);
                             activeMarker.setIcon(defaultIcon);
                         }
-
-                        // activeMarker = l;
-                        // l.setIcon(selectedIcon);
                     });
-
 
                     // listen for drag events
                     l.on('dragend', function (e) {
@@ -590,9 +561,9 @@ function loadCustomCommunitiesLayer() {
 
                         validateCoords()
 
-                        document.getElementById('community-id-group').style.display = 'block';
-                        document.getElementById('community_id').value = fContext.community_id;
-                        document.getElementById('point_name').value = fContext.name;
+                        communityIdGroup.style.display = 'block';
+                        communityIdInput.value = fContext.community_id;
+                        pointNameInput.value = fContext.name;
                     });
 
                     l.on('click', async function (e) {
@@ -622,7 +593,6 @@ function loadCustomCommunitiesLayer() {
                         createBtn.disabled = true;
                         updateBtn.disabled = true;
 
-
                         let fContext = {
                             community_id: f.properties.community_id,
                             existing_community_id: existing_community_id,
@@ -632,22 +602,18 @@ function loadCustomCommunitiesLayer() {
 
                         }
 
-                        console.log('Feature context from click:', fContext);
-
-                        document.getElementById('community-id-group').style.display = 'block';
-                        document.getElementById('community_id').value = fContext.community_id;
-                        document.getElementById('point_name').value = fContext.name;
+                        communityIdGroup.style.display = 'block';
+                        communityIdInput.value = fContext.community_id;
+                        pointNameInput.value = fContext.name;
                         coord_x.value = fContext.lon;
                         coord_y.value = fContext.lat;
 
                         validateCoords()
-
-
                     })
 
                 }
             });
-            updateCustomCommunities.addTo(map)
+            customCommunityEditLayer.addTo(map)
         })
         .catch(err => {
             console.error('Error loading custom communities:', err);

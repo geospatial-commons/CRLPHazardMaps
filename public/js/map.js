@@ -550,11 +550,41 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                         });
                     },
                     onEachFeature: function (f, l) {
-                        if (f.properties && f.properties.name) {
-                            l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
-                        }
+                        l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
+                        l.on('click', function () {
+                            // commSelect.value = '<option value="all">-- All Communities --</option>';
+                            commSelect.value = 'all';
+                            distSelect.value = 'all';
+                            provSelect.value = 'all';
+
+                            // 1. Reset all markers to the default style first
+                            customCommunityLayer.setStyle({
+                                radius: 5,
+                                fillColor: communitiesFill,
+                                color: communitiesStroke,
+                                weight: 1
+                            });
+                            if (communityLayer) {
+                                communityLayer.setStyle({
+                                    radius: 5,
+                                    fillColor: communitiesFill,
+                                    color: communitiesStroke,
+                                    weight: 1
+                                });
+                            }
+
+                            // 2. Set the style for the specific marker that was clicked
+                            l.setStyle({
+                                radius: 6,
+                                fillColor: selctedCommunityColor,
+                            });
+                            if (!map.isEditModeActive) {
+                                map.flyTo([f.geometry.coordinates[1], f.geometry.coordinates[0]], 16, { animate: true, duration: 1.5 });
+                            }
+
+                        });
                     }
-                });
+                }).addTo(map);
 
                 contextLayerInstances[layerConfig.id] = customCommunityLayer;
                 if (checkbox.checked) {
@@ -882,7 +912,14 @@ function renderCommunities(distId) {
                             color: communitiesStroke,
                             weight: 1
                         });
-
+                        if (customCommunityLayer) {
+                            customCommunityLayer.setStyle({
+                                radius: 5,
+                                fillColor: communitiesFill,
+                                color: communitiesStroke,
+                                weight: 1
+                            });
+                        }
                         // 2. Set the style for the specific marker that was clicked
                         l.setStyle({
                             radius: 6,
@@ -1044,8 +1081,8 @@ commSelect.addEventListener('change', function () {
 
     var coords = this.value.split(',').map(Number);
     const selectedCombined = this.options[this.selectedIndex].dataset.combined;
-
-    if (!map.isEditModeActive) {   
+    console.log("coords: ", coords)
+    if (!map.isEditModeActive) {
         map.flyTo([coords[0], coords[1]], 16, { animate: true, duration: 1.5 });
     }
 
