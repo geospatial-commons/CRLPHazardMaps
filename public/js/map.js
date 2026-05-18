@@ -10,11 +10,12 @@ export let overlayLayers = {};
 export let customCommunityLayer; // Declare customCommunityLayer in the outer scope to be accessible in editMode.js
 
 let provincesData, districtsData;
-let provincesLayer, districtsLayer, communityLayer;
+let provincesLayer, districtsLayer
+export let communityLayer;
 let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
-let communitiesStroke = "#000000";
-let communitiesFill = "#BFBFBF";
+export let communitiesStroke = "#000000";
+export let communitiesFill = "#BFBFBF";
 let selctedCommunityColor = "#12436D";
 let districtCapitalColor = "#F7B841";
 let districtCapitalStroke = "#000000";
@@ -1044,7 +1045,9 @@ commSelect.addEventListener('change', function () {
     var coords = this.value.split(',').map(Number);
     const selectedCombined = this.options[this.selectedIndex].dataset.combined;
 
-    map.flyTo([coords[0], coords[1]], 16, { animate: true, duration: 1.5 });
+    if (!map.isEditModeActive) {   
+        map.flyTo([coords[0], coords[1]], 16, { animate: true, duration: 1.5 });
+    }
 
     // After fly completes, find the marker, style it, and open popup
     map.once('moveend', function () {

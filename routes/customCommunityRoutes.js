@@ -49,7 +49,7 @@ router.post('/api/custom-communities', (req, res) => {
 router.get('/api/custom-communities', (req, res) => {
     try {
         const communities = customCommunitiesDb.prepare(`
-        SELECT community_id, point_name, coord_y AS lat, coord_x AS lon
+        SELECT community_id, existing_community_id, point_name, coord_y AS lat, coord_x AS lon
         FROM crlp_custom_communities t1
         WHERE status <> 'Deleted'
             and t1.modified_dt = (
@@ -59,7 +59,6 @@ router.get('/api/custom-communities', (req, res) => {
             )
     `).all();
 
-    console.log('Fetched communities:', communities);
 
         const geojson = {
             type: "FeatureCollection",
@@ -68,6 +67,7 @@ router.get('/api/custom-communities', (req, res) => {
                 geometry: wellknown.parse(`POINT(${c.lon} ${c.lat})`),
                 properties: {
                     community_id: c.community_id,
+                    existing_community_id: c.existing_community_id,
                     name: c.point_name
                 }
             }))
@@ -81,13 +81,14 @@ router.get('/api/custom-communities', (req, res) => {
 });
 
 router.delete('/api/custom-communities', (req, res) => {
-    const { community_id, lat, lon, name } = req.body;
+    const { community_id, existing_community_id, lat, lon, name } = req.body;
 
     const now = new Date().toISOString();
     try {
         customCommunitiesDb.prepare(`
             INSERT INTO crlp_custom_communities (
                 community_id,
+                existing_community_id,
                 point_name,
                 coord_y,
                 coord_x,
@@ -95,8 +96,8 @@ router.delete('/api/custom-communities', (req, res) => {
                 status,
                 data_source
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(community_id, name, lat, lon, now, 'Deleted', 'CRLP App');
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(community_id, existing_community_id,  name, lat, lon, now, 'Deleted', 'CRLP App');
         res.json({ message: 'Community deleted successfully' });
     } catch (err) {
         console.error('Error deleting community:', err);
@@ -105,11 +106,18 @@ router.delete('/api/custom-communities', (req, res) => {
 });
 
 router.post('/api/custom-communities/update', (req, res) => {
-    const { community_id, lat, lon, name } = req.body;
+    let { community_id, existing_community_id, lat, lon, name } = req.body;
 
-    if (!community_id) {
+    if (!community_id && !existing_community_id) {
         return res.status(400).json({ error: 'Missing community_id' });
     }
+
+    if (!community_id) {
+        community_id = crypto.randomUUID();
+    }
+
+    console.log('community_id:', community_id);
+    console.log('existing_community_id:', existing_community_id);
 
     const now = new Date().toISOString();
 
@@ -118,6 +126,7 @@ router.post('/api/custom-communities/update', (req, res) => {
         customCommunitiesDb.prepare(`
             INSERT INTO crlp_custom_communities (
                 community_id,
+                existing_community_id,
                 point_name,
                 coord_y,
                 coord_x,
@@ -125,8 +134,8 @@ router.post('/api/custom-communities/update', (req, res) => {
                 status,
                 data_source
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(community_id, name, lat, lon, now, 'Modified', 'CRLP App');
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(community_id, existing_community_id, name, lat, lon, now, 'Modified', 'CRLP App');
 
         res.json({ message: 'Updated via versioning' });
 

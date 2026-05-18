@@ -174,7 +174,8 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
         // SQL Query: Fetch only communities matching the district ID
         // Note: Replace 'communities_table' with the actual table name in your GPKG
         const query = `
-            SELECT point_name, 
+            SELECT fid,
+                   point_name, 
                    norm_dist_code,
                    coord_y,
                    coord_x,
@@ -197,13 +198,16 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
             features: communities.map(c => ({
                 type: "Feature",
                 properties: {
+                    fid: c.fid,
                     name: c.point_name,
                     norm_dist_code: c.norm_dist_code,
                     match_cdc_id: c.match_cdc_id,
                     match_cdc_name: c.match_cdc_name,
                     Arazi_OBJ_ID: c.Arazi_OBJ_ID,
                     UNOPS_Code: c.UNOPS_Code,
-                    IOM_Code: c.IOM_Code
+                    IOM_Code: c.IOM_Code,
+                    coord_x: c.coord_x,
+                    coord_y: c.coord_y
                 },
                 geometry: {
                     type: "Point",
