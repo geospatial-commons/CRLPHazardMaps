@@ -345,9 +345,6 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             }
         }
 
-        let zoom = map.getZoom();
-        console.log("Zoom", zoom);
-
         const roadsLayer = L.vectorGrid.protobuf(layerConfig.url,
             {
                 minZoom: layerConfig.minZoom,
@@ -438,15 +435,29 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             });
     }
     else if (layerConfig.id === 'contours') {
-        loadingNote.remove();
-        checkbox.disabled = false;
-        contourLayer = L.vectorGrid.protobuf(layerConfig.url, {
-            minZoom: layerConfig.minZoom,
-            maxNativeZoom: layerConfig.maxNativeZoom,
-            maxZoom: layerConfig.maxZoom,
-            vectorTileLayerStyles: {
-                contours: { weight: 0.5, color: '#080808' }
-            }
+            loadingNote.remove();
+            checkbox.disabled = false;
+            contourLayer = L.vectorGrid.protobuf(layerConfig.url, {
+                minZoom: layerConfig.minZoom,
+                maxNativeZoom: layerConfig.maxNativeZoom,
+                maxZoom: layerConfig.maxZoom,
+                vectorTileLayerStyles: {
+                    // Change 'contours' from an object to a function
+                    contours: function(properties, zoom) {
+                        let lineWeight = 1; // Default for 12 and under, and 16+
+                        
+                        // Up till 15 (meaning 13, 14, 15), weight is 1.5
+                        if (zoom > 12 && zoom < 15) {
+                            lineWeight = 1.5;
+                        } else if (zoom >= 15) {
+                            lineWeight = 1.25;
+                        }
+                        return { 
+                            weight: lineWeight, 
+                            color: '#080808' 
+                        };
+                    }
+                }
         });
 
 
@@ -474,6 +485,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         updateZoomNote(row, layerConfig);
     }
 }
+
 
 function removeContextLayer(id) {
     const layer = contextLayerInstances[id];
