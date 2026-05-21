@@ -366,6 +366,11 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             }
         }
         updateZoomNote(row, layerConfig);
+
+        // Ensure community layer is brought to the front.
+        if (communityLayer) {
+            communityLayer.bringToFront();
+        }
         return;
     }
 
@@ -476,29 +481,29 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             });
     }
     else if (layerConfig.id === 'contours') {
-            loadingNote.remove();
-            checkbox.disabled = false;
-            contourLayer = L.vectorGrid.protobuf(layerConfig.url, {
-                minZoom: layerConfig.minZoom,
-                maxNativeZoom: layerConfig.maxNativeZoom,
-                maxZoom: layerConfig.maxZoom,
-                vectorTileLayerStyles: {
-                    // Change 'contours' from an object to a function
-                    contours: function(properties, zoom) {
-                        let lineWeight = 1; // Default for 12 and under, and 16+
-                        
-                        // Up till 15 (meaning 13, 14, 15), weight is 1.5
-                        if (zoom > 12 && zoom < 15) {
-                            lineWeight = 1.5;
-                        } else if (zoom >= 15) {
-                            lineWeight = 1.25;
-                        }
-                        return { 
-                            weight: lineWeight, 
-                            color: '#080808' 
-                        };
+        loadingNote.remove();
+        checkbox.disabled = false;
+        contourLayer = L.vectorGrid.protobuf(layerConfig.url, {
+            minZoom: layerConfig.minZoom,
+            maxNativeZoom: layerConfig.maxNativeZoom,
+            maxZoom: layerConfig.maxZoom,
+            vectorTileLayerStyles: {
+                // Change 'contours' from an object to a function
+                contours: function (properties, zoom) {
+                    let lineWeight = 1; // Default for 12 and under, and 16+
+
+                    // Up till 15 (meaning 13, 14, 15), weight is 1.5
+                    if (zoom > 12 && zoom < 15) {
+                        lineWeight = 1.5;
+                    } else if (zoom >= 15) {
+                        lineWeight = 1.25;
                     }
+                    return {
+                        weight: lineWeight,
+                        color: '#080808'
+                    };
                 }
+            }
         });
 
 
@@ -720,8 +725,7 @@ function renderCommunities(distId) {
                         fillColor: communitiesFill,
                         color: communitiesStroke,
                         weight: 1,
-                        fillOpacity: 0.9,
-                        zIndex: 100
+                        fillOpacity: 0.9
                     });
                 },
                 onEachFeature: function (f, l) {
