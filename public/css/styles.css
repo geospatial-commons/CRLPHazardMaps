@@ -245,6 +245,10 @@ button {
     cursor: not-allowed;
 }
 
+#unops-code-search {
+    margin-bottom: 10px;
+}
+
 /* ── RESET FILTERS BUTTON ── */
 .tertiary-btn {
     background: transparent;
@@ -756,18 +760,21 @@ button {
 }
 
 /* Community popup — keep transparent style */
-.community-popup .leaflet-popup-content-wrapper {
+/* .community-popup .leaflet-popup-content-wrapper {
     background: none;
     box-shadow: none;
     border-radius: 0;
-}
+} */
 
-.community-popup .leaflet-popup-tip {
+/* .community-popup .leaflet-popup-tip {
     background: none;
-}
+} */
+ .leaflet-popup-content {
+    padding-right: 10px;
+ }
 
 .community-popup .leaflet-popup-content {
-    margin: 0;
+    margin: 4px;
     text-shadow:
         -1px -1px 0 #fff, 1px -1px 0 #fff,
         -1px 1px 0 #fff, 1px 1px 0 #fff,

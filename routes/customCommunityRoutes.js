@@ -71,7 +71,8 @@ router.post('/api/custom-communities', (req, res) => {
 router.get('/api/custom-communities', (req, res) => {
     try {
         const communities = customCommunitiesDb.prepare(`
-        SELECT community_id, 
+        SELECT rowid,
+                community_id, 
                 existing_community_id, 
                 point_name, 
                 coord_y AS lat, 
@@ -94,6 +95,7 @@ router.get('/api/custom-communities', (req, res) => {
                 type: "Feature",
                 geometry: wellknown.parse(`POINT(${c.lon} ${c.lat})`),
                 properties: {
+                    rowid : c.rowid,
                     community_id: c.community_id,
                     existing_community_id: c.existing_community_id,
                     name: c.point_name,

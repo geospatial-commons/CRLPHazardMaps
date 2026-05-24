@@ -177,13 +177,15 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
             SELECT fid,
                    point_name, 
                    norm_dist_code,
+                   norm_dist_name,
                    coord_y,
                    coord_x,
                    match_cdc_id,
                    match_cdc_name,
                    Arazi_OBJ_ID,
                    UNOPS_Code,
-                   IOM_Code
+                   IOM_Code,
+                   GPS_Verified
             FROM settlements
             WHERE norm_dist_code = ? 
             /*and GPS_Verified = true*/
@@ -201,13 +203,15 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
                     fid: c.fid,
                     name: c.point_name,
                     norm_dist_code: c.norm_dist_code,
+                    norm_dist_name: c.norm_dist_name,
                     match_cdc_id: c.match_cdc_id,
                     match_cdc_name: c.match_cdc_name,
                     Arazi_OBJ_ID: c.Arazi_OBJ_ID,
                     UNOPS_Code: c.UNOPS_Code,
                     IOM_Code: c.IOM_Code,
                     coord_x: c.coord_x,
-                    coord_y: c.coord_y
+                    coord_y: c.coord_y,
+                    gps_verified: c.GPS_Verified
                 },
                 geometry: {
                     type: "Point",

@@ -60,9 +60,9 @@ const rasterLabels = {
 };
 
 // ---- TINT BUTTONS ----
-const tintBlueBtn = document.getElementById('tint-blue-btn');
-const tintRedBtn = document.getElementById('tint-red-btn');
-const tintResetBtn = document.getElementById('tint-reset-btn');
+// const tintBlueBtn = document.getElementById('tint-blue-btn');
+// const tintRedBtn = document.getElementById('tint-red-btn');
+// const tintResetBtn = document.getElementById('tint-reset-btn');
 
 function setPdfUiState(mode, status = '') {
     const isOpen = mode !== 'hidden';
@@ -284,13 +284,18 @@ const contextLayerInstances = {};
 
 function loadContextLayers() {
     const container = document.getElementById('context-layers');
+    const communitiesContainer = document.getElementById('communities-container')
 
     fetch('/context-config.json')
         .then(res => res.json())
         .then(layers => {
             container.innerHTML = '';
             layers.forEach(layerConfig => {
-                buildContextToggle(container, layerConfig);
+                if (layerConfig.id == 'custom-communities') {
+                    buildContextToggle(communitiesContainer, layerConfig)
+                } else {
+                    buildContextToggle(container, layerConfig);
+                }
             });
         })
         .catch(() => {
@@ -387,6 +392,10 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         // Ensure community layer is brought to the front.
         if (communityLayer) {
             communityLayer.bringToFront();
+        }
+
+        if (customCommunityLayer) {
+            customCommunityLayer.bringToFront();
         }
         return;
     }
@@ -553,16 +562,44 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                         });
                     },
                     onEachFeature: function (f, l) {
-                        l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
+                        const props = f.properties;
+
+                        // Construct popup HTML
+                        // const customCommunityPopupContent = `
+                        //         <strong>${props.name}</strong><br>
+                        //         District: ${props.dist}<br>
+                        //         Status: '<span style="color: red;">❌ Unverified</span>'
+                        //     `;
+
+                        const customCommunityPopupContent =
+                            `<div style="min-width: 100px;">
+                                <strong style="display: block; margin-bottom: 8px; margin-right:5px; font-size: 12px;">${props.name}</strong>
+                                <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
+                                    <span style="width: 50px; font-weight: bold; color: #555;">ID:</span>
+                                    <span>${props.rowid}</span>
+                                </div>
+                                <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
+                                    <span style="width: 50px; font-weight: bold; color: #555;">District:</span>
+                                    <span>${props.dist}</span>
+                                </div>
+                                <div style="display: flex; margin: 8px 0px; border-top: 1px solid #bdbdbd; padding-top: 6px; padding-right:10px; font-size: 10px;">
+                                    <span style="width: 50px; font-weight: bold; color: #555;">Status:</span>
+                                    <span style="color: red;">❌ Unverified</span>
+                                </div>
+                            </div>
+                        `;
+
+                        l.bindPopup(customCommunityPopupContent, { className: 'community-popup' });
+                        // l.bindPopup(customCommunityPopupContent, { className: 'community-popup' });
                         l.on('click', function () {
                             // commSelect.value = '<option value="all">-- All Communities --</option>';
                             commSelect.value = 'all';
                             distSelect.value = 'all';
                             provSelect.value = 'all';
 
-                            customCommunityTitleText = `${f.properties.name}, ${f.properties.dist} District, ${f.properties.prov} Province`;
+                            customCommunityTitleText = `${props.name}, ${props.dist} District, ${props.prov} Province`;
                             console.log(customCommunityTitleText);
-                            console.log(f.properties);
+                            console.log(props);
 
                             // 1. Reset all markers to the default style first
                             customCommunityLayer.setStyle({
@@ -711,6 +748,7 @@ function updateZoomNote(row, layerConfig) {
 // POPUP MANAGEMENT
 // ----------------------
 async function disablePopupsOnActiveLayers() {
+    map.closePopup();
     Object.values(overlayLayers).forEach(layer => {
         if (map.hasLayer(layer)) {
             // Store original popup state
@@ -930,7 +968,41 @@ function renderCommunities(distId) {
                     });
                 },
                 onEachFeature: function (f, l) {
-                    l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
+                    // Extract properties
+                    const props = f.properties;
+
+                    // Determine verification status badge
+                    const gpsStatus = props.gps_verified
+                        ? '<span style="color: green;">✔ GPS Verified</span>'
+                        : '<span style="color: red;">❌ Unverified</span>';
+
+                    // // Construct popup HTML
+                    // const existingCommunityPopupContent = `
+                    //     <strong>${props.name}</strong><br>
+                    //     ID: ${props.fid}<br>
+                    //     District: ${props.norm_dist_name} (${props.norm_dist_code})<br>
+                    //     Status: ${gpsStatus}
+                    // `;
+
+                    const existingCommunityPopupContent =
+                        `<div style="min-width: 100px;">
+                        <strong style="display: block; margin-bottom: 8px; margin-right:5px; font-size: 12px;">${props.name}</strong>
+                        <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
+                            <span style="width: 50px; font-weight: bold; color: #555;">ID:</span>
+                            <span>${props.fid}</span>
+                        </div>
+                        <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
+                            <span style="width: 50px; font-weight: bold; color: #555;">District:</span>
+                            <span>${props.norm_dist_name}</span>
+                        </div>
+                        <div style="display: flex; margin: 8px 0px; border-top: 1px solid #bdbdbd; padding-top: 6px;  padding-right:10px; font-size: 10px;">
+                            <span style="width: 50px; font-weight: bold; color: #555;">Status:</span>
+                            <span>${gpsStatus}</span>
+                        </div>
+                    </div>
+                `;
+
+                    l.bindPopup(existingCommunityPopupContent, { className: 'community-popup' });
                     l.on('click', function () {
                         // 1. Reset all markers to the default style first
                         communityLayer.setStyle({
@@ -952,7 +1024,7 @@ function renderCommunities(distId) {
                             radius: 6,
                             fillColor: selctedCommunityColor,
                         });
-                        const clickedName = f.properties.name;
+                        const clickedName = props.name;
                         const clickedCoords = f.geometry.coordinates;
                         const targetCombined = `${clickedName}_${clickedCoords[1]},${clickedCoords[0]}`;
                         for (let i = 0; i < commSelect.options.length; i++) {
@@ -1180,8 +1252,8 @@ document.querySelectorAll('input[name="hazard-layer"]')
             //document.getElementById('active-raster').textContent = hazardLabel;
 
             globalTintClass = '';
-            if (tintBlueBtn) tintBlueBtn.classList.remove('active');
-            if (tintRedBtn) tintRedBtn.classList.remove('active');
+            // if (tintBlueBtn) tintBlueBtn.classList.remove('active');
+            // if (tintRedBtn) tintRedBtn.classList.remove('active');
             resetLegend();
             updateLegendBar(this.value);
             toggleRaster(hazardLayer);
@@ -1241,34 +1313,34 @@ opacityRange.addEventListener('input', function () {
 });
 
 // ---- TINT BUTTONS ----
-function applyTint(tintClass) {
-    globalTintClass = tintClass;
+// function applyTint(tintClass) {
+//     globalTintClass = tintClass;
 
-    if (currentHazardLayer) {
-        const container = currentHazardLayer.getContainer();
-        if (container) {
-            container.classList.remove('red-tint-layer', 'blue-tint-layer');
-            if (tintClass === 'hazard-blue') container.classList.add('blue-tint-layer');
-            if (tintClass === 'hazard-red') container.classList.add('red-tint-layer');
-        }
-    }
+//     if (currentHazardLayer) {
+//         const container = currentHazardLayer.getContainer();
+//         if (container) {
+//             container.classList.remove('red-tint-layer', 'blue-tint-layer');
+//             if (tintClass === 'hazard-blue') container.classList.add('blue-tint-layer');
+//             if (tintClass === 'hazard-red') container.classList.add('red-tint-layer');
+//         }
+//     }
 
-    // Apply tint to legend swatches
-    document.querySelectorAll('#legend-content .legend-bar-swatch-color').forEach(el => {
-        el.classList.remove('red-tint-layer', 'blue-tint-layer');
-        if (tintClass === 'hazard-blue') el.classList.add('blue-tint-layer');
-        if (tintClass === 'hazard-red') el.classList.add('red-tint-layer');
-    });
+//     // Apply tint to legend swatches
+//     document.querySelectorAll('#legend-content .legend-bar-swatch-color').forEach(el => {
+//         el.classList.remove('red-tint-layer', 'blue-tint-layer');
+//         if (tintClass === 'hazard-blue') el.classList.add('blue-tint-layer');
+//         if (tintClass === 'hazard-red') el.classList.add('red-tint-layer');
+//     });
 
-    // Update button active state
-    [tintBlueBtn, tintRedBtn].forEach(btn => btn.classList.remove('active'));
-    if (tintClass === 'hazard-blue') tintBlueBtn.classList.add('active');
-    if (tintClass === 'hazard-red') tintRedBtn.classList.add('active');
-}
+//     // Update button active state
+//     [tintBlueBtn, tintRedBtn].forEach(btn => btn.classList.remove('active'));
+//     if (tintClass === 'hazard-blue') tintBlueBtn.classList.add('active');
+//     if (tintClass === 'hazard-red') tintRedBtn.classList.add('active');
+// }
 
-if (tintBlueBtn) tintBlueBtn.addEventListener('click', () => applyTint('hazard-blue'));
-if (tintRedBtn) tintRedBtn.addEventListener('click', () => applyTint('hazard-red'));
-if (tintResetBtn) tintResetBtn.addEventListener('click', () => applyTint(''));
+// if (tintBlueBtn) tintBlueBtn.addEventListener('click', () => applyTint('hazard-blue'));
+// if (tintRedBtn) tintRedBtn.addEventListener('click', () => applyTint('hazard-red'));
+// if (tintResetBtn) tintResetBtn.addEventListener('click', () => applyTint(''));
 
 // ----------------------
 // LEGEND BAR (above map)
@@ -1363,7 +1435,7 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.admin-dist").style.display = 'block';
                 document.querySelector(".legend-color.admin-dist").style.border = `2px solid ${districtsColor}`;
                 document.querySelector(".legend-label.admin-dist").textContent = 'District';
-            } else if (layerName === 'Communities') {
+            } else if (layerName === 'Communities' || 'Custom Communities') {
                 document.querySelector(".legend-color.admin-comm").style.display = 'block';
                 document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
                 document.querySelector(".legend-color.admin-comm").style.backgroundColor = selctedCommunityColor;
@@ -1398,15 +1470,16 @@ function resetLegend() {
 // CREATE PDF LAYOUT
 // ----------------------
 function createPdfLayout(download = true) {
+    overlay.style.display = 'flex';
     const mapElement = document.getElementById('map');
     const topLeftControl = document.querySelector("div.leaflet-top.leaflet-left");
+    const currentCommunityPopup = document.querySelector('div.community-popup'); 
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric'
     });
-
     document.getElementById('footer-date').innerHTML = `<strong>Date Created: </strong> ${formattedDate}`;
 
     scaleBarWidth = leafletScaleBarElement.style.width || (leafletScaleBarElement.offsetWidth + 'px');
@@ -1421,6 +1494,7 @@ function createPdfLayout(download = true) {
 
     // Hide zoom and scale controls for clean screenshot
     if (topLeftControl) topLeftControl.style.display = 'none';
+    if (currentCommunityPopup) currentCommunityPopup.style.display = 'none';
     if (leafletScaleBarElement) leafletScaleBarElement.style.display = 'none';
 
     // Temporarily resize map to exact PDF dimensions (230mm × 170mm at 96dpi)
@@ -1444,6 +1518,7 @@ function createPdfLayout(download = true) {
             map.invalidateSize({ animate: false });
 
             if (topLeftControl) topLeftControl.style.display = '';
+            if (currentCommunityPopup) currentCommunityPopup.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
 
             const mapImg = new Image();
@@ -1521,7 +1596,8 @@ function createPdfLayout(download = true) {
                 hazardDescription: currentHazardDescription,
                 mapTitle: [hazardTitle, mapTitle],
             };
-
+            overlay.style.display = 'none';
+            
             if (download) {
                 setPdfUiState('busy', 'Starting PDF download...');
 
@@ -1550,12 +1626,11 @@ function createPdfLayout(download = true) {
             mapElement.style.flex = origFlex;
             map.invalidateSize({ animate: false });
             if (topLeftControl) topLeftControl.style.display = '';
+            if (currentCommunityPopup) currentCommunityPopup.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
             setPdfUiState('hidden');
             console.error('PDF capture failed:', err);
         });
-
-
 }
 
 downloadPdfBtn.addEventListener('click', function () {
