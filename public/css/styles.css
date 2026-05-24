@@ -166,7 +166,7 @@ button {
     /* gap: 8px; */
 }
 
-.sidebar-section > h2 {
+.sidebar-section>h2 {
     margin: 4px 0px 10px 0px;
 }
 
@@ -1203,7 +1203,7 @@ button {
     z-index: 10000;
     pointer-events: auto;
     filter: grayscale(100%);
-    border-radius:2px;
+    border-radius: 2px;
     border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
@@ -1431,6 +1431,7 @@ button {
 .data-entry-form::-webkit-scrollbar-thumb:hover {
     background: #888;
 }
+
 .btn-delete-container {
     display: flex;
     justify-content: flex-end;
@@ -1495,7 +1496,7 @@ select:disabled {
     background: rgb(0, 104, 52);
     color: white;
     cursor: pointer;
-    transition: 
+    transition:
         background 0.2s ease,
         opacity 0.2s ease,
         transform 0.1s ease;
@@ -1527,7 +1528,7 @@ select:disabled {
     color: #c62828;
     font-size: 9px;
     font-weight: 400;
-    font-style:italic
+    font-style: italic
 }
 
 .form-group input.coord-input-error {
@@ -1573,7 +1574,7 @@ select:disabled {
 /* ================================================================
     EDIT MODE STYLES
    ================================================================ */
-   /* Edit mode cursor styling */
+/* Edit mode cursor styling */
 #map.edit-mode-active,
 #map.edit-mode-active * {
     cursor: crosshair !important;
@@ -1589,12 +1590,15 @@ select:disabled {
 }
 
 .custom-circle-marker.selected {
-  background: yellow;
+    background: yellow;
 }
 
 #editBtn {
     margin-left: auto;
     padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 #btn-create,
@@ -1606,6 +1610,7 @@ select:disabled {
     background: transparent;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 4px;
+    flex-shrink: 0;
 }
 
 #btn-create:hover,
@@ -1621,6 +1626,36 @@ select:disabled {
     border: 1px solid #999;
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+#update-warning {
+    font-size: 10px;
+    color: #c62828;
+    white-space: nowrap;
+    text-align: right;
+    line-height: 1.2em;
+    flex-shrink: 0;
+}
+
+#update-mode-toast {
+    background-color: #424242;
+    color: white;
+    font-size: 10px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateX(10px);
+    pointer-events: none;
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+    white-space: nowrap;
+    margin-right: 10px;
+}
+
+#update-mode-toast.show {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 /* .cursor-tooltip {

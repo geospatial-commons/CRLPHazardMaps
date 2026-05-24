@@ -1,5 +1,5 @@
 import { downloadPdf } from './pdf-export.js';
-import { setupCreateMode, setupUpdateMode } from './editMode.js';
+import { setupCreateMode, setupUpdateMode, updateBtn, updateMode } from './editMode.js';
 
 // ----------------------
 // GLOBAL VARIABLES
@@ -29,6 +29,7 @@ let baseMaps = {};
 let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit, leafletScaleBarElement, scaleBarTextElement;
 let currentHazardDescription = '';
 let leafletBottomLeft;
+let customCommunityTitleText = '';
 
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
@@ -557,6 +558,10 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                             distSelect.value = 'all';
                             provSelect.value = 'all';
 
+                            customCommunityTitleText = `${f.properties.name}, ${f.properties.dist} District, ${f.properties.prov} Province`;
+                            console.log(customCommunityTitleText);
+                            console.log(f.properties);
+
                             // 1. Reset all markers to the default style first
                             customCommunityLayer.setStyle({
                                 radius: 5,
@@ -838,6 +843,12 @@ function renderDistricts(data, selectedDistId) {
     }
     if (!data) return;
 
+    if (map.isEditModeActive) {
+        updateBtn.disabled = false;
+        updateBtn.click();
+
+    }
+
     districtsLayer = L.geoJSON(data, {
         style: {
             color: districtsColor,
@@ -935,6 +946,7 @@ function renderCommunities(distId) {
                                 break;
                             }
                         }
+                        customCommunityTitleText = ''
                     });
                 }
             }).addTo(map);
@@ -1457,6 +1469,8 @@ function createPdfLayout(download = true) {
                 titleText = `${distName} District, ${provName} Province`;
             } else if (provSelect.value !== 'all') {
                 titleText = `${provName} Province`;
+            } else if (customCommunityTitleText) {
+                titleText = customCommunityTitleText;
             } else {
                 titleText = 'Afghanistan';
             }

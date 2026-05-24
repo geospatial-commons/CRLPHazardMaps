@@ -195,8 +195,14 @@
                 <div id="legend-bar" aria-label="Map legend">
                     <span id="legend-content"><em>Select a hazard layer to view the legend</em></span>
                     <div id="editBtn">
-                        <button id="btn-create">Create Community</button>
+                        <div id="update-mode-toast" class="hidden">
+                            Update mode disabled
+                        </div>
+                        <span id="update-warning">
+                            To update an existing community<br>first select a district
+                        </span>
                         <button id="btn-update">Update Community</button>
+                        <button id="btn-create">Create Community</button>
                     </div>
                 </div>
 
@@ -206,7 +212,7 @@
                 <!-- Hidden data form: positioned in bottom right corner -->
                 <form id="data-entry-form" class="data-entry-form hidden" aria-label="Create community form">
                     <fieldset>
-                        <legend>Create Community</legend>
+                        <legend id="form-legend"></legend>
 
                         <div class="form-group" id="community-id-group" style="display:none">
                             <label for="community_id">Community ID</label>
@@ -222,7 +228,7 @@
                                 <div class="form-group">
                                     <label for="coord_y">Coord Y</label>
                                     <input type="number" id="coord_y" name="coord_y" step="any" />
-                                </div>                        
+                                </div>
                                 <div class="form-group">
                                     <label for="coord_x">Coord X</label>
                                     <input type="number" id="coord_x" name="coord_x" step="any" />

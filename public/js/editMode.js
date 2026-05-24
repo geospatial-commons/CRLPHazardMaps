@@ -20,6 +20,7 @@ let activeMarker = null;
 let validCoords = null;
 let coord_x = document.getElementById('coord_x');
 let coord_y = document.getElementById('coord_y');
+let formTitle = document.getElementById('form-legend');
 let template;
 let hasDragged = false;
 
@@ -45,7 +46,7 @@ const selectedIcon = L.divIcon({
 });
 
 const createBtn = document.getElementById('btn-create');
-const updateBtn = document.getElementById('btn-update');
+export const updateBtn = document.getElementById('btn-update');
 const dataEntryForm = document.getElementById('data-entry-form');
 const closeFormBtn = dataEntryForm.querySelector('.btn-close');
 const deleteBtn = dataEntryForm.querySelector('.btn-delete');
@@ -53,7 +54,7 @@ const coordsContainer = dataEntryForm.querySelector('.coords-and-button')
 const setCoordsBtn = document.getElementById('set-coords-btn');
 
 var createMode = false;
-var updateMode = false;
+export var updateMode = false;
 
 function removePendingCommunity() {
     if (pendingCommunity) {
@@ -126,6 +127,26 @@ function validateCoords() {
     coord_y.classList.remove('coord-input-error');
 
     return true
+}
+
+function flashUpdateDisabledMessage() {
+    const toast = document.getElementById('update-mode-toast');
+
+    toast.classList.remove('hidden');
+
+    // force reflow so animation retriggers
+    void toast.offsetWidth;
+
+    toast.classList.add('show');
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 250);
+
+    }, 1800);
 }
 
 coord_x.addEventListener('blur', validateCoords);
@@ -330,6 +351,7 @@ function setupCreateMode() {
             updateBtn.disabled = true;
             communityIdGroup.style.display = 'none';
             deleteBtn.style.display = 'none';
+            formTitle.innerHTML = 'Create Community';
 
             const mapContainer = map.getContainer();
             mapContainer.classList.add('edit-mode-active');
@@ -392,6 +414,11 @@ function setupUpdateMode() {
         const customCommunityCheckbox = document.querySelector('input[data-id="custom-communities"]');
         updateMode = !updateMode;
         map.isEditModeActive = updateMode;
+        console.log('Update Button Clicked', updateMode)
+
+        if (!dataEntryForm.classList.contains('hidden')) {
+            closeFormBtn.click()
+        }
 
         if (updateMode) {
             updateBtn.textContent = "Disable Update Mode";
@@ -399,6 +426,7 @@ function setupUpdateMode() {
             disablePopupsOnActiveLayers();
 
             loadCustomCommunitiesLayer();
+            formTitle.innerHTML = 'Update Community';
 
             const mapContainer = map.getContainer();
             mapContainer.classList.add('edit-mode-active');
@@ -407,6 +435,7 @@ function setupUpdateMode() {
             communityClickHandler = function (e) {
                 resetCommunityLayerStyle();
                 deleteBtn.style.display = 'none';
+                updateBtn.disabled = true;
 
                 if (activeMarker) {
                     activeMarker.setLatLng(activeMarker.originalLatLng);
@@ -463,6 +492,7 @@ function setupUpdateMode() {
             customCommunityCheckbox.disabled = true;
 
         } else { // EXIT Update MODE
+            flashUpdateDisabledMessage()
             updateBtn.textContent = "Update Community";
             createBtn.disabled = false;
             updateBtn.disabled = false;

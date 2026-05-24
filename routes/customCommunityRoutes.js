@@ -11,7 +11,7 @@ const districts = require('../data/districts.json')
 router.post('/api/custom-communities', (req, res) => {
     let { lat, lon, name } = req.body;
     let admin1_pcode = '';
-    
+
     const point = turf.point([lon, lat]);
 
     for (const feature of provinces.features) {
@@ -71,7 +71,13 @@ router.post('/api/custom-communities', (req, res) => {
 router.get('/api/custom-communities', (req, res) => {
     try {
         const communities = customCommunitiesDb.prepare(`
-        SELECT community_id, existing_community_id, point_name, coord_y AS lat, coord_x AS lon
+        SELECT community_id, 
+                existing_community_id, 
+                point_name, 
+                coord_y AS lat, 
+                coord_x AS lon,
+                admin1_pcode,
+                admin2_pcode
         FROM crlp_custom_communities t1
         WHERE status <> 'Deleted'
             and t1.modified_dt = (
@@ -90,7 +96,9 @@ router.get('/api/custom-communities', (req, res) => {
                 properties: {
                     community_id: c.community_id,
                     existing_community_id: c.existing_community_id,
-                    name: c.point_name
+                    name: c.point_name,
+                    prov : c.admin1_pcode,
+                    dist : c.admin2_pcode
 
                 }
             }))
@@ -103,10 +111,12 @@ router.get('/api/custom-communities', (req, res) => {
     }
 });
 
+
 router.delete('/api/custom-communities', (req, res) => {
-    const { community_id, existing_community_id, lat, lon, name } = req.body;
+    const { community_id } = req.body;
 
     const now = new Date().toISOString();
+
     try {
         customCommunitiesDb.prepare(`
             INSERT INTO crlp_custom_communities (
@@ -115,12 +125,33 @@ router.delete('/api/custom-communities', (req, res) => {
                 point_name,
                 coord_y,
                 coord_x,
+                pcode,
+                admin1_pcode,
+                admin2_pcode,
+                editor,
                 modified_dt,
                 status,
                 data_source
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(community_id, existing_community_id, name, lat, lon, now, 'Deleted', 'CRLP App');
+            SELECT
+                community_id,
+                existing_community_id,
+                point_name,
+                coord_y,
+                coord_x,
+                pcode,
+                admin1_pcode,
+                admin2_pcode,
+                editor,
+                ?,
+                'Deleted',
+                data_source
+            FROM crlp_custom_communities
+            WHERE community_id = ?
+            ORDER BY modified_dt DESC
+            LIMIT 1
+        `).run(now, community_id);
+
         res.json({ message: 'Community deleted successfully' });
     } catch (err) {
         console.error('Error deleting community:', err);
