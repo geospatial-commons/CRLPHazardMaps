@@ -383,6 +383,11 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             }
         }
         updateZoomNote(row, layerConfig);
+
+        // Ensure community layer is brought to the front.
+        if (communityLayer) {
+            communityLayer.bringToFront();
+        }
         return;
     }
 
@@ -402,9 +407,6 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 return { color: tertiaryRoadColor, weight: 1.5, opacity: 0.7 };
             }
         }
-
-        let zoom = map.getZoom();
-        console.log("Zoom", zoom);
 
         const roadsLayer = L.vectorGrid.protobuf(layerConfig.url,
             {
@@ -617,7 +619,21 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             maxNativeZoom: layerConfig.maxNativeZoom,
             maxZoom: layerConfig.maxZoom,
             vectorTileLayerStyles: {
-                contours: { weight: 0.5, color: '#080808' }
+                // Change 'contours' from an object to a function
+                contours: function (properties, zoom) {
+                    let lineWeight = 1; // Default for 12 and under, and 16+
+
+                    // Up till 15 (meaning 13, 14, 15), weight is 1.5
+                    if (zoom > 12 && zoom < 15) {
+                        lineWeight = 1.5;
+                    } else if (zoom >= 15) {
+                        lineWeight = 1.25;
+                    }
+                    return {
+                        weight: lineWeight,
+                        color: '#080808'
+                    };
+                }
             }
         });
 
@@ -647,6 +663,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         updateZoomNote(row, layerConfig);
     }
 }
+
 
 function removeContextLayer(id) {
     const layer = contextLayerInstances[id];
@@ -909,8 +926,7 @@ function renderCommunities(distId) {
                         fillColor: communitiesFill,
                         color: communitiesStroke,
                         weight: 1,
-                        fillOpacity: 0.9,
-                        zIndex: 100
+                        fillOpacity: 0.9
                     });
                 },
                 onEachFeature: function (f, l) {
