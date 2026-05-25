@@ -1599,7 +1599,7 @@ select:disabled {
     background: yellow;
 }
 
-#editBtn {
+#adminBtns {
     margin-left: auto;
     padding: 6px 12px;
     display: flex;
@@ -1608,7 +1608,8 @@ select:disabled {
 }
 
 #btn-create,
-#btn-update {
+#btn-update,
+#btn-login {
     padding: 6px 12px;
     font-size: 11px;
     font-weight: 500;
@@ -1620,7 +1621,8 @@ select:disabled {
 }
 
 #btn-create:hover,
-#btn-update:hover {
+#btn-update:hover,
+#btn-login:hover {
     background-color: rgba(0, 0, 0, 0.04);
     border-color: rgba(0, 0, 0, 0.2);
 }
@@ -1664,11 +1666,124 @@ select:disabled {
     transform: translateX(0);
 }
 
-/* .cursor-tooltip {
-    background: rgba(0, 0, 0, 0.75);
+/* ================================================================
+   LOGIN FORM & AUTHENTICATION STYLES
+   ================================================================ */
+
+   
+.login-form.hidden {
+    display: none;
+}
+
+/* Login form - centered in map area */
+.login-form {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    background: white;
+    border: 2px solid var(--wb-navy);
+    border-radius: 6px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    z-index: 2000;
+}
+
+.login-form fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.login-form legend {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--wb-navy);
+    margin: 0 0 12px 0;
+    padding: 0;
+    width: 100%;
+    text-align: center;
+}
+
+.login-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.login-form .form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--wb-gray-900);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.login-form .form-group input {
+    padding: 10px 12px;
+    border: 1px solid var(--wb-gray-100);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    background: white;
+    color: var(--wb-gray-900);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-form .form-group input:focus {
+    border-color: var(--wb-blue);
+    box-shadow: 0 0 0 3px rgba(0, 159, 218, 0.1);
+}
+
+.login-form .form-group input::placeholder {
+    color: var(--wb-gray-500);
+}
+
+/* Form actions for login */
+.login-form .form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.login-form .login-btn-submit {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--wb-blue);
     color: white;
     border: none;
-    padding: 4px 8px;
-    font-size: 12px;
     border-radius: 4px;
-} */
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.login-form .login-btn-submit:hover {
+    background: #0087c6;
+}
+
+.login-form .login-btn-submit:active {
+    background: #006a9e;
+}
+
+.login-form .login-btn-close {
+    flex: 0;
+    width: 36px;
+    padding: 10px;
+    font-size: 16px;
+    background: var(--wb-gray-100);
+    color: var(--wb-gray-900);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.login-form .login-btn-close:hover {
+    background: var(--wb-gray-50);
+}

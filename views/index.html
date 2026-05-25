@@ -197,17 +197,37 @@
                 <!-- Legend bar: fixed 36px, above map -->
                 <div id="legend-bar" aria-label="Map legend">
                     <span id="legend-content"><em>Select a hazard layer to view the legend</em></span>
-                    <div id="editBtn">
+                    <div id="adminBtns">
                         <div id="update-mode-toast" class="hidden">
                             Update mode disabled
                         </div>
-                        <span id="update-warning">
+                        <span id="update-warning" style="display:none">
                             To update an existing community<br>first select a district
                         </span>
-                        <button id="btn-update">Update Community</button>
-                        <button id="btn-create">Create Community</button>
+                        <button id="btn-update" style="display:none">Update Community</button>
+                        <button id="btn-create" style="display:none">Create Community</button>
+                        <button id="btn-login">Login</button>
                     </div>
                 </div>
+
+                                                <!-- Add login form (hidden by default) -->
+                <form id="login-form" class="login-form hidden">
+                    <fieldset>
+                        <legend>Login</legend>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" required />
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="login-btn-submit">Submit</button>
+                            <button type="button" class="login-btn-close" aria-label="Close login form">×</button>
+                        </div>
+                    </fieldset>
+                </form>
 
                 <!-- Map -->
                 <div id="map" aria-label="Interactive hazard map"></div>
@@ -374,6 +394,7 @@
     <script type="module" src="/js/editMode.js"></script>
     <script type="module" src="/js/map.js"></script>
     <script type="module" src="/js/search.js"></script>
+    <script type="module" src="/js/auth.js"></script>
 
     <script>
         // PDF preview helpers (global scope — called from pdf-wrapper buttons)
