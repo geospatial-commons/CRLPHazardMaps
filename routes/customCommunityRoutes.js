@@ -7,8 +7,86 @@ const turf = require('@turf/turf')
 const provinces = require('../data/provinces.json')
 const districts = require('../data/districts.json')
 
+// Import your custom validators
+const validationParam = require('./validationParams.js');
 
-router.post('/api/custom-communities', (req, res) => {
+//Import authentication middleware
+const jwt = require('jsonwebtoken');
+
+const requireAuth = (req, res, next) => {
+    try {
+        // 1. Extract the token from cookies
+        const token = req.cookies.userToken;
+
+        // 2. If no token exists, block access immediately
+        if (!token) {
+            return res.status(401).json({ error: 'Access denied. Please log in.' });
+        }
+
+        // 3. Verify the token with your environment secret key
+        const decoded = jwt.verify(token, process.env.SECRET_KEY);
+
+        // 4. Attach decoded payload (e.g., email, role) to the request object
+        req.user = decoded;
+
+        // 5. Pass control to your route handler or next middleware
+        next(); 
+    } catch (err) {
+        console.error('Authentication error:', err.message);
+        // Clean up the invalid cookie if verification fails
+        res.clearCookie('userToken');
+        return res.status(401).json({ error: 'Session expired or invalid. Please log in again.' });
+    }
+};
+
+// Get all custom communities
+router.get('/api/custom-communities', (req, res) => {
+    try {
+        const communities = customCommunitiesDb.prepare(`
+        SELECT rowid,
+                community_id, 
+                existing_community_id, 
+                point_name, 
+                coord_y AS lat, 
+                coord_x AS lon,
+                admin1_pcode,
+                admin2_pcode
+        FROM crlp_custom_communities t1
+        WHERE status <> 'Deleted'
+            and t1.modified_dt = (
+                SELECT MAX(modified_dt)
+                FROM crlp_custom_communities t2
+                WHERE t2.community_id = t1.community_id
+            )
+    `).all();
+
+
+        const geojson = {
+            type: "FeatureCollection",
+            features: communities.map(c => ({
+                type: "Feature",
+                geometry: wellknown.parse(`POINT(${c.lon} ${c.lat})`),
+                properties: {
+                    rowid : c.rowid,
+                    community_id: c.community_id,
+                    existing_community_id: c.existing_community_id,
+                    name: c.point_name,
+                    prov : c.admin1_pcode,
+                    dist : c.admin2_pcode
+
+                }
+            }))
+        };
+
+        res.json(geojson);
+    } catch (err) {
+        console.error('Error fetching communities:', err);
+        res.status(500).json({ error: 'Failed to fetch communities' });
+    }
+});
+
+// Create a new custom community with versioning (status 'New')
+router.post('/api/custom-communities', requireAuth, validationParam.validateCreateCommunity, (req, res) => {
     let { lat, lon, name } = req.body;
     let admin1_pcode = '';
 
@@ -68,53 +146,8 @@ router.post('/api/custom-communities', (req, res) => {
 
 });
 
-router.get('/api/custom-communities', (req, res) => {
-    try {
-        const communities = customCommunitiesDb.prepare(`
-        SELECT rowid,
-                community_id, 
-                existing_community_id, 
-                point_name, 
-                coord_y AS lat, 
-                coord_x AS lon,
-                admin1_pcode,
-                admin2_pcode
-        FROM crlp_custom_communities t1
-        WHERE status <> 'Deleted'
-            and t1.modified_dt = (
-                SELECT MAX(modified_dt)
-                FROM crlp_custom_communities t2
-                WHERE t2.community_id = t1.community_id
-            )
-    `).all();
-
-
-        const geojson = {
-            type: "FeatureCollection",
-            features: communities.map(c => ({
-                type: "Feature",
-                geometry: wellknown.parse(`POINT(${c.lon} ${c.lat})`),
-                properties: {
-                    rowid : c.rowid,
-                    community_id: c.community_id,
-                    existing_community_id: c.existing_community_id,
-                    name: c.point_name,
-                    prov : c.admin1_pcode,
-                    dist : c.admin2_pcode
-
-                }
-            }))
-        };
-
-        res.json(geojson);
-    } catch (err) {
-        console.error('Error fetching communities:', err);
-        res.status(500).json({ error: 'Failed to fetch communities' });
-    }
-});
-
-
-router.delete('/api/custom-communities', (req, res) => {
+// Delete a custom community (soft delete by marking status as 'Deleted')
+router.delete('/api/custom-communities', requireAuth, validationParam.validateDeleteCommunity, (req, res) => {
     const { community_id } = req.body;
 
     const now = new Date().toISOString();
@@ -161,7 +194,11 @@ router.delete('/api/custom-communities', (req, res) => {
     }
 });
 
-router.post('/api/custom-communities/update', (req, res) => {
+// Update a custom community (versioning by inserting a new record with status 'Modified')
+router.post('/api/custom-communities/update', requireAuth, validationParam.validateUpdateCommunity,  (req, res) => {
+    let admin1_pcode
+    let admin2_pcode
+
     let { community_id, existing_community_id, lat, lon, name } = req.body;
 
     if (!community_id && !existing_community_id) {

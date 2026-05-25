@@ -1607,6 +1607,13 @@ select:disabled {
     gap: 8px;
 }
 
+#user-info {
+    font-size: 10px;
+    color: var(--wb-gray-900);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
 #btn-create,
 #btn-update,
 #btn-login {

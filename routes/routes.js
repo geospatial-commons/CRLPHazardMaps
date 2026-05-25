@@ -13,7 +13,7 @@ const EMPTY_TILE_BUFFER = Buffer.from([
 ]);
 
 // Import your custom validators
-const validationParam = require('./validationParams.js'); // Adjust path as necessary
+const validationParam = require('./validationParams.js');
 
 // Landing page route
 router.get('/', (req, res) => {
@@ -23,24 +23,8 @@ router.get('/', (req, res) => {
 // App route
 router.get('/app', (req, res) => {
     // console.log(req.cookies);
-    var decodedToken = jwt.decode(req.cookies.token, {complete:true});
-    console.log(decodedToken);
+    var decodedToken = jwt.decode(req.cookies.userToken, { complete: true });
 
-    const SECRET_KEY = process.env.SECRET_KEY;
-    payload = {
-        'email': 'ivo@wb.org',
-        'role': 'constultant'
-    }
-    
-    const token = jwt.sign(payload, SECRET_KEY, { algorithm: 'HS256' });
-    
-    res.cookie("token", token, {
-        httpOnly: true,
-        SameSite: 'Strict',
-        //secure: true,
-        maxAge: 2592000000,
-        //signed: true
-    })
     res.sendFile(path.join(__dirname, '..', 'views', 'index.html'));
 });
 
@@ -438,27 +422,76 @@ router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (re
     }
 });
 
-router.post('/login', (req, res) => {
-    console.log(req.body);
+// Authentication routes (simplified for demonstration)
+router.post('/login', validationParam.validateLogin, (req, res) => {
 
     try {
+        //check master password first this will be changed in the future to a more robust authentication system but for now this is sufficient for the use case of custom communities management
+        if (req.body.password != process.env.MASTER_PASSWORD) {
+            return res.status(403).send('Invalid password');
+        }
+
+        // Check if user exists in the database
         const query = `
             SELECT user, role
             FROM users
             WHERE user = ?
-        `
+        `;
         const user = customCommunitiesDb.prepare(query).all([req.body.email])
         console.log(user.length);
-        if (user.length > 0){
+
+        // If user exists, create and send JWT token
+        if (user.length > 0) {
+
+            //process jsonwebtoken
+            const SECRET_KEY = process.env.SECRET_KEY;
+            const payload = {
+                'email': user[0].user,
+                'role': user[0].role
+            }
+
+            const token = jwt.sign(payload, SECRET_KEY, {
+                algorithm: 'HS256',
+                expiresIn: '30d' // Keep it matched with your 30-day cookie
+            });
+
+            res.cookie("userToken", token, {
+                httpOnly: true,
+                SameSite: 'Strict',
+                //secure: true, // Uncomment if using HTTPS
+                maxAge: 2592000000,
+                //signed: true 
+            })
+
             return res.status(200).send('User found');
+        } else {
+            return res.status(403).send('User not found');
         }
-    } catch(err) {
+    } catch (err) {
         console.log(err)
+        return res.status(500).send('Something went wrong on the server');
     }
-    return res.status(403).send('User not found');
-    
 })
 
+// Logout route - clears the token cookie and realoads the current page to update the UI accordingly
+router.get('/logout', (req, res) => {
+    res.clearCookie("userToken");
+    res.status(200).send('Logged out');
+});
 
+// Get user info route - verifies the JWT token and returns user details
+router.get('/api/user', (req, res) => {
+    try {
+        const token = req.cookies.userToken;
+        if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
+        }
+        const decoded = jwt.verify(token, process.env.SECRET_KEY);
+        res.json({ email: decoded.email, role: decoded.role });
+    } catch (err) {
+        console.error('Token verification error:', err);
+        res.status(401).json({ error: 'Invalid token' });
+    }
+});
 
 module.exports = router;
