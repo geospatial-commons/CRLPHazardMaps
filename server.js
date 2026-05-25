@@ -6,7 +6,7 @@ const helmet = require('helmet');
 //const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const communityRouter = require('./routes/customCommunityRoutes');
-
+const cookies = require('cookie-parser');
 
 const PORT = process.env.PORT || 3000;
 const IP = process.env.IP || '127.0.0.1';
@@ -50,6 +50,9 @@ app.use(express.json());
 
 // Serve static files (CSS, client JS, images, etc.)
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Cookie parser to retrieve cookies
+app.use(cookies());
 
 // Import routes
 const routes = require('./routes/routes');

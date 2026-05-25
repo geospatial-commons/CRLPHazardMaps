@@ -1,14 +1,15 @@
 const express = require('express');
 const path = require('path');
-const { db, mbtilesDb, analyticsDb } = require('../db');
+const { db, mbtilesDb, analyticsDb, customCommunitiesDb } = require('../db');
 const router = express.Router();
 const wellknown = require('wellknown');
 const { validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
 
 const EMPTY_TILE_BUFFER = Buffer.from([
-  0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00
+    0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00
 ]);
 
 // Import your custom validators
@@ -21,6 +22,25 @@ router.get('/', (req, res) => {
 
 // App route
 router.get('/app', (req, res) => {
+    // console.log(req.cookies);
+    var decodedToken = jwt.decode(req.cookies.token, {complete:true});
+    console.log(decodedToken);
+
+    const SECRET_KEY = process.env.SECRET_KEY;
+    payload = {
+        'email': 'ivo@wb.org',
+        'role': 'constultant'
+    }
+    
+    const token = jwt.sign(payload, SECRET_KEY, { algorithm: 'HS256' });
+    
+    res.cookie("token", token, {
+        httpOnly: true,
+        SameSite: 'Strict',
+        //secure: true,
+        maxAge: 2592000000,
+        //signed: true
+    })
     res.sendFile(path.join(__dirname, '..', 'views', 'index.html'));
 });
 
@@ -401,7 +421,7 @@ router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (re
 
         const tile = stmt.get(z, x, flippedY);
 
-        
+
         res.setHeader('Content-Type', 'application/x-protobuf');
         res.setHeader('Content-Encoding', 'gzip');
         res.setHeader('Cache-Control', 'public, max-age=1209600'); // Cache for 2 weeks
@@ -411,12 +431,34 @@ router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (re
         }
 
         res.send(tile.tile_data);
-        
+
     } catch (err) {
         console.error(err);
         res.status(500).send("Tile error");
     }
 });
+
+router.post('/login', (req, res) => {
+    console.log(req.body);
+
+    try {
+        const query = `
+            SELECT user, role
+            FROM users
+            WHERE user = ?
+        `
+        const user = customCommunitiesDb.prepare(query).all([req.body.email])
+        console.log(user.length);
+        if (user.length > 0){
+            return res.status(200).send('User found');
+        }
+    } catch(err) {
+        console.log(err)
+    }
+    return res.status(403).send('User not found');
+    
+})
+
 
 
 module.exports = router;
