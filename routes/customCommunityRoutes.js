@@ -104,17 +104,6 @@ router.post('/api/custom-communities', requireAuth, validationParam.validateCrea
         }
     }
 
-
-    if (
-        typeof lat !== 'number' ||
-        typeof lon !== 'number' ||
-        typeof name !== 'string'
-    ) {
-        return res.status(400).json({ error: 'Invalid input data' });
-    }
-    if (name.trim() === '') {
-        name = 'Unnamed';
-    }
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
 

@@ -438,7 +438,6 @@ router.post('/login', validationParam.validateLogin, (req, res) => {
             WHERE user = ?
         `;
         const user = customCommunitiesDb.prepare(query).all([req.body.email])
-        console.log(user.length);
 
         // If user exists, create and send JWT token
         if (user.length > 0) {

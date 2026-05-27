@@ -59,6 +59,11 @@ const rasterLabels = {
     'earthquake': 'Earthquake Hazard'
 };
 
+const worldBounds = [
+  [-90, -180], // southwest corner
+  [90, 180]    // northeast corner
+];
+
 // ---- TINT BUTTONS ----
 // const tintBlueBtn = document.getElementById('tint-blue-btn');
 // const tintRedBtn = document.getElementById('tint-red-btn');
@@ -123,7 +128,14 @@ function setupScaleBarText() {
 // INITIALIZE MAP
 // ----------------------
 function initMap() {
-    map = L.map('map').setView([33.93, 67.68], 6);
+    // map = L.map('map').setView([33.93, 67.68], 6);
+    map = L.map('map', {
+        center: [33.93, 67.68],
+        zoom: 6,
+        minZoom: 3,
+        maxZoom: 18,
+        maxBounds: worldBounds
+    });
 
     overlay.style.display = 'flex';
     disableMapInteraction();

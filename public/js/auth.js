@@ -51,8 +51,8 @@ function initAuth() {
  * Handle login form submission
  * Currently just closes the form and reveals admin buttons
  */
-async function handleLogin(jwtemail = null) {
-    const email = jwtemail || document.getElementById('email').value;
+async function handleLogin() {
+    const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const loginData = { email, password }
     const response = await fetch('/login', {
@@ -130,7 +130,8 @@ function checkAuthOnLoad() {
             
             return response.json();
         } else {
-            throw new Error('Not authenticated');
+            // if jwt not present or bad jwt
+            // throw new Error('Not authenticated');
         }
     })
     .then(data => {

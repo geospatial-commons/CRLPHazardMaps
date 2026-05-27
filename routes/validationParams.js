@@ -147,7 +147,7 @@ const validateCreateCommunity = [
         .toFloat(),
         
     body('name')
-        .optional({ values: 'falsy' })
+        .exists().withMessage('Please provide a community name')
         .trim()
         .isLength({ max: 250 }).withMessage('Name cannot exceed 250 characters')
         .escape(),
