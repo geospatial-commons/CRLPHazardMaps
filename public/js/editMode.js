@@ -5,12 +5,14 @@ import {
     disablePopupsOnActiveLayers,
     restorePopupsOnActiveLayers,
     communitiesStroke,
-    communitiesFill
+    communitiesFill,
+    drawControlVisible
 } from './map.js';
 
 const communityIdGroup = document.getElementById('community-id-group');
 const communityIdInput = document.getElementById('community_id');
 const pointNameInput = document.getElementById('point_name');
+const overlay = document.getElementById('loadingOverlay');
 
 let createClickHandler = null;
 let pendingCommunity;
@@ -50,8 +52,8 @@ export const updateBtn = document.getElementById('btn-update');
 const dataEntryForm = document.getElementById('data-entry-form');
 const closeFormBtn = dataEntryForm.querySelector('.btn-close');
 const deleteBtn = dataEntryForm.querySelector('.btn-delete');
-const coordsContainer = dataEntryForm.querySelector('.coords-and-button')
 const setCoordsBtn = document.getElementById('set-coords-btn');
+const coordsContainer = dataEntryForm.querySelector('.coords-and-button')
 
 var createMode = false;
 export var updateMode = false;
@@ -345,15 +347,22 @@ setCoordsBtn.addEventListener('click', () => {
 function setupCreateMode() {
 
     createBtn.addEventListener('click', () => {
+        const drawToggle = document.querySelector('div.leaflet-top.leaflet-left .draw-toggle');
+        const drawControl = document.querySelector('div.leaflet-draw.leaflet-control');
         createMode = !createMode;
         map.isEditModeActive = createMode;
-
         if (createMode) {
             disablePopupsOnActiveLayers();
             createBtn.textContent = "Disable Create Mode";
             updateBtn.disabled = true;
             communityIdGroup.style.display = 'none';
             deleteBtn.style.display = 'none';
+
+            if (drawControlVisible) {
+                drawToggle.click(); // hide draw control if visible when entering create mode
+            }
+            drawToggle.style.display = 'none';
+
             formTitle.innerHTML = 'Create Community';
 
             const mapContainer = map.getContainer();
@@ -361,7 +370,7 @@ function setupCreateMode() {
             mapContainer.style.cursor = 'crosshair';
 
             createClickHandler = async (e) => {
-
+                console.log('Map clicked at:', e.latlng);
                 const { lat, lng } = e.latlng;
                 removePendingCommunity();
                 pendingCommunity = L.marker([lat, lng], {
@@ -403,6 +412,7 @@ function setupCreateMode() {
             dataEntryForm.reset();
             dataEntryForm.classList.add('hidden');
             updateBtn.disabled = false;
+            drawToggle.style.display = 'block';
         }
     });
 }
@@ -414,6 +424,7 @@ function setupUpdateMode() {
 
     updateBtn.addEventListener('click', () => {
 
+        const drawToggle = document.querySelector('div.leaflet-top.leaflet-left .draw-toggle');
         const customCommunityCheckbox = document.querySelector('input[data-id="custom-communities"]');
         updateMode = !updateMode;
         map.isEditModeActive = updateMode;
@@ -426,6 +437,12 @@ function setupUpdateMode() {
         if (updateMode) {
             updateBtn.textContent = "Disable Update Mode";
             createBtn.disabled = true;
+            
+            if (drawControlVisible) {
+                drawToggle.click(); // hide draw control if visible when entering create mode
+            }
+            drawToggle.style.display = 'none';
+
             disablePopupsOnActiveLayers();
 
             loadCustomCommunitiesLayer();
@@ -436,7 +453,6 @@ function setupUpdateMode() {
             mapContainer.style.cursor = 'crosshair';
 
             communityClickHandler = function (e) {
-
                 const layer = e.layer;
                 const existingFeatureProps = layer.feature.properties;
                 const { lat, lng } = e.latlng;
@@ -503,6 +519,7 @@ function setupUpdateMode() {
             updateBtn.textContent = "Update Community";
             createBtn.disabled = false;
             updateBtn.disabled = false;
+            drawToggle.style.display = 'block';
             removePendingCommunity();
             const mapContainer = map.getContainer();
             mapContainer.classList.remove('edit-mode-active');
@@ -544,9 +561,9 @@ function loadCustomCommunitiesLayer() {
                     });
                 },
                 onEachFeature: function (f, l) {
-                    if (f.properties && f.properties.name) {
-                        l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
-                    }
+                    // if (f.properties && f.properties.name) {
+                    //     l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
+                    // }
                     l.originalLatLng = l.getLatLng();
                     existing_community_id = f.properties.existing_community_id
 

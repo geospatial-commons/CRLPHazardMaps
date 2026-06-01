@@ -16,7 +16,7 @@ let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
 export let communitiesStroke = "#000000";
 export let communitiesFill = "#BFBFBF";
-let selctedCommunityColor = "#12436D";
+let selectedCommunityColor = "#12436D";
 let districtCapitalColor = "#F7B841";
 let districtCapitalStroke = "#000000";
 let primaryRoadColor = "#FF6B35";
@@ -30,6 +30,8 @@ let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit, le
 let currentHazardDescription = '';
 let leafletBottomLeft;
 let customCommunityTitleText = '';
+export let drawControlVisible = false;
+
 
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
@@ -224,13 +226,12 @@ function initMap() {
         if (el) el.style.display = 'none';
     }, 0);
 
-    let visible = false;
     drawToggleBtn.onclick = function (e) {
         e.preventDefault();
         const drawControl = document.querySelector('.leaflet-draw.leaflet-control');
         if (!drawControl) return;
-        visible = !visible;
-        drawControl.style.display = visible ? 'block' : 'none';
+        drawControlVisible = !drawControlVisible;
+        drawControl.style.display = drawControlVisible ? 'block' : 'none';
     };
 
     //handle draw events
@@ -293,6 +294,16 @@ function initMap() {
 // ----------------------
 // Tracks loaded Leaflet layers keyed by context layer id
 const contextLayerInstances = {};
+
+function bringCommunitiesToFront() {
+    if (communityLayer) {
+        communityLayer.bringToFront();
+    }
+
+    if (customCommunityLayer) {
+        customCommunityLayer.bringToFront();
+    }
+}
 
 function loadContextLayers() {
     const container = document.getElementById('context-layers');
@@ -401,14 +412,8 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         }
         updateZoomNote(row, layerConfig);
 
-        // Ensure community layer is brought to the front.
-        if (communityLayer) {
-            communityLayer.bringToFront();
-        }
+        bringCommunitiesToFront();
 
-        if (customCommunityLayer) {
-            customCommunityLayer.bringToFront();
-        }
         return;
     }
 
@@ -609,6 +614,17 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                             distSelect.value = 'all';
                             provSelect.value = 'all';
 
+                            if (districtsLayer) {
+                                map.removeLayer(districtsLayer);
+                                delete overlayLayers['Districts'];
+                                districtsLayer = null;
+                            }
+                            if (communityLayer) {
+                                map.removeLayer(communityLayer);
+                                delete overlayLayers['Communities'];
+                                communityLayer = null;
+                            }
+
                             customCommunityTitleText = `${props.name}, ${props.dist} District, ${props.prov} Province`;
                             console.log(customCommunityTitleText);
                             console.log(props);
@@ -629,12 +645,14 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                                 });
                             }
 
-                            // 2. Set the style for the specific marker that was clickedF
+                            // 2. Set the style for the specific marker that was clicked
                             if (!map.isEditModeActive) {
-                                map.flyTo([f.geometry.coordinates[1], f.geometry.coordinates[0]], 16, { animate: true, duration: 1.5 });
+                                if (map.getZoom() < 12) {
+                                    map.flyTo([f.geometry.coordinates[1], f.geometry.coordinates[0]], 12, { animate: true, duration: 1.5 });
+                                }
 
                                 l.setStyle({
-                                    radius: 6,
+                                    radius: 5,
                                     fillColor: selectedCommunityColor,
                                 });
                             }
@@ -899,6 +917,8 @@ function renderProvinces(selectedProvId, quality) {
     if (selectedProvId === 'all' && quality == 0) {
         map.fitBounds(provincesLayer.getBounds(), { padding: [30, 30] });
     }
+
+    bringCommunitiesToFront();
 }
 
 // ----------------------
@@ -942,6 +962,8 @@ function renderDistricts(data, selectedDistId) {
             map.fitBounds(districtsLayer.getBounds(), { padding: [30, 30] });
         }
     }
+
+    bringCommunitiesToFront();
 }
 
 // ----------------------
@@ -1034,8 +1056,8 @@ function renderCommunities(distId) {
                         }
                         // 2. Set the style for the specific marker that was clicked
                         l.setStyle({
-                            radius: 6,
-                            fillColor: selctedCommunityColor,
+                            radius: 5,
+                            fillColor: selectedCommunityColor,
                         });
                         const clickedName = props.name;
                         const clickedCoords = f.geometry.coordinates;
@@ -1114,6 +1136,7 @@ provSelect.addEventListener('change', function () {
             sortedDists.forEach(d => distSelect.appendChild(new Option(d.name, d.distId)));
             overlay.style.display = 'none';
             renderDistricts(data, 'all');
+
         })
         .catch(err => console.error("Error loading districts:", err));
 });
@@ -1196,7 +1219,9 @@ commSelect.addEventListener('change', function () {
     const selectedCombined = this.options[this.selectedIndex].dataset.combined;
     console.log("coords: ", coords)
     if (!map.isEditModeActive) {
-        map.flyTo([coords[0], coords[1]], 16, { animate: true, duration: 1.5 });
+        if (map.getZoom() < 12) {
+            map.flyTo([coords[0], coords[1]], 12, { animate: true, duration: 1.5 });
+        }
     }
 
     // After fly completes, find the marker, style it, and open popup
@@ -1219,12 +1244,12 @@ commSelect.addEventListener('change', function () {
             if (combined === selectedCombined) {
                 // 2. Highlight the matching marker
                 layer.setStyle({
-                    radius: 6,
-                    fillColor: selctedCommunityColor
+                    radius: 5,
+                    fillColor: selectedCommunityColor
                 });
 
                 // If radius doesn't update via setStyle, use:
-                if (layer.setRadius) layer.setRadius(6);
+                if (layer.setRadius) layer.setRadius(5);
 
                 layer.openPopup();
             }
@@ -1451,7 +1476,7 @@ function buildLegend(activeAdminLayers = []) {
             } else if (layerName === 'Communities' || 'Custom Communities') {
                 document.querySelector(".legend-color.admin-comm").style.display = 'block';
                 document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
-                document.querySelector(".legend-color.admin-comm").style.backgroundColor = selctedCommunityColor;
+                document.querySelector(".legend-color.admin-comm").style.backgroundColor = selectedCommunityColor;
                 document.querySelector(".legend-label.admin-comm").textContent = 'Community';
             }
             else if (layerName === 'District Capitals') {
@@ -1600,7 +1625,7 @@ function createPdfLayout(download = true) {
                 districtsColor: districtsColor,
                 communitiesStroke: communitiesStroke,
                 communitiesFill: communitiesFill,
-                communitiesSelected: selctedCommunityColor,
+                communitiesSelected: selectedCommunityColor,
                 districtCapitalColor: districtCapitalColor,
                 districtCapitalStroke: districtCapitalStroke,
                 primaryRoadColor: primaryRoadColor,

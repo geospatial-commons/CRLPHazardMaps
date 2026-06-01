@@ -328,7 +328,7 @@ async function downloadPdf(layoutConfig) {
                 pdf.rect(legendX, legendY - 3, 5, 5, 'S');
                 pdf.text('District', legendX + 8, legendY + 1);
                 legendY += 7;
-            } else if (layerName === 'Communities') {
+            } else if (layerName === 'Communities' || layerName === 'Custom Communities') {
                 pdf.setFillColor(layoutConfig.communitiesSelected); // Show selected/focus color in legend
                 pdf.setDrawColor(layoutConfig.communitiesStroke);
                 pdf.setLineWidth(0.2);
