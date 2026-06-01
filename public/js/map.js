@@ -60,8 +60,8 @@ const rasterLabels = {
 };
 
 const worldBounds = [
-  [-90, -180], // southwest corner
-  [90, 180]    // northeast corner
+    [-90, -180], // southwest corner
+    [90, 180]    // northeast corner
 ];
 
 // ---- TINT BUTTONS ----
@@ -629,13 +629,14 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                                 });
                             }
 
-                            // 2. Set the style for the specific marker that was clicked
-                            l.setStyle({
-                                radius: 6,
-                                fillColor: selctedCommunityColor,
-                            });
+                            // 2. Set the style for the specific marker that was clickedF
                             if (!map.isEditModeActive) {
                                 map.flyTo([f.geometry.coordinates[1], f.geometry.coordinates[0]], 16, { animate: true, duration: 1.5 });
+
+                                l.setStyle({
+                                    radius: 6,
+                                    fillColor: selectedCommunityColor,
+                                });
                             }
 
                         });
@@ -1485,7 +1486,7 @@ function createPdfLayout(download = true) {
     overlay.style.display = 'flex';
     const mapElement = document.getElementById('map');
     const topLeftControl = document.querySelector("div.leaflet-top.leaflet-left");
-    const currentCommunityPopup = document.querySelector('div.community-popup'); 
+    const currentCommunityPopup = document.querySelector('div.community-popup');
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
     const today = new Date();
@@ -1609,7 +1610,7 @@ function createPdfLayout(download = true) {
                 mapTitle: [hazardTitle, mapTitle],
             };
             overlay.style.display = 'none';
-            
+
             if (download) {
                 setPdfUiState('busy', 'Starting PDF download...');
 

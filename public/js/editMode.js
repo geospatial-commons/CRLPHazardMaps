@@ -64,12 +64,14 @@ function removePendingCommunity() {
 }
 
 function resetCommunityLayerStyle() {
-    communityLayer.setStyle({
-        radius: 5,
-        fillColor: communitiesFill,
-        color: communitiesStroke,
-        weight: 1
-    })
+    if (communityLayer) {
+        communityLayer.setStyle({
+            radius: 5,
+            fillColor: communitiesFill,
+            color: communitiesStroke,
+            weight: 1
+        })
+    }
 }
 
 function refreshCustomCommunities() {
@@ -217,7 +219,7 @@ async function handleSubmitForm(e) {
         }
 
         // --- SUCCESS LOGIC STARTS HERE ---
-        console.log('Saved successfully:', data);
+        // console.log('Saved successfully:', data);
 
         // Refresh the layer by toggling the checkbox
         refreshCustomCommunities();
@@ -331,7 +333,8 @@ setCoordsBtn.addEventListener('click', () => {
     } else if (updateMode && pendingCommunity) {
         removePendingCommunity();
         pendingCommunity = L.marker([lat, lng], {
-            icon: selectedIcon
+            icon: selectedIcon,
+            draggable: true
         }).addTo(map);
     }
 });
@@ -393,7 +396,7 @@ function setupCreateMode() {
 
             restorePopupsOnActiveLayers();
 
-            if (pendingCommunity) map.removeLayer(pendingCommunity);
+            removePendingCommunity();
             pendingCommunity = null;
 
             //close form if open
@@ -433,7 +436,12 @@ function setupUpdateMode() {
             mapContainer.style.cursor = 'crosshair';
 
             communityClickHandler = function (e) {
-                resetCommunityLayerStyle();
+
+                const layer = e.layer;
+                const existingFeatureProps = layer.feature.properties;
+                const { lat, lng } = e.latlng;
+                map.flyTo([lat, lng], 12, { animate: true, duration: 1.5 });
+
                 deleteBtn.style.display = 'none';
                 updateBtn.disabled = true;
 
@@ -442,10 +450,9 @@ function setupUpdateMode() {
                     activeMarker.setIcon(defaultIcon);
                 }
 
-                const layer = e.layer;
-                const existingFeatureProps = layer.feature.properties;
-                const { lat, lng } = e.latlng;
                 removePendingCommunity();
+
+                resetCommunityLayerStyle();
 
                 pendingCommunity = L.marker([lat, lng], {
                     icon: selectedIcon,
@@ -562,8 +569,10 @@ function loadCustomCommunitiesLayer() {
 
                         map.setView([newLatLng.lat, newLatLng.lng], map.getZoom());
 
-                        if (pendingCommunity) {
-                            removePendingCommunity();
+                        removePendingCommunity();
+
+                        if (communityLayer) {
+                            resetCommunityLayerStyle();
                         }
 
                         // Set current active marker
@@ -599,16 +608,17 @@ function loadCustomCommunitiesLayer() {
                     l.on('click', async function (e) {
                         existing_community_id = f.properties.existing_community_id
                         console.log('Existing community id clicked:', existing_community_id);
-
+                        // console.log(activeMarker);
                         // reset previous selected marker
+
                         if (activeMarker && activeMarker !== l) {
                             activeMarker.setLatLng(activeMarker.originalLatLng);
                             activeMarker.setIcon(defaultIcon);
                         }
 
-                        if (pendingCommunity) {
-                            removePendingCommunity();
-                        }
+                        removePendingCommunity();
+
+                        resetCommunityLayerStyle();
 
                         // highlight clicked marker
                         l.setIcon(selectedIcon);

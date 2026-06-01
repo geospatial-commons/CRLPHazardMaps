@@ -90,6 +90,7 @@ router.post('/api/custom-communities', requireAuth, validationParam.validateCrea
     let { lat, lon, name } = req.body;
     let admin1_pcode = '';
 
+
     const point = turf.point([lon, lat]);
 
     for (const feature of provinces.features) {
@@ -124,7 +125,7 @@ router.post('/api/custom-communities', requireAuth, validationParam.validateCrea
             status,
             data_source)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, '', name, lat, lon, '', admin1_pcode, admin2_pcode, '', now, 'New', 'CRLP App');
+    `).run(id, '', name, lat, lon, '', admin1_pcode, admin2_pcode, req.user.email, now, 'New', 'CRLP App');
 
     res.status(201).json({
         id,
@@ -166,7 +167,7 @@ router.delete('/api/custom-communities', requireAuth, validationParam.validateDe
                 pcode,
                 admin1_pcode,
                 admin2_pcode,
-                editor,
+                ?,
                 ?,
                 'Deleted',
                 data_source
@@ -174,7 +175,7 @@ router.delete('/api/custom-communities', requireAuth, validationParam.validateDe
             WHERE community_id = ?
             ORDER BY modified_dt DESC
             LIMIT 1
-        `).run(now, community_id);
+        `).run(req.user.email, now, community_id);
 
         res.json({ message: 'Community deleted successfully' });
     } catch (err) {
@@ -230,7 +231,7 @@ router.post('/api/custom-communities/update', requireAuth, validationParam.valid
                 status,
                 data_source)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(community_id, existing_community_id, name, lat, lon, '', admin1_pcode, admin2_pcode, '', now, 'Modified', 'CRLP App');
+        `).run(community_id, existing_community_id, name, lat, lon, '', admin1_pcode, admin2_pcode, req.user.email, now, 'Modified', 'CRLP App');
 
         res.json({ message: 'Updated via versioning' });
 
