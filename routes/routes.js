@@ -204,7 +204,7 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
             features: communities.map(c => ({
                 type: "Feature",
                 properties: {
-                    fid: c.fid,
+                    pk_id: c.fid,
                     name: c.point_name,
                     norm_dist_code: c.norm_dist_code,
                     norm_dist_name: c.norm_dist_name,

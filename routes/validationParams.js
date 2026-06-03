@@ -156,21 +156,21 @@ const validateCreateCommunity = [
 ];
 
 const validateDeleteCommunity = [
-    body('community_id')
+    body('crlp_community_id')
         .trim()
-        .notEmpty().withMessage('community_id is required'),
+        .notEmpty().withMessage('crlp_community_id is required'),
         //.isUUID().withMessage('Invalid ID format'),
 
     validateRequest
 ];
 
 const validateUpdateCommunity = [
-    body('community_id')
+    body('crlp_community_id')
         .optional({ values: 'falsy' })
         .trim(),
-        //.isUUID().withMessage('Invalid community_id format'),
+        //.isUUID().withMessage('Invalid crlp_community_id format'),
 
-    body('existing_community_id')
+    body('pk_id')
         .optional({ values: 'falsy' })
         .trim()
         .isLength({ max: 50 }).withMessage('Existing ID is too long'),

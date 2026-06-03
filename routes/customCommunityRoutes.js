@@ -44,19 +44,19 @@ router.get('/api/custom-communities', (req, res) => {
     try {
         const communities = customCommunitiesDb.prepare(`
         SELECT rowid,
-                community_id, 
-                existing_community_id, 
+                crlp_community_id, 
+                pk_id, 
                 point_name, 
                 coord_y AS lat, 
                 coord_x AS lon,
-                admin1_pcode,
-                admin2_pcode
+                prov_name,
+                dist_name
         FROM crlp_custom_communities t1
         WHERE status <> 'Deleted'
             and t1.modified_dt = (
                 SELECT MAX(modified_dt)
                 FROM crlp_custom_communities t2
-                WHERE t2.community_id = t1.community_id
+                WHERE t2.crlp_community_id = t1.crlp_community_id
             )
     `).all();
 
@@ -68,11 +68,11 @@ router.get('/api/custom-communities', (req, res) => {
                 geometry: wellknown.parse(`POINT(${c.lon} ${c.lat})`),
                 properties: {
                     rowid : c.rowid,
-                    community_id: c.community_id,
-                    existing_community_id: c.existing_community_id,
+                    crlp_community_id: c.crlp_community_id,
+                    pk_id: c.pk_id,
                     name: c.point_name,
-                    prov : c.admin1_pcode,
-                    dist : c.admin2_pcode
+                    prov : c.prov_name,
+                    dist : c.dist_name
 
                 }
             }))
@@ -88,47 +88,47 @@ router.get('/api/custom-communities', (req, res) => {
 // Create a new custom community with versioning (status 'New')
 router.post('/api/custom-communities', requireAuth, validationParam.validateCreateCommunity, (req, res) => {
     let { lat, lon, name } = req.body;
-    let admin1_pcode = '';
+    let prov_name = '';
 
 
     const point = turf.point([lon, lat]);
 
     for (const feature of provinces.features) {
         if (turf.booleanPointInPolygon(point, feature)) {
-            admin1_pcode = feature.properties.Prov_name;
+            prov_name = feature.properties.Prov_name;
         }
     }
 
     for (const feature of districts.features) {
         if (turf.booleanPointInPolygon(point, feature)) {
-            admin2_pcode = feature.properties.Dist_name;
+            dist_name = feature.properties.Dist_name;
         }
     }
 
     const now = new Date().toISOString();
-    const id = crypto.randomUUID();
+    const crlp_community_id = crypto.randomUUID();
 
     console.log('Received new community:', { name, lat, lon });
 
     const result = customCommunitiesDb.prepare(`
         INSERT INTO crlp_custom_communities (
-            community_id,
-            existing_community_id,
+            crlp_community_id,
+            pk_id,
             point_name,
             coord_y,
             coord_x,
-            pcode,
-            admin1_pcode,
-            admin2_pcode,
+            prov_name,
+            dist_name,
             editor,
             modified_dt,
             status,
+            gps_verified,
             data_source)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, '', name, lat, lon, '', admin1_pcode, admin2_pcode, req.user.email, now, 'New', 'CRLP App');
+    `).run(crlp_community_id, '', name, lat, lon, prov_name, dist_name, req.user.email, now, 'New', 'false', 'CRLP App');
 
     res.status(201).json({
-        id,
+        crlp_community_id,
         name,
         lat,
         lon
@@ -138,44 +138,44 @@ router.post('/api/custom-communities', requireAuth, validationParam.validateCrea
 
 // Delete a custom community (soft delete by marking status as 'Deleted')
 router.delete('/api/custom-communities', requireAuth, validationParam.validateDeleteCommunity, (req, res) => {
-    const { community_id } = req.body;
+    const { crlp_community_id } = req.body;
 
     const now = new Date().toISOString();
 
     try {
         customCommunitiesDb.prepare(`
             INSERT INTO crlp_custom_communities (
-                community_id,
-                existing_community_id,
+                crlp_community_id,
+                pk_id,
                 point_name,
                 coord_y,
                 coord_x,
-                pcode,
-                admin1_pcode,
-                admin2_pcode,
+                prov_name,
+                dist_name,
                 editor,
                 modified_dt,
                 status,
+                gps_verified,
                 data_source
             )
             SELECT
-                community_id,
-                existing_community_id,
+                crlp_community_id,
+                pk_id,
                 point_name,
                 coord_y,
                 coord_x,
-                pcode,
-                admin1_pcode,
-                admin2_pcode,
+                prov_name,
+                dist_name,
                 ?,
                 ?,
                 'Deleted',
+                gps_verified,
                 data_source
             FROM crlp_custom_communities
-            WHERE community_id = ?
+            WHERE crlp_community_id = ?
             ORDER BY modified_dt DESC
             LIMIT 1
-        `).run(req.user.email, now, community_id);
+        `).run(req.user.email, now, crlp_community_id);
 
         res.json({ message: 'Community deleted successfully' });
     } catch (err) {
@@ -186,30 +186,30 @@ router.delete('/api/custom-communities', requireAuth, validationParam.validateDe
 
 // Update a custom community (versioning by inserting a new record with status 'Modified')
 router.post('/api/custom-communities/update', requireAuth, validationParam.validateUpdateCommunity,  (req, res) => {
-    let admin1_pcode
-    let admin2_pcode
+    let prov_name
+    let dist_name
 
-    let { community_id, existing_community_id, lat, lon, name } = req.body;
+    let { crlp_community_id, pk_id, lat, lon, name } = req.body;
 
-    if (!community_id && !existing_community_id) {
-        return res.status(400).json({ error: 'Missing community_id' });
+    if (!crlp_community_id && !pk_id) {
+        return res.status(400).json({ error: 'Missing crlp_community_id' });
     }
 
-    if (!community_id) {
-        community_id = crypto.randomUUID();
+    if (!crlp_community_id) {
+        crlp_community_id = crypto.randomUUID();
     }
 
     const point = turf.point([lon, lat]);
 
     for (const feature of provinces.features) {
         if (turf.booleanPointInPolygon(point, feature)) {
-            admin1_pcode = feature.properties.Prov_name;
+            prov_name = feature.properties.Prov_name;
         }
     }
 
     for (const feature of districts.features) {
         if (turf.booleanPointInPolygon(point, feature)) {
-            admin2_pcode = feature.properties.Dist_name;
+            dist_name = feature.properties.Dist_name;
         }
     }
 
@@ -218,20 +218,20 @@ router.post('/api/custom-communities/update', requireAuth, validationParam.valid
     try {
         customCommunitiesDb.prepare(`
             INSERT INTO crlp_custom_communities (
-                community_id,
-                existing_community_id,
+                crlp_community_id,
+                pk_id,
                 point_name,
                 coord_y,
                 coord_x,
-                pcode,
-                admin1_pcode,
-                admin2_pcode,
+                prov_name,
+                dist_name,
                 editor,
                 modified_dt,
                 status,
+                gps_verified,
                 data_source)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(community_id, existing_community_id, name, lat, lon, '', admin1_pcode, admin2_pcode, req.user.email, now, 'Modified', 'CRLP App');
+        `).run(crlp_community_id, pk_id, name, lat, lon, prov_name, dist_name, req.user.email , now, 'Modified', 'false', 'CRLP App');
 
         res.json({ message: 'Updated via versioning' });
 

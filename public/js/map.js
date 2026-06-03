@@ -1007,7 +1007,7 @@ function renderCommunities(distId) {
                     const props = f.properties;
 
                     // Determine verification status badge
-                    const gpsStatus = props.gps_verified
+                    const gpsVerified = props.gps_verified
                         ? '<span style="color: green;">✔ GPS Verified</span>'
                         : '<span style="color: red;">❌ Unverified</span>';
 
@@ -1016,7 +1016,7 @@ function renderCommunities(distId) {
                     //     <strong>${props.name}</strong><br>
                     //     ID: ${props.fid}<br>
                     //     District: ${props.norm_dist_name} (${props.norm_dist_code})<br>
-                    //     Status: ${gpsStatus}
+                    //     Status: ${gpsVerified}
                     // `;
 
                     const existingCommunityPopupContent =
@@ -1024,7 +1024,7 @@ function renderCommunities(distId) {
                         <strong style="display: block; margin-bottom: 8px; margin-right:5px; font-size: 12px;">${props.name}</strong>
                         <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
                             <span style="width: 50px; font-weight: bold; color: #555;">ID:</span>
-                            <span>${props.fid}</span>
+                            <span>${props.pk_id}</span>
                         </div>
                         <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
                             <span style="width: 50px; font-weight: bold; color: #555;">District:</span>
@@ -1032,7 +1032,7 @@ function renderCommunities(distId) {
                         </div>
                         <div style="display: flex; margin: 8px 0px; border-top: 1px solid #bdbdbd; padding-top: 6px;  padding-right:10px; font-size: 10px;">
                             <span style="width: 50px; font-weight: bold; color: #555;">Status:</span>
-                            <span>${gpsStatus}</span>
+                            <span>${gpsVerified}</span>
                         </div>
                     </div>
                 `;

@@ -66,7 +66,7 @@ async function handleLogin() {
         loginForm.classList.add('hidden');
         //   loginBtn.style.display = 'none';
         loginBtn.innerHTML = 'Logout';
-        userInfo.innerHTML = `Logged in as:<br>${email}`; // Display logged-in user's email
+        userInfo.innerHTML = `Logged in as: ${email}`; // Display logged-in user's email
 
         updateBtn.style.display = '';
         updateWarning.style.display = '';
@@ -137,7 +137,7 @@ function checkAuthOnLoad() {
     .then(data => {
          // Assuming the response contains the user's email
         const email = data.email;
-        userInfo.innerHTML = `Logged in as:<br>${email}`; // Display logged-in user's email
+        userInfo.innerHTML = `Logged in as: ${email}`; // Display logged-in user's email
         loginForm.classList.add('hidden');
         //   loginBtn.style.display = 'none';
         loginBtn.innerHTML = 'Logout';

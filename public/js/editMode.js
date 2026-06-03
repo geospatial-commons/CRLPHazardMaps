@@ -16,7 +16,8 @@ const overlay = document.getElementById('loadingOverlay');
 
 let createClickHandler = null;
 let pendingCommunity;
-let existing_community_id = null;
+let pk_id = null;
+let crlp_community_id = null;
 let customCommunityEditLayer = null;
 let activeMarker = null;
 let validCoords = null;
@@ -163,13 +164,13 @@ coord_y.addEventListener('blur', validateCoords);
 async function handleSubmitForm(e) {
     e.preventDefault();
     let url = '/api/custom-communities';
-    let community_id = '';
+    let crlp_community_id = '';
 
 
     // let's undertand the mode and context before submitting
     if (createMode) {
         console.log('Submitting form in CREATE mode');
-        community_id = null; // or generate a temporary ID if needed
+        crlp_community_id = null; // or generate a temporary ID if needed
     } else if (updateMode) {
         console.log('Submitting form in UPDATE mode');
         url += '/update';
@@ -177,9 +178,9 @@ async function handleSubmitForm(e) {
         const id = communityIdInput.value;
 
         if (!template) {
-            community_id = id
+            crlp_community_id = id
         } else {
-            existing_community_id = id
+            pk_id = id
         }
     }
 
@@ -207,8 +208,8 @@ async function handleSubmitForm(e) {
                 lat: lat,
                 lon: lon,
                 name: formData.point_name,
-                community_id: community_id,
-                existing_community_id: existing_community_id
+                crlp_community_id: crlp_community_id,
+                pk_id: pk_id
             })
         });
 
@@ -270,8 +271,8 @@ const handleDelete = async (e) => {
     const rawData = new FormData(dataEntryForm);
     const formData = Object.fromEntries(rawData.entries());
     // console.log(formData);
-    const community_id = communityIdInput.value
-    // console.log(community_id);
+    const crlp_community_id = communityIdInput.value
+    // console.log(crlp_community_id);
 
     const lat = Number(formData.coord_y)
     const lon = Number(formData.coord_x)
@@ -285,8 +286,8 @@ const handleDelete = async (e) => {
             lat: lat,
             lon: lon,
             name: formData.point_name,
-            community_id: community_id,
-            existing_community_id: existing_community_id
+            crlp_community_id: crlp_community_id,
+            pk_id: pk_id
         })
     });
 
@@ -308,7 +309,7 @@ function cleanup() {
         resetCommunityLayerStyle();
     }
     template = false;
-    existing_community_id = null;
+    pk_id = null;
 }
 
 closeFormBtn.addEventListener('click', () => handleCloseForm(createMode ? 'create' : 'update'));
@@ -370,7 +371,7 @@ function setupCreateMode() {
             mapContainer.style.cursor = 'crosshair';
 
             createClickHandler = async (e) => {
-                console.log('Map clicked at:', e.latlng);
+                // console.log('Map clicked at:', e.latlng);
                 const { lat, lng } = e.latlng;
                 removePendingCommunity();
                 pendingCommunity = L.marker([lat, lng], {
@@ -428,7 +429,7 @@ function setupUpdateMode() {
         const customCommunityCheckbox = document.querySelector('input[data-id="custom-communities"]');
         updateMode = !updateMode;
         map.isEditModeActive = updateMode;
-        console.log('Update Button Clicked', updateMode)
+        // console.log('Update Button Clicked', updateMode)
 
         if (!dataEntryForm.classList.contains('hidden')) {
             closeFormBtn.click()
@@ -479,7 +480,7 @@ function setupUpdateMode() {
                     const marker = event.target;
                     const { lat, lng } = marker.getLatLng();
 
-                    console.log('Marker dragged to:', lat, lng);
+                    // console.log('Marker dragged to:', lat, lng);
 
                     // Update form fields
                     dataEntryForm.querySelector('#coord_y').value = lat;
@@ -497,7 +498,7 @@ function setupUpdateMode() {
 
                 validateCoords()
 
-                communityIdInput.value = existingFeatureProps.fid;
+                communityIdInput.value = existingFeatureProps.pk_id;
                 pointNameInput.value = existingFeatureProps.name;
 
                 template = true;
@@ -565,7 +566,7 @@ function loadCustomCommunitiesLayer() {
                     //     l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
                     // }
                     l.originalLatLng = l.getLatLng();
-                    existing_community_id = f.properties.existing_community_id
+                    pk_id = f.properties.pk_id
 
                     l.on('dragstart', function () {
                         if (activeMarker && activeMarker !== l) {
@@ -577,7 +578,8 @@ function loadCustomCommunitiesLayer() {
                     // listen for drag events
                     l.on('dragend', function (e) {
 
-                        existing_community_id = f.properties.existing_community_id
+                        pk_id = f.properties.pk_id
+                        crlp_community_id = f.properties.crlp_community_id
 
                         const newLatLng = e.target.getLatLng();
 
@@ -599,14 +601,14 @@ function loadCustomCommunitiesLayer() {
                         l.setIcon(selectedIcon);
 
                         let fContext = {
-                            community_id: f.properties.community_id,
-                            existing_community_id: existing_community_id,
+                            crlp_community_id: crlp_community_id,
+                            pk_id: pk_id,
                             lat: newLatLng.lat,
                             lon: newLatLng.lng,
                             name: f.properties.name,
                         }
 
-                        console.log('Feature context from drag:', fContext);
+                        // console.log('Feature context from drag:', fContext);
 
                         //update the form coordinates with the new marker position
                         dataEntryForm.querySelector('#coord_y').value = newLatLng.lat;
@@ -618,13 +620,15 @@ function loadCustomCommunitiesLayer() {
                         validateCoords()
 
                         communityIdGroup.style.display = 'block';
-                        communityIdInput.value = fContext.community_id;
+                        communityIdInput.value = fContext.crlp_community_id;
                         pointNameInput.value = fContext.name;
                     });
 
                     l.on('click', async function (e) {
-                        existing_community_id = f.properties.existing_community_id
-                        console.log('Existing community id clicked:', existing_community_id);
+                        pk_id = f.properties.pk_id
+                        crlp_community_id = f.properties.crlp_community_id
+
+                        // console.log('Existing community id clicked:', pk_id);
                         // console.log(activeMarker);
                         // reset previous selected marker
 
@@ -651,8 +655,8 @@ function loadCustomCommunitiesLayer() {
                         updateBtn.disabled = true;
 
                         let fContext = {
-                            community_id: f.properties.community_id,
-                            existing_community_id: existing_community_id,
+                            crlp_community_id: crlp_community_id,
+                            pk_id: pk_id,
                             lat: latlng.lat,
                             lon: latlng.lng,
                             name: f.properties.name,
@@ -660,7 +664,7 @@ function loadCustomCommunitiesLayer() {
                         }
 
                         communityIdGroup.style.display = 'block';
-                        communityIdInput.value = fContext.community_id;
+                        communityIdInput.value = fContext.crlp_community_id;
                         pointNameInput.value = fContext.name;
                         coord_x.value = fContext.lon;
                         coord_y.value = fContext.lat;
