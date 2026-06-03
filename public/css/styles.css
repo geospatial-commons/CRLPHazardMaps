@@ -1642,14 +1642,14 @@ select:disabled {
 }
 
 #user-info {
-    position: absolute;
-    top: 20px;
-    right: 10px;
-    font-size: 12px;
+    font-size: 13px;
     color: white;
     font-weight: 500;
     white-space: nowrap;
-    z-index: 1000;
+}
+
+#user-info:empty {
+    display: none; /* avoid phantom nav gap before login */
 }
 
 #btn-create,
