@@ -78,7 +78,7 @@ sudo apt-get install build-essential python3
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/mena-gis/CRLPHazardMaps.git
+git clone https://github.com/geospatial-commons/CRLPHazardMaps.git
 cd CRLPHazardMaps
 ```
 
