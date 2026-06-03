@@ -126,7 +126,7 @@ window.addEventListener('load', () => {
             // 2. Wait for DistSelect to be enabled and populated by your existing map.js logic
             await waitForDropdownPopulation(distSelect);
 
-            // 3. Set District and trigger the fetch for Settlements
+            // 3. Set District and trigger the fetch for Community
             if (distSelect.value !== distcode) {
                 distSelect.value = distcode;
                 distSelect.dispatchEvent(new Event('change'));
@@ -137,7 +137,7 @@ window.addEventListener('load', () => {
             //commSelect.value = targetValue;
             //commSelect.dispatchEvent(new Event('change'));
 
-            // 5. CRITICAL: Select the Settlement by matching data-combined or name
+            // 5. CRITICAL: Select the Community by matching data-combined or name
             // We look for a value that matches "lat,lng" OR the text matches the name
             let found = false;
             const targetCoords = `${lat},${lng}`;

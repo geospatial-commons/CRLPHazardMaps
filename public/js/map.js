@@ -1,17 +1,22 @@
 import { downloadPdf } from './pdf-export.js';
+import { setupCreateMode, setupUpdateMode, updateBtn, updateMode } from './editMode.js';
 
 // ----------------------
 // GLOBAL VARIABLES
 // ----------------------
-let map;
-let overlayLayers = {};
+export let map;
+export let overlayLayers = {};
+
+export let customCommunityLayer; // Declare customCommunityLayer in the outer scope to be accessible in editMode.js
+
 let provincesData, districtsData;
-let provincesLayer, districtsLayer, communityLayer;
+let provincesLayer, districtsLayer
+export let communityLayer;
 let provincesColor = "#000000";
 let districtsColor = "#00E5FF";
-let communitiesStroke = "#000000";
-let communitiesFill = "#BFBFBF";
-let selctedCommunityColor = "#12436D";
+export let communitiesStroke = "#000000";
+export let communitiesFill = "#BFBFBF";
+let selectedCommunityColor = "#12436D";
 let districtCapitalColor = "#F7B841";
 let districtCapitalStroke = "#000000";
 let primaryRoadColor = "#FF6B35";
@@ -24,6 +29,9 @@ let baseMaps = {};
 let scaleBarText, scaleBarWidth, scaleBarStops, scaleBarLabels, scaleBarUnit, leafletScaleBarElement, scaleBarTextElement;
 let currentHazardDescription = '';
 let leafletBottomLeft;
+let customCommunityTitleText = '';
+export let drawControlVisible = false;
+
 
 const provSelect = document.getElementById('prov-select');
 const distSelect = document.getElementById('dist-select');
@@ -40,6 +48,7 @@ const pdfDescription = document.getElementById('pdf-hazard-description');
 const legendContent = document.getElementById('legend-content');
 const pdfHazardTitle = document.getElementById('pdf-map-title');
 const pdfHazardIcon = document.getElementById('pdf-hazard-icon');
+const createBtn = document.getElementById('createBtn');
 const pdfWrapper = document.getElementById('pdf-wrapper');
 const pdfStatusMessage = document.getElementById('pdf-status-message');
 const defaultPreviewDownloadLabel = '↓ Download PDF';
@@ -52,10 +61,15 @@ const rasterLabels = {
     'earthquake': 'Earthquake Hazard'
 };
 
+const worldBounds = [
+    [-90, -180], // southwest corner
+    [90, 180]    // northeast corner
+];
+
 // ---- TINT BUTTONS ----
-const tintBlueBtn = document.getElementById('tint-blue-btn');
-const tintRedBtn = document.getElementById('tint-red-btn');
-const tintResetBtn = document.getElementById('tint-reset-btn');
+// const tintBlueBtn = document.getElementById('tint-blue-btn');
+// const tintRedBtn = document.getElementById('tint-red-btn');
+// const tintResetBtn = document.getElementById('tint-reset-btn');
 
 function setPdfUiState(mode, status = '') {
     const isOpen = mode !== 'hidden';
@@ -116,7 +130,14 @@ function setupScaleBarText() {
 // INITIALIZE MAP
 // ----------------------
 function initMap() {
-    map = L.map('map').setView([33.93, 67.68], 6);
+    // map = L.map('map').setView([33.93, 67.68], 6);
+    map = L.map('map', {
+        center: [33.93, 67.68],
+        zoom: 6,
+        minZoom: 3,
+        maxZoom: 18,
+        maxBounds: worldBounds
+    });
 
     overlay.style.display = 'flex';
     disableMapInteraction();
@@ -205,13 +226,12 @@ function initMap() {
         if (el) el.style.display = 'none';
     }, 0);
 
-    let visible = false;
     drawToggleBtn.onclick = function (e) {
         e.preventDefault();
         const drawControl = document.querySelector('.leaflet-draw.leaflet-control');
         if (!drawControl) return;
-        visible = !visible;
-        drawControl.style.display = visible ? 'block' : 'none';
+        drawControlVisible = !drawControlVisible;
+        drawControl.style.display = drawControlVisible ? 'block' : 'none';
     };
 
     //handle draw events
@@ -261,6 +281,12 @@ function initMap() {
         // Load context layers after map is ready
         loadContextLayers();
     });
+
+    // Attach overlayLayers to map object for access in other modules
+    map.overlayLayers = overlayLayers;
+
+    setupCreateMode();
+    setupUpdateMode();
 }
 
 // ----------------------
@@ -269,15 +295,30 @@ function initMap() {
 // Tracks loaded Leaflet layers keyed by context layer id
 const contextLayerInstances = {};
 
+function bringCommunitiesToFront() {
+    if (communityLayer) {
+        communityLayer.bringToFront();
+    }
+
+    if (customCommunityLayer) {
+        customCommunityLayer.bringToFront();
+    }
+}
+
 function loadContextLayers() {
     const container = document.getElementById('context-layers');
+    const communitiesContainer = document.getElementById('communities-container')
 
     fetch('/context-config.json')
         .then(res => res.json())
         .then(layers => {
             container.innerHTML = '';
             layers.forEach(layerConfig => {
-                buildContextToggle(container, layerConfig);
+                if (layerConfig.id == 'custom-communities') {
+                    buildContextToggle(communitiesContainer, layerConfig)
+                } else {
+                    buildContextToggle(container, layerConfig);
+                }
             });
         })
         .catch(() => {
@@ -363,14 +404,16 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
             overlayLayers[layerConfig.name] = provincesLayer;
             if (checkbox.checked && !map.hasLayer(provincesLayer)) {
                 provincesLayer.addTo(map);
+                // Disable popups if in edit mode
+                if (map.isEditModeActive) {
+                    disablePopupsOnLayer(provincesLayer);
+                }
             }
         }
         updateZoomNote(row, layerConfig);
 
-        // Ensure community layer is brought to the front.
-        if (communityLayer) {
-            communityLayer.bringToFront();
-        }
+        bringCommunitiesToFront();
+
         return;
     }
 
@@ -414,6 +457,10 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         // Add layer to map if checkbox is already checked
         if (checkbox.checked) {
             roadsLayer.addTo(map);
+            // Disable popups if in edit mode
+            if (map.isEditModeActive) {
+                disablePopupsOnLayer(roadsLayer);
+            }
         }
 
         checkbox.addEventListener('change', () => {
@@ -428,9 +475,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         // return;
     }
 
-
-
-    if (layerConfig.type === 'geojson') {
+    if (layerConfig.id === 'prov-boundaries') {
         fetch(layerConfig.url)
             .then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -440,13 +485,39 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 loadingNote.remove();
                 checkbox.disabled = false;
 
-                const leafletLayer = L.geoJSON(data, {
-                    style: layerConfig.id === 'prov-boundaries' ? {
+                const provLayer = L.geoJSON(data, {
+                    style: {
                         color: provincesColor,
                         weight: 2,
                         fillOpacity: 0
-                    } : undefined,
-                    pointToLayer: layerConfig.id === 'district-capitals' ? function (feature, latlng) {
+                    }
+                });
+
+                contextLayerInstances[layerConfig.id] = provLayer;
+                overlayLayers[layerConfig.name] = provLayer;
+            })
+            .catch(() => {
+                loadingNote.remove();
+                checkbox.disabled = false;
+                checkbox.checked = false;
+                const errNote = document.createElement('p');
+                errNote.className = 'context-unavailable';
+                errNote.textContent = `${layerConfig.name} unavailable`;
+                row.appendChild(errNote);
+            });
+    }
+
+    if (layerConfig.id === 'district-capitals') {
+        fetch(layerConfig.url)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                loadingNote.remove();
+                checkbox.disabled = false;
+                const districtLayer = L.geoJSON(data, {
+                    pointToLayer: function (feature, latlng) {
                         return L.circleMarker(latlng, {
                             radius: 4,
                             fillColor: districtCapitalColor,
@@ -455,7 +526,7 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                             fillOpacity: 0.9,
                             zIndex: 150
                         });
-                    } : undefined,
+                    },
                     onEachFeature: function (f, l) {
                         if (f.properties && f.properties.name) {
                             l.bindPopup(`<b>District Capital: </b>${f.properties.name}`);
@@ -463,11 +534,15 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                     }
                 });
 
-                contextLayerInstances[layerConfig.id] = leafletLayer;
+                contextLayerInstances[layerConfig.id] = districtLayer;
                 if (checkbox.checked) {
-                    leafletLayer.addTo(map);
+                    districtLayer.addTo(map);
+                    // Disable popups if in edit mode
+                    if (map.isEditModeActive) {
+                        disablePopupsOnLayer(districtLayer);
+                    }
                 }
-                overlayLayers[layerConfig.name] = leafletLayer;
+                overlayLayers[layerConfig.name] = districtLayer;
                 updateZoomNote(row, layerConfig);
             })
             .catch(() => {
@@ -480,6 +555,130 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
                 row.appendChild(errNote);
             });
     }
+
+    if (layerConfig.id === 'custom-communities') {
+        fetch(layerConfig.url)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+
+                console.log(data);
+                loadingNote.remove();
+                checkbox.disabled = false;
+                customCommunityLayer = L.geoJSON(data, {
+                    pointToLayer: function (feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: 5,
+                            fillColor: communitiesFill,
+                            color: communitiesStroke,
+                            weight: 1,
+                            fillOpacity: 0.9,
+                            zIndex: 100
+                        });
+                    },
+                    onEachFeature: function (f, l) {
+                        const props = f.properties;
+
+                        // Construct popup HTML
+                        // const customCommunityPopupContent = `
+                        //         <strong>${props.name}</strong><br>
+                        //         District: ${props.dist}<br>
+                        //         Status: '<span style="color: red;">❌ Unverified</span>'
+                        //     `;
+
+                        const customCommunityPopupContent =
+                            `<div style="min-width: 100px;">
+                                <strong style="display: block; margin-bottom: 8px; margin-right:5px; font-size: 12px;">${props.name}</strong>
+                                <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
+                                    <span style="width: 50px; font-weight: bold; color: #555;">ID:</span>
+                                    <span>${props.rowid}</span>
+                                </div>
+                                <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
+                                    <span style="width: 50px; font-weight: bold; color: #555;">District:</span>
+                                    <span>${props.dist}</span>
+                                </div>
+                                <div style="display: flex; margin: 8px 0px; border-top: 1px solid #bdbdbd; padding-top: 6px; padding-right:10px; font-size: 10px;">
+                                    <span style="width: 50px; font-weight: bold; color: #555;">Status:</span>
+                                    <span style="color: red;">❌ Unverified</span>
+                                </div>
+                            </div>
+                        `;
+
+                        l.bindPopup(customCommunityPopupContent, { className: 'community-popup' });
+                        // l.bindPopup(customCommunityPopupContent, { className: 'community-popup' });
+                        l.on('click', function () {
+                            // commSelect.value = '<option value="all">-- All Communities --</option>';
+                            commSelect.value = 'all';
+                            distSelect.value = 'all';
+                            provSelect.value = 'all';
+
+                            if (districtsLayer) {
+                                map.removeLayer(districtsLayer);
+                                delete overlayLayers['Districts'];
+                                districtsLayer = null;
+                            }
+                            if (communityLayer) {
+                                map.removeLayer(communityLayer);
+                                delete overlayLayers['Communities'];
+                                communityLayer = null;
+                            }
+
+                            customCommunityTitleText = `${props.name}, ${props.dist} District, ${props.prov} Province`;
+                            console.log(customCommunityTitleText);
+                            console.log(props);
+
+                            // 1. Reset all markers to the default style first
+                            customCommunityLayer.setStyle({
+                                radius: 5,
+                                fillColor: communitiesFill,
+                                color: communitiesStroke,
+                                weight: 1
+                            });
+                            if (communityLayer) {
+                                communityLayer.setStyle({
+                                    radius: 5,
+                                    fillColor: communitiesFill,
+                                    color: communitiesStroke,
+                                    weight: 1
+                                });
+                            }
+
+                            // 2. Set the style for the specific marker that was clicked
+                            if (!map.isEditModeActive) {
+                                if (map.getZoom() < 12) {
+                                    map.flyTo([f.geometry.coordinates[1], f.geometry.coordinates[0]], 12, { animate: true, duration: 1.5 });
+                                }
+
+                                l.setStyle({
+                                    radius: 5,
+                                    fillColor: selectedCommunityColor,
+                                });
+                            }
+
+                        });
+                    }
+                }).addTo(map);
+
+                contextLayerInstances[layerConfig.id] = customCommunityLayer;
+                if (checkbox.checked) {
+                    customCommunityLayer.addTo(map);
+                }
+                overlayLayers[layerConfig.name] = customCommunityLayer;
+                updateZoomNote(row, layerConfig);
+            })
+            .catch(() => {
+                loadingNote.remove();
+                checkbox.disabled = false;
+                checkbox.checked = false;
+                const errNote = document.createElement('p');
+                errNote.className = 'context-unavailable';
+                errNote.textContent = `${layerConfig.name} unavailable`;
+                row.appendChild(errNote);
+            });
+    }
+
     else if (layerConfig.id === 'contours') {
         loadingNote.remove();
         checkbox.disabled = false;
@@ -514,11 +713,12 @@ function fetchAndAddContextLayer(layerConfig, checkbox, row) {
         loadingNote.remove();
         checkbox.disabled = false;
 
-
         if (checkbox.checked) {
-            contourLayer.addTo(map
-
-            );
+            contourLayer.addTo(map);
+            // Disable popups if in edit mode
+            if (map.isEditModeActive) {
+                disablePopupsOnLayer(contourLayer);
+            }
         }
 
         checkbox.addEventListener('change', () => {
@@ -574,6 +774,66 @@ function updateZoomNote(row, layerConfig) {
         if (existingNote) existingNote.remove();
     }
 }
+
+// ----------------------
+// POPUP MANAGEMENT
+// ----------------------
+async function disablePopupsOnActiveLayers() {
+    map.closePopup();
+    Object.values(overlayLayers).forEach(layer => {
+        if (map.hasLayer(layer)) {
+            // Store original popup state
+            if (!layer._popupDisabledByEditMode) {
+                layer._popupDisabledByEditMode = true;
+                layer._originalPopupState = [];
+
+                layer.eachLayer(sublayer => {
+                    if (sublayer.getPopup && sublayer.getPopup()) {
+                        layer._originalPopupState.push({
+                            sublayer: sublayer,
+                            popup: sublayer.getPopup()
+                        });
+                        sublayer.unbindPopup();
+                    }
+                });
+            }
+        }
+    });
+}
+
+function restorePopupsOnActiveLayers() {
+    Object.values(overlayLayers).forEach(layer => {
+        if (layer._popupDisabledByEditMode && layer._originalPopupState) {
+            layer._originalPopupState.forEach(({ sublayer, popup }) => {
+                sublayer.bindPopup(popup);
+            });
+            layer._popupDisabledByEditMode = false;
+            layer._originalPopupState = [];
+        }
+    });
+}
+
+function disablePopupsOnLayer(layer) {
+    if (!layer) return;
+
+    // Store original popup state
+    if (!layer._popupDisabledByEditMode) {
+        layer._popupDisabledByEditMode = true;
+        layer._originalPopupState = [];
+
+        layer.eachLayer(sublayer => {
+            if (sublayer.getPopup && sublayer.getPopup()) {
+                layer._originalPopupState.push({
+                    sublayer: sublayer,
+                    popup: sublayer.getPopup()
+                });
+                sublayer.unbindPopup();
+            }
+        });
+    }
+}
+
+export { disablePopupsOnActiveLayers, restorePopupsOnActiveLayers, disablePopupsOnLayer };
 
 // ----------------------
 // BASEMAP SWITCHER
@@ -657,6 +917,8 @@ function renderProvinces(selectedProvId, quality) {
     if (selectedProvId === 'all' && quality == 0) {
         map.fitBounds(provincesLayer.getBounds(), { padding: [30, 30] });
     }
+
+    bringCommunitiesToFront();
 }
 
 // ----------------------
@@ -669,6 +931,12 @@ function renderDistricts(data, selectedDistId) {
     }
     if (!data) return;
 
+    if (map.isEditModeActive) {
+        updateBtn.disabled = false;
+        updateBtn.click();
+
+    }
+
     districtsLayer = L.geoJSON(data, {
         style: {
             color: districtsColor,
@@ -680,6 +948,10 @@ function renderDistricts(data, selectedDistId) {
         }
     }).addTo(map);
 
+    if (map.isEditModeActive) {
+        disablePopupsOnLayer(districtsLayer);
+    }
+
     overlayLayers['Districts'] = districtsLayer;
 
     if (districtsLayer.getLayers().length > 0) {
@@ -690,6 +962,8 @@ function renderDistricts(data, selectedDistId) {
             map.fitBounds(districtsLayer.getBounds(), { padding: [30, 30] });
         }
     }
+
+    bringCommunitiesToFront();
 }
 
 // ----------------------
@@ -729,7 +1003,41 @@ function renderCommunities(distId) {
                     });
                 },
                 onEachFeature: function (f, l) {
-                    l.bindPopup(`<b>Community:</b> ${f.properties.name}`, { className: 'community-popup' });
+                    // Extract properties
+                    const props = f.properties;
+
+                    // Determine verification status badge
+                    const gpsVerified = props.gps_verified
+                        ? '<span style="color: green;">✔ GPS Verified</span>'
+                        : '<span style="color: red;">❌ Unverified</span>';
+
+                    // // Construct popup HTML
+                    // const existingCommunityPopupContent = `
+                    //     <strong>${props.name}</strong><br>
+                    //     ID: ${props.fid}<br>
+                    //     District: ${props.norm_dist_name} (${props.norm_dist_code})<br>
+                    //     Status: ${gpsVerified}
+                    // `;
+
+                    const existingCommunityPopupContent =
+                        `<div style="min-width: 100px;">
+                        <strong style="display: block; margin-bottom: 8px; margin-right:5px; font-size: 12px;">${props.name}</strong>
+                        <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
+                            <span style="width: 50px; font-weight: bold; color: #555;">ID:</span>
+                            <span>${props.pk_id}</span>
+                        </div>
+                        <div style="display: flex; margin-bottom: 4px; font-size: 10px;">
+                            <span style="width: 50px; font-weight: bold; color: #555;">District:</span>
+                            <span>${props.norm_dist_name}</span>
+                        </div>
+                        <div style="display: flex; margin: 8px 0px; border-top: 1px solid #bdbdbd; padding-top: 6px;  padding-right:10px; font-size: 10px;">
+                            <span style="width: 50px; font-weight: bold; color: #555;">Status:</span>
+                            <span>${gpsVerified}</span>
+                        </div>
+                    </div>
+                `;
+
+                    l.bindPopup(existingCommunityPopupContent, { className: 'community-popup' });
                     l.on('click', function () {
                         // 1. Reset all markers to the default style first
                         communityLayer.setStyle({
@@ -738,13 +1046,20 @@ function renderCommunities(distId) {
                             color: communitiesStroke,
                             weight: 1
                         });
-
+                        if (customCommunityLayer) {
+                            customCommunityLayer.setStyle({
+                                radius: 5,
+                                fillColor: communitiesFill,
+                                color: communitiesStroke,
+                                weight: 1
+                            });
+                        }
                         // 2. Set the style for the specific marker that was clicked
                         l.setStyle({
-                            radius: 6,
-                            fillColor: selctedCommunityColor,
+                            radius: 5,
+                            fillColor: selectedCommunityColor,
                         });
-                        const clickedName = f.properties.name;
+                        const clickedName = props.name;
                         const clickedCoords = f.geometry.coordinates;
                         const targetCombined = `${clickedName}_${clickedCoords[1]},${clickedCoords[0]}`;
                         for (let i = 0; i < commSelect.options.length; i++) {
@@ -754,6 +1069,7 @@ function renderCommunities(distId) {
                                 break;
                             }
                         }
+                        customCommunityTitleText = ''
                     });
                 }
             }).addTo(map);
@@ -761,6 +1077,7 @@ function renderCommunities(distId) {
             overlayLayers['Communities'] = communityLayer;
             commSelect.disabled = false;
         });
+
 }
 
 // ----------------------
@@ -819,6 +1136,7 @@ provSelect.addEventListener('change', function () {
             sortedDists.forEach(d => distSelect.appendChild(new Option(d.name, d.distId)));
             overlay.style.display = 'none';
             renderDistricts(data, 'all');
+
         })
         .catch(err => console.error("Error loading districts:", err));
 });
@@ -899,8 +1217,12 @@ commSelect.addEventListener('change', function () {
 
     var coords = this.value.split(',').map(Number);
     const selectedCombined = this.options[this.selectedIndex].dataset.combined;
-
-    map.flyTo([coords[0], coords[1]], 16, { animate: true, duration: 1.5 });
+    console.log("coords: ", coords)
+    if (!map.isEditModeActive) {
+        if (map.getZoom() < 12) {
+            map.flyTo([coords[0], coords[1]], 12, { animate: true, duration: 1.5 });
+        }
+    }
 
     // After fly completes, find the marker, style it, and open popup
     map.once('moveend', function () {
@@ -922,12 +1244,12 @@ commSelect.addEventListener('change', function () {
             if (combined === selectedCombined) {
                 // 2. Highlight the matching marker
                 layer.setStyle({
-                    radius: 6,
-                    fillColor: selctedCommunityColor
+                    radius: 5,
+                    fillColor: selectedCommunityColor
                 });
 
                 // If radius doesn't update via setStyle, use:
-                if (layer.setRadius) layer.setRadius(6);
+                if (layer.setRadius) layer.setRadius(5);
 
                 layer.openPopup();
             }
@@ -968,8 +1290,8 @@ document.querySelectorAll('input[name="hazard-layer"]')
             //document.getElementById('active-raster').textContent = hazardLabel;
 
             globalTintClass = '';
-            if (tintBlueBtn) tintBlueBtn.classList.remove('active');
-            if (tintRedBtn) tintRedBtn.classList.remove('active');
+            // if (tintBlueBtn) tintBlueBtn.classList.remove('active');
+            // if (tintRedBtn) tintRedBtn.classList.remove('active');
             resetLegend();
             updateLegendBar(this.value);
             toggleRaster(hazardLayer);
@@ -1029,34 +1351,34 @@ opacityRange.addEventListener('input', function () {
 });
 
 // ---- TINT BUTTONS ----
-function applyTint(tintClass) {
-    globalTintClass = tintClass;
+// function applyTint(tintClass) {
+//     globalTintClass = tintClass;
 
-    if (currentHazardLayer) {
-        const container = currentHazardLayer.getContainer();
-        if (container) {
-            container.classList.remove('red-tint-layer', 'blue-tint-layer');
-            if (tintClass === 'hazard-blue') container.classList.add('blue-tint-layer');
-            if (tintClass === 'hazard-red') container.classList.add('red-tint-layer');
-        }
-    }
+//     if (currentHazardLayer) {
+//         const container = currentHazardLayer.getContainer();
+//         if (container) {
+//             container.classList.remove('red-tint-layer', 'blue-tint-layer');
+//             if (tintClass === 'hazard-blue') container.classList.add('blue-tint-layer');
+//             if (tintClass === 'hazard-red') container.classList.add('red-tint-layer');
+//         }
+//     }
 
-    // Apply tint to legend swatches
-    document.querySelectorAll('#legend-content .legend-bar-swatch-color').forEach(el => {
-        el.classList.remove('red-tint-layer', 'blue-tint-layer');
-        if (tintClass === 'hazard-blue') el.classList.add('blue-tint-layer');
-        if (tintClass === 'hazard-red') el.classList.add('red-tint-layer');
-    });
+//     // Apply tint to legend swatches
+//     document.querySelectorAll('#legend-content .legend-bar-swatch-color').forEach(el => {
+//         el.classList.remove('red-tint-layer', 'blue-tint-layer');
+//         if (tintClass === 'hazard-blue') el.classList.add('blue-tint-layer');
+//         if (tintClass === 'hazard-red') el.classList.add('red-tint-layer');
+//     });
 
-    // Update button active state
-    [tintBlueBtn, tintRedBtn].forEach(btn => btn.classList.remove('active'));
-    if (tintClass === 'hazard-blue') tintBlueBtn.classList.add('active');
-    if (tintClass === 'hazard-red') tintRedBtn.classList.add('active');
-}
+//     // Update button active state
+//     [tintBlueBtn, tintRedBtn].forEach(btn => btn.classList.remove('active'));
+//     if (tintClass === 'hazard-blue') tintBlueBtn.classList.add('active');
+//     if (tintClass === 'hazard-red') tintRedBtn.classList.add('active');
+// }
 
-if (tintBlueBtn) tintBlueBtn.addEventListener('click', () => applyTint('hazard-blue'));
-if (tintRedBtn) tintRedBtn.addEventListener('click', () => applyTint('hazard-red'));
-if (tintResetBtn) tintResetBtn.addEventListener('click', () => applyTint(''));
+// if (tintBlueBtn) tintBlueBtn.addEventListener('click', () => applyTint('hazard-blue'));
+// if (tintRedBtn) tintRedBtn.addEventListener('click', () => applyTint('hazard-red'));
+// if (tintResetBtn) tintResetBtn.addEventListener('click', () => applyTint(''));
 
 // ----------------------
 // LEGEND BAR (above map)
@@ -1151,10 +1473,10 @@ function buildLegend(activeAdminLayers = []) {
                 document.querySelector(".legend-color.admin-dist").style.display = 'block';
                 document.querySelector(".legend-color.admin-dist").style.border = `2px solid ${districtsColor}`;
                 document.querySelector(".legend-label.admin-dist").textContent = 'District';
-            } else if (layerName === 'Communities') {
+            } else if (layerName === 'Communities' || 'Custom Communities') {
                 document.querySelector(".legend-color.admin-comm").style.display = 'block';
                 document.querySelector(".legend-color.admin-comm").style.border = `1px solid ${communitiesStroke}`;
-                document.querySelector(".legend-color.admin-comm").style.backgroundColor = selctedCommunityColor;
+                document.querySelector(".legend-color.admin-comm").style.backgroundColor = selectedCommunityColor;
                 document.querySelector(".legend-label.admin-comm").textContent = 'Community';
             }
             else if (layerName === 'District Capitals') {
@@ -1186,15 +1508,16 @@ function resetLegend() {
 // CREATE PDF LAYOUT
 // ----------------------
 function createPdfLayout(download = true) {
+    overlay.style.display = 'flex';
     const mapElement = document.getElementById('map');
     const topLeftControl = document.querySelector("div.leaflet-top.leaflet-left");
+    const currentCommunityPopup = document.querySelector('div.community-popup');
     const mapContainerLayout = document.getElementById('map-container');
     const scaleBarLayout = document.getElementById('scale-bar');
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric'
     });
-
     document.getElementById('footer-date').innerHTML = `<strong>Date Created: </strong> ${formattedDate}`;
 
     scaleBarWidth = leafletScaleBarElement.style.width || (leafletScaleBarElement.offsetWidth + 'px');
@@ -1209,6 +1532,7 @@ function createPdfLayout(download = true) {
 
     // Hide zoom and scale controls for clean screenshot
     if (topLeftControl) topLeftControl.style.display = 'none';
+    if (currentCommunityPopup) currentCommunityPopup.style.display = 'none';
     if (leafletScaleBarElement) leafletScaleBarElement.style.display = 'none';
 
     // Temporarily resize map to exact PDF dimensions (230mm × 170mm at 96dpi)
@@ -1232,6 +1556,7 @@ function createPdfLayout(download = true) {
             map.invalidateSize({ animate: false });
 
             if (topLeftControl) topLeftControl.style.display = '';
+            if (currentCommunityPopup) currentCommunityPopup.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
 
             const mapImg = new Image();
@@ -1273,6 +1598,8 @@ function createPdfLayout(download = true) {
                 titleText = `${distName} District, ${provName} Province`;
             } else if (provSelect.value !== 'all') {
                 titleText = `${provName} Province`;
+            } else if (customCommunityTitleText) {
+                titleText = customCommunityTitleText;
             } else {
                 titleText = 'Afghanistan';
             }
@@ -1298,7 +1625,7 @@ function createPdfLayout(download = true) {
                 districtsColor: districtsColor,
                 communitiesStroke: communitiesStroke,
                 communitiesFill: communitiesFill,
-                communitiesSelected: selctedCommunityColor,
+                communitiesSelected: selectedCommunityColor,
                 districtCapitalColor: districtCapitalColor,
                 districtCapitalStroke: districtCapitalStroke,
                 primaryRoadColor: primaryRoadColor,
@@ -1307,6 +1634,7 @@ function createPdfLayout(download = true) {
                 hazardDescription: currentHazardDescription,
                 mapTitle: [hazardTitle, mapTitle],
             };
+            overlay.style.display = 'none';
 
             if (download) {
                 setPdfUiState('busy', 'Starting PDF download...');
@@ -1336,12 +1664,11 @@ function createPdfLayout(download = true) {
             mapElement.style.flex = origFlex;
             map.invalidateSize({ animate: false });
             if (topLeftControl) topLeftControl.style.display = '';
+            if (currentCommunityPopup) currentCommunityPopup.style.display = '';
             if (leafletScaleBarElement) leafletScaleBarElement.style.display = '';
             setPdfUiState('hidden');
             console.error('PDF capture failed:', err);
         });
-
-
 }
 
 downloadPdfBtn.addEventListener('click', function () {

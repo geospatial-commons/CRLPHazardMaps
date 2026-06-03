@@ -1,18 +1,19 @@
 const express = require('express');
 const path = require('path');
-const { db, mbtilesDb, analyticsDb } = require('../db');
+const { db, mbtilesDb, analyticsDb, customCommunitiesDb } = require('../db');
 const router = express.Router();
 const wellknown = require('wellknown');
 const { validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
 
 const EMPTY_TILE_BUFFER = Buffer.from([
-  0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00
+    0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00
 ]);
 
 // Import your custom validators
-const validationParam = require('./validationParams.js'); // Adjust path as necessary
+const validationParam = require('./validationParams.js');
 
 // Landing page route
 router.get('/', (req, res) => {
@@ -21,6 +22,9 @@ router.get('/', (req, res) => {
 
 // App route
 router.get('/app', (req, res) => {
+    // console.log(req.cookies);
+    var decodedToken = jwt.decode(req.cookies.userToken, { complete: true });
+
     res.sendFile(path.join(__dirname, '..', 'views', 'index.html'));
 });
 
@@ -178,15 +182,18 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
         // SQL Query: Fetch only communities matching the district ID
         // Note: Replace 'communities_table' with the actual table name in your GPKG
         const query = `
-            SELECT point_name, 
+            SELECT fid,
+                   point_name, 
                    norm_dist_code,
+                   norm_dist_name,
                    coord_y,
                    coord_x,
                    match_cdc_id,
                    match_cdc_name,
                    Arazi_OBJ_ID,
                    UNOPS_Code,
-                   IOM_Code
+                   IOM_Code,
+                   GPS_Verified
             FROM settlements
             WHERE norm_dist_code = ? 
             /*and GPS_Verified = true*/
@@ -201,13 +208,18 @@ router.get('/api/communities/:distId', validationParam.validateCommunities, (req
             features: communities.map(c => ({
                 type: "Feature",
                 properties: {
+                    pk_id: c.fid,
                     name: c.point_name,
                     norm_dist_code: c.norm_dist_code,
+                    norm_dist_name: c.norm_dist_name,
                     match_cdc_id: c.match_cdc_id,
                     match_cdc_name: c.match_cdc_name,
                     Arazi_OBJ_ID: c.Arazi_OBJ_ID,
                     UNOPS_Code: c.UNOPS_Code,
-                    IOM_Code: c.IOM_Code
+                    IOM_Code: c.IOM_Code,
+                    coord_x: c.coord_x,
+                    coord_y: c.coord_y,
+                    gps_verified: c.GPS_Verified
                 },
                 geometry: {
                     type: "Point",
@@ -397,7 +409,7 @@ router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (re
 
         const tile = stmt.get(z, x, flippedY);
 
-        
+
         res.setHeader('Content-Type', 'application/x-protobuf');
         res.setHeader('Content-Encoding', 'gzip');
         res.setHeader('Cache-Control', 'public, max-age=1209600'); // Cache for 2 weeks
@@ -407,12 +419,82 @@ router.get('/tiles/roads/:z/:x/:y.pbf', validationParam.validateVectorTiles, (re
         }
 
         res.send(tile.tile_data);
-        
+
     } catch (err) {
         console.error(err);
         res.status(500).send("Tile error");
     }
 });
 
+// Authentication routes (simplified for demonstration)
+router.post('/login', validationParam.validateLogin, (req, res) => {
+
+    try {
+        //check master password first this will be changed in the future to a more robust authentication system but for now this is sufficient for the use case of custom communities management
+        if (req.body.password != process.env.MASTER_PASSWORD) {
+            return res.status(403).send('Invalid password');
+        }
+
+        // Check if user exists in the database
+        const query = `
+            SELECT user, role
+            FROM users
+            WHERE user = ?
+        `;
+        const user = customCommunitiesDb.prepare(query).all([req.body.email])
+
+        // If user exists, create and send JWT token
+        if (user.length > 0) {
+
+            //process jsonwebtoken
+            const SECRET_KEY = process.env.SECRET_KEY;
+            const payload = {
+                'email': user[0].user,
+                'role': user[0].role
+            }
+
+            const token = jwt.sign(payload, SECRET_KEY, {
+                algorithm: 'HS256',
+                expiresIn: '30d' // Keep it matched with your 30-day cookie
+            });
+
+            res.cookie("userToken", token, {
+                httpOnly: true,
+                SameSite: 'Strict',
+                //secure: true, // Uncomment if using HTTPS
+                maxAge: 2592000000,
+                //signed: true 
+            })
+
+            return res.status(200).send('User found');
+        } else {
+            return res.status(403).send('User not found');
+        }
+    } catch (err) {
+        console.log(err)
+        return res.status(500).send('Something went wrong on the server');
+    }
+})
+
+// Logout route - clears the token cookie and realoads the current page to update the UI accordingly
+router.get('/logout', (req, res) => {
+    res.clearCookie("userToken");
+    res.status(200).send('Logged out');
+});
+
+// Get user info route - verifies the JWT token and returns user details
+router.get('/api/user', (req, res) => {
+    try {
+        const token = req.cookies.userToken;
+        if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
+        }
+        const decoded = jwt.verify(token, process.env.SECRET_KEY);
+        res.json({ email: decoded.email, role: decoded.role });
+    } catch (err) {
+        console.error('Token verification error:', err);
+        res.status(401).json({ error: 'Invalid token' });
+    }
+});
 
 module.exports = router;

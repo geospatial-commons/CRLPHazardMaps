@@ -118,6 +118,82 @@ const validateMapCreationAnalytics = [
     validateRequest
 ];
 
+const validateLogin = [
+    body('email')
+        .trim()
+        .notEmpty().withMessage('Email is required')
+        .isEmail().withMessage('Must be a valid email address')
+        .normalizeEmail(), // Cleans up the email (e.g., lowercase, removes dots in Gmail if configured)
+
+    body('password')
+        .notEmpty().withMessage('Password is required')
+        .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
+        // Optional: .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain an uppercase letter, lowercase letter, and a number')
+
+    validateRequest
+];
+
+
+// Custom Community Validations
+const validateCreateCommunity = [
+    body('lat')
+        .exists().withMessage('Latitude is required')
+        .isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90')
+        .toFloat(),
+        
+    body('lon')
+        .exists().withMessage('Longitude is required')
+        .isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180')
+        .toFloat(),
+        
+    body('name')
+        .exists().withMessage('Please provide a community name')
+        .trim()
+        .isLength({ max: 250 }).withMessage('Name cannot exceed 250 characters')
+        .escape(),
+
+    validateRequest
+];
+
+const validateDeleteCommunity = [
+    body('crlp_community_id')
+        .trim()
+        .notEmpty().withMessage('crlp_community_id is required'),
+        //.isUUID().withMessage('Invalid ID format'),
+
+    validateRequest
+];
+
+const validateUpdateCommunity = [
+    body('crlp_community_id')
+        .optional({ values: 'falsy' })
+        .trim(),
+        //.isUUID().withMessage('Invalid crlp_community_id format'),
+
+    body('pk_id')
+        .optional({ values: 'falsy' })
+        .trim()
+        .isLength({ max: 50 }).withMessage('Existing ID is too long'),
+
+    body('lat')
+        .exists().withMessage('Latitude is required')
+        .isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90')
+        .toFloat(),
+        
+    body('lon')
+        .exists().withMessage('Longitude is required')
+        .isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180')
+        .toFloat(),
+        
+    body('name')
+        .optional({ values: 'falsy' })
+        .trim()
+        .isLength({ max: 250 }).withMessage('Name cannot exceed 250 characters')
+        .escape(),
+
+    validateRequest
+];
+
 // Export them exactly like your example
 module.exports = {
     validateTiles,
@@ -127,5 +203,9 @@ module.exports = {
     validateCommunities,
     validateSearchName,
     validateSearchCode,
-    validateMapCreationAnalytics
+    validateMapCreationAnalytics,
+    validateLogin,
+    validateCreateCommunity,
+    validateDeleteCommunity,
+    validateUpdateCommunity
 };

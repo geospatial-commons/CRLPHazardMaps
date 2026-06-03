@@ -201,7 +201,7 @@ button {
     /* gap: 8px; */
 }
 
-.sidebar-section > h2 {
+.sidebar-section>h2 {
     margin: 4px 0px 10px 0px;
 }
 
@@ -278,6 +278,10 @@ button {
 #sidebar select:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+#unops-code-search {
+    margin-bottom: 10px;
 }
 
 /* ── RESET FILTERS BUTTON ── */
@@ -728,15 +732,16 @@ button {
     border-bottom: 1px solid var(--wb-gray-100);
     display: flex;
     align-items: center;
-    padding: 0 16px;
+    padding: 0 10px;
     overflow: hidden;
     z-index: 5;
 }
 
+
 #legend-content {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     white-space: nowrap;
     overflow: hidden;
     font-size: 12px;
@@ -790,18 +795,21 @@ button {
 }
 
 /* Community popup — keep transparent style */
-.community-popup .leaflet-popup-content-wrapper {
+/* .community-popup .leaflet-popup-content-wrapper {
     background: none;
     box-shadow: none;
     border-radius: 0;
-}
+} */
 
-.community-popup .leaflet-popup-tip {
+/* .community-popup .leaflet-popup-tip {
     background: none;
+} */
+.leaflet-popup-content {
+    padding-right: 10px;
 }
 
 .community-popup .leaflet-popup-content {
-    margin: 0;
+    margin: 4px;
     text-shadow:
         -1px -1px 0 #fff, 1px -1px 0 #fff,
         -1px 1px 0 #fff, 1px 1px 0 #fff,
@@ -1236,14 +1244,13 @@ button {
     z-index: 10000;
     pointer-events: auto;
     filter: grayscale(100%);
-    border-radius:2px;
+    border-radius: 2px;
     border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 #draw-toggle:hover {
     background-color: var(--wb-gray-100);
 }
-
 
 /* .custom-scale-text {
     font-size: 12px;
@@ -1309,6 +1316,268 @@ button {
 }
 
 /* ================================================================
+   DATA ENTRY FORM STYLES
+   ================================================================ */
+
+/* Hidden state */
+.data-entry-form.hidden {
+    display: none;
+}
+
+/* Positioned in bottom right corner of map */
+.data-entry-form {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 320px;
+    max-height: 80vh;
+    background: white;
+    border: 2px solid var(--wb-navy);
+    border-radius: 6px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.data-entry-form fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.data-entry-form legend {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--wb-navy);
+    margin: 0 0 8px 0;
+    padding: 0;
+    width: 100%;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--wb-gray-900);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.form-group input {
+    padding: 8px 10px;
+    border: 1px solid var(--wb-gray-100);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    background: white;
+    color: var(--wb-gray-900);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus {
+    border-color: var(--wb-blue);
+    box-shadow: 0 0 0 3px rgba(0, 159, 218, 0.1);
+}
+
+.form-group input::placeholder {
+    color: var(--wb-gray-500);
+}
+
+/* Form actions */
+.form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--wb-gray-100);
+    padding-top: 12px;
+}
+
+.btn-submit,
+.btn-reset,
+.btn-close {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-submit {
+    background: var(--wb-blue);
+    color: white;
+}
+
+.btn-submit:hover {
+    background: #0087c6;
+}
+
+.btn-submit:active {
+    background: #006a9e;
+}
+
+.btn-reset {
+    background: var(--wb-gray-100);
+    color: var(--wb-gray-900);
+}
+
+.btn-reset:hover {
+    background: var(--wb-gray-50);
+}
+
+.btn-reset:active {
+    background: #e0e6ed;
+}
+
+.btn-close {
+    flex: 0;
+    width: 32px;
+    padding: 8px;
+    background: var(--wb-gray-100);
+    color: var(--wb-gray-900);
+    font-size: 14px;
+}
+
+.btn-close:hover {
+    background: var(--wb-gray-50);
+}
+
+/* Scrollbar for form */
+.data-entry-form::-webkit-scrollbar {
+    width: 6px;
+}
+
+.data-entry-form::-webkit-scrollbar-track {
+    background: var(--wb-gray-100);
+    border-radius: 3px;
+}
+
+.data-entry-form::-webkit-scrollbar-thumb {
+    background: var(--wb-gray-500);
+    border-radius: 3px;
+}
+
+.data-entry-form::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+.btn-delete-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.btn-delete {
+    background: #dc3545;
+    color: white;
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-delete:hover {
+    background: #c82333;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+    background-color: #b6b6b6;
+    color: #000000;
+    border: 1px solid #491919;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Coordinates and button layout */
+.coords-and-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.coords-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.set-coords {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    flex: 1
+}
+
+.set-coords button {
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    background: rgb(0, 104, 52);
+    color: white;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        opacity 0.2s ease,
+        transform 0.1s ease;
+    white-space: nowrap;
+}
+
+/* Hover only when enabled */
+.set-coords button:not(:disabled):hover {
+    background: rgba(0, 104, 52, 0.75);
+}
+
+.set-coords button:not(:disabled):active {
+    background: #006a9e;
+    transform: scale(0.98);
+}
+
+/* Strong disabled state */
+.set-coords button:disabled {
+    background: #b5b5b5;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.65;
+    box-shadow: none;
+    filter: grayscale(40%);
+}
+
+.coord-error-message {
+    margin-top: 8px;
+    color: #c62828;
+    font-size: 9px;
+    font-weight: 400;
+    font-style: italic
+}
+
+.form-group input.coord-input-error {
+    border: 1px solid #d32f2f;
+    background-color: #ffcbd3;
+    outline: none;
+}
+
+/* ================================================================
    PRINT CSS
    ================================================================ */
 @media print {
@@ -1316,7 +1585,8 @@ button {
     #sidebar,
     #app-header,
     #pdf-wrapper,
-    #loadingOverlay {
+    #loadingOverlay,
+    .data-entry-form {
         display: none !important;
     }
 
@@ -1338,4 +1608,230 @@ button {
         width: 100% !important;
         height: calc(100vh - var(--legend-bar-height)) !important;
     }
+}
+
+
+/* ================================================================
+    EDIT MODE STYLES
+   ================================================================ */
+/* Edit mode cursor styling */
+#map.edit-mode-active,
+#map.edit-mode-active * {
+    cursor: crosshair !important;
+}
+
+.custom-circle-marker {
+    width: 10px;
+    height: 10px;
+    background-color: #00E5FF;
+    border: 1px solid #ff0000;
+    border-radius: 50%;
+    opacity: 0.9;
+}
+
+.custom-circle-marker.selected {
+    background: yellow;
+}
+
+#adminBtns {
+    margin-left: auto;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#user-info {
+    font-size: 13px;
+    color: white;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+#user-info:empty {
+    display: none; /* avoid phantom nav gap before login */
+}
+
+#btn-create,
+#btn-update,
+#btn-login {
+    padding: 6px 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--wb-gray-900);
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+#btn-create:hover,
+#btn-update:hover,
+#btn-login:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+#btn-create:disabled,
+#btn-update:disabled {
+    background-color: #ccc;
+    color: #888;
+    border: 1px solid #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+#update-warning {
+    font-size: 10px;
+    color: #c62828;
+    white-space: nowrap;
+    text-align: right;
+    line-height: 1.2em;
+    flex-shrink: 0;
+}
+
+#update-mode-toast {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: var(--wb-blue);
+    color: white;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+#update-mode-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ================================================================
+   LOGIN FORM & AUTHENTICATION STYLES
+   ================================================================ */
+
+
+.login-form.hidden {
+    display: none;
+}
+
+/* Login form - centered in map area */
+.login-form {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    background: white;
+    border: 2px solid var(--wb-navy);
+    border-radius: 6px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    z-index: 2000;
+}
+
+.login-form fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.login-form legend {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--wb-navy);
+    margin: 0 0 12px 0;
+    padding: 0;
+    width: 100%;
+    text-align: center;
+}
+
+.login-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.login-form .form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--wb-gray-900);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.login-form .form-group input {
+    padding: 10px 12px;
+    border: 1px solid var(--wb-gray-100);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    background: white;
+    color: var(--wb-gray-900);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-form .form-group input:focus {
+    border-color: var(--wb-blue);
+    box-shadow: 0 0 0 3px rgba(0, 159, 218, 0.1);
+}
+
+.login-form .form-group input::placeholder {
+    color: var(--wb-gray-500);
+}
+
+/* Form actions for login */
+.login-form .form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.login-form .login-btn-submit {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--wb-blue);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.login-form .login-btn-submit:hover {
+    background: #0087c6;
+}
+
+.login-form .login-btn-submit:active {
+    background: #006a9e;
+}
+
+.login-form .login-btn-close {
+    flex: 0;
+    width: 36px;
+    padding: 10px;
+    font-size: 16px;
+    background: var(--wb-gray-100);
+    color: var(--wb-gray-900);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.login-form .login-btn-close:hover {
+    background: var(--wb-gray-50);
 }

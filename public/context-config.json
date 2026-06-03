@@ -5,7 +5,7 @@
     "type": "geojson",
     "url": "/api/provinces/0",
     "default": true,
-    "minZoom": 5,
+    "minZoom": 1,
     "maxZoom": 14
   },
   {
@@ -33,6 +33,16 @@
     "default": false,
     "minZoom": 12,
     "maxNativeZoom": 15,
+    "maxZoom": 18
+  },
+
+  {
+    "id": "custom-communities",
+    "name": "Custom Communities",
+    "type": "geojson",
+    "url": "/api/custom-communities",
+    "default": false,
+    "minZoom": 4,
     "maxZoom": 18
   }
 ]

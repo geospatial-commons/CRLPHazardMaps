@@ -32,6 +32,7 @@
             <img src="/assets/img/wb-logo-white.png" alt="World Bank Group" class="header-logo" />
             <h1 id="app-title">CRLP Hazard Mapping Application</h1>
             <nav id="header-nav" aria-label="Site">
+                <span id="user-info"></span>
                 <a href="/methods" class="header-link">Methods</a>
             </nav>
         </header>
@@ -51,6 +52,9 @@
                     <div>
                         <label class="field-label" for="unops-code-search">Search by UNOPS Code</label>
                         <input type="text" id="unops-code-search">
+                    </div>
+                    <div id="communities-container">
+
                     </div>
                 </div>
                 <div class="sidebar-section">
@@ -197,10 +201,83 @@
                 <!-- Legend bar: fixed 36px, above map -->
                 <div id="legend-bar" aria-label="Map legend">
                     <span id="legend-content"><em>Select a hazard layer to view the legend</em></span>
+                    <div id="adminBtns">
+                        <span id="update-warning" style="display:none">
+                            Select district to update <br>an  existing community
+                        </span>
+                        <button id="btn-update" style="display:none">Update Community</button>
+                        <button id="btn-create" style="display:none">Create Community</button>
+                        <button id="btn-login">Login</button>
+                    </div>
+                </div>
+                
+                <!-- Add login form (hidden by default) -->
+                <form id="login-form" class="login-form hidden">
+                    <fieldset>
+                        <legend>Login</legend>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" required />
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="login-btn-submit">Submit</button>
+                            <button type="button" class="login-btn-close" aria-label="Close login form">×</button>
+                        </div>
+                    </fieldset>
+                </form>
+                
+                <!-- Map -->
+                <div id="map" aria-label="Interactive hazard map">
+                    
+                    <!-- Update mode toast: positioned in top right of map -->
+                    <div id="update-mode-toast" class="hidden">
+                        Update mode disabled
+                    </div>
                 </div>
 
-                <!-- Map -->
-                <div id="map" aria-label="Interactive hazard map"></div>
+                <!-- Hidden data form: positioned in bottom right corner -->
+                <form id="data-entry-form" class="data-entry-form hidden" aria-label="Create community form">
+                    <fieldset>
+                        <legend id="form-legend"></legend>
+
+                        <div class="form-group" id="community-id-group" style="display:none">
+                            <label for="community_id">Community ID</label>
+                            <input type="text" id="community_id" name="community_id" disabled />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="point_name">Point Name</label>
+                            <input type="text" id="point_name" name="point_name" />
+                        </div>
+                        <div class="coords-and-button">
+                            <div class="coords-inputs">
+                                <div class="form-group">
+                                    <label for="coord_y">Coord Y</label>
+                                    <input type="number" id="coord_y" name="coord_y" step="any" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="coord_x">Coord X</label>
+                                    <input type="number" id="coord_x" name="coord_x" step="any" />
+                                </div>
+                            </div>
+                            <div class="set-coords">
+                                <button type="button" id="set-coords-btn">Move to</button>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-submit">Submit</button>
+                            <button type="reset" class="btn-reset">Clear</button>
+                            <button type="button" class="btn-close" aria-label="Close form">×</button>
+                        </div>
+                        <div class="btn-delete-container">
+                            <button type="button" class="btn-delete" style="display: none;">Delete</button>
+                        </div>
+                    </fieldset>
+                </form>
             </main>
         </div>
     </div>
@@ -321,8 +398,10 @@
 
     <!-- App JS -->
     <script type="module" src="/js/pdf-export.js"></script>
+    <script type="module" src="/js/editMode.js"></script>
     <script type="module" src="/js/map.js"></script>
     <script type="module" src="/js/search.js"></script>
+    <script type="module" src="/js/auth.js"></script>
 
     <script>
         // PDF preview helpers (global scope — called from pdf-wrapper buttons)
