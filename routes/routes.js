@@ -24,6 +24,10 @@ router.get('/app', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'views', 'index.html'));
 });
 
+router.get('/methods', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'views', 'methods.html'));
+});
+
 router.get('/tiles/:layer/:z/:x/:y.png', validationParam.validateTiles, (req, res) => {
 
     const { layer, z, x, y: yParam } = req.params;
