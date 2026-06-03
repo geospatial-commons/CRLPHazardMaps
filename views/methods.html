@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CRLP Hazard Mapping Application - Methods</title>
+    <link rel="stylesheet" href="/css/landing.css" />
+    <link rel="stylesheet" href="/css/methods.css" />
+</head>
+
+<body>
+    <div class="methods-page">
+        <div class="background-overlay"></div>
+
+        <div class="methods-content">
+            <img src="/assets/img/wb-logo-white.png" alt="World Bank Group" class="wb-wordmark" />
+
+            <header class="methods-header">
+                <h1 class="landing-title">Methods</h1>
+                <p class="landing-subtitle">Hazard mapping methodologies</p>
+            </header>
+
+            <main class="methods-main">
+                <p class="methods-intro">
+                    This page describes the methodologies used to for each of the hazards found in the CRLP Hazard
+                    Mapping Application.
+                </p>
+
+                <section class="hazard-section">
+                    <h2 class="hazard-title">Flood</h2>
+                    <div class="hazard-content">
+                        <p class="hazard-description">
+                            The flood hazard map based on flood depth indicates how deep the water is expected to be at
+                            each location during a modeled flood. The adopted flood hazard classification for the map is
+                            a modified version of those developed by the UK Environmental Agency. In particular:
+                        </p>
+                        <ul class="hazard-list">
+                            <li>Low hazard: yellow color, depth < 0.49 m</li>
+                            <li>Medium hazard: orange color, depth between 0.5 m and 0.99 m</li>
+                            <li>High hazard: red color, depth > 1 m</li>
+                        </ul>
+                        <p class="hazard-description">
+                            Such maps help people understand where flooding might occur and - particularly - how deep it
+                            could be at specific places like roads and settled areas, parcels, or facilities. Deeper
+                            water generally means greater damage potential, more road closures, and more challenging
+                            emergency access. Flood hazard maps can be used for planning of infrastructure (i.e.,
+                            vegetative riverbank stabilization, retention ponds, desilting, gabion bank protection),
+                            broader town development, and evacuation.
+                        </p>
+                    </div>
+                </section>
+
+                <section class="hazard-section">
+                    <h2 class="hazard-title">Landslide</h2>
+                    <div class="hazard-content">
+                        <p class="hazard-description">
+                            The rainfall-induced landslide hazard map shows where slopes are naturally more or less
+                            prone to landslides during heavy rain. The map combines information on slope steepness,
+                            geology, rainfall data and land cover to classify each location from low to very high
+                            susceptibility. This is a screening and planning tool for prioritization of slope
+                            stabilization interventions (i.e., drainage, stone and gabion walls, brush layering) or
+                            evacuation routes planning. Colors indicate relative susceptibility: greens mark lower
+                            susceptibility, yellow is moderate, orange is high, and red is very high.
+                        </p>
+                        <ul class="hazard-list">
+                            <li>Very low susceptibility: green color, 1% probability of generating a landslide </li>
+                            <li>Low susceptibility: yellow color, 2% probability of generating a landslide </li>
+                            <li>Moderate susceptibility: orange color, 3% probability of generating a landslide</li>
+                            <li>Significant susceptibility: red color, >5% probability of generating a landslide </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="hazard-section">
+                    <h2 class="hazard-title">Avalanche</h2>
+                    <div class="hazard-content">
+                        <p class="hazard-description">
+                            The avalanche hazard map indicates how strong the force from a potential avalanche could be
+                            at different locations, expressed in kilopascals (kPa). Higher-pressure zones mean higher
+                            destructive potential on buildings, roads, and people. The resulting map uses colors to
+                            delineate hazard zones:
+                        </p>
+                        <ul class="hazard-list">
+                            <li>Very Low hazard: green color, 1-2.5 kPa: avalanche that can break windows </li>
+                            <li>Low hazard: yellow color, 2.6 - 17.5 kPa: avalanche that can push doors </li>
+                            <li>Medium hazard: orange color, 17.6 - 65 kPa: avalanche that can cause severe damage to
+                                wood-frame structures </li>
+                            <li>High hazard: red color, 65.1 - 200 kPa: avalanche that can destroy several buildings
+                            </li>
+                            <li>Very high hazard: dark red color, > 200 kPa: avalanche that can destroy reinforced
+                                concrete buildings </li>
+                        </ul>
+                    </div>
+                </section>
+            </main>
+
+            <footer class="methods-footer">
+                <button id="back-btn" class="enter-button" aria-label="Return to the application">
+                    Back to Application
+                </button>
+            </footer>
+
+            <div class="disclaimer">
+                <p>The boundaries and names shown and the designations used on this map do not imply official
+                    endorsement or acceptance by the World Bank Group.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('back-btn').addEventListener('click', function () {
+            window.location.href = '/app';
+        });
+    </script>
+</body>
+
+</html>
